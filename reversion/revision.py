@@ -18,11 +18,12 @@ class RevisionManagementError(Exception):
     pass
 
 
-def start(comment=""):
+def start(comment=None, user=None):
     """Enters transaction management for a running thread."""
+    print "START", comment
     current_thread = threading.currentThread()
     revisions.setdefault(current_thread, [])
-    revisions[current_thread].append(comment)
+    revisions[current_thread].append((comment, user))
     
     
 def end():
@@ -40,15 +41,18 @@ def add(model):
     """Registers a model with the given revision."""
     if is_managed():
         current_revisions = revisions[threading.currentThread()]
-        # Create revisions as required.
-        parent = None
-        for n in range(len(current_revisions)):
-            if isinstance(current_revisions[n], basestring):
-                current_revisions[n] = Revision.objects.create(parent=parent,
-                                                               comment=current_revisions[n])
-            parent = current_revisions[n]
+        # Create Revision model if required.
+        revision = current_revisions[-1]
+        if not isinstance(revision, Revision):
+            if len(current_revisions) > 1:
+                parent = current_revisions[-2]
+            else:
+                parent = None
+            comment, user = revision
+            revision = Revision.objects.create(comment=comment, user=user)
+            current_revisions[-1] = revision
         # Create version and add to revision.
-        version = Version.objects.create(revision=current_revisions[-1],
+        version = Version.objects.create(revision=revision,
                                          object_version=model)
         return version
     else:

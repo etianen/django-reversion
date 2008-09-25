@@ -21,7 +21,14 @@ class Revision(models.Model):
     date_created = models.DateTimeField(auto_now_add=True,
                                         help_text="When this transaction was created.")
 
-    comment = models.TextField(help_text="A comment about what took place in this revision.")
+    comment = models.TextField(blank=True,
+                               null=True,
+                               help_text="A comment about what took place in this revision.")
+
+    user = models.ForeignKey("auth.User",
+                             blank=True,
+                             null=True,
+                             help_text="The user who made this revision.")
 
     def __unicode__(self):
         """Returns a unicode representation."""
