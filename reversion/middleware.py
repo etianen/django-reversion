@@ -17,7 +17,11 @@ class RevisionMiddleware(TransactionMiddleware):
     def process_request(self, request):
         """Starts a new revision."""
         super(RevisionMiddleware, self).process_request(request)
-        revision.start("%s request to %s" % (request.method, request.get_full_path()), request.user)
+        if request.user.is_authenticated():
+            user = request.user
+        else:
+            user = None
+        revision.start("%s request to %s" % (request.method, request.get_full_path()), user)
         
     def process_response(self, request, response):
         """Closes the revision."""

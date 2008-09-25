@@ -36,20 +36,26 @@ def is_managed():
     return bool(revisions.get(threading.currentThread()))
 
 
+def get_current_revision():
+    """Returns the currently open revision."""
+    current_revisions = revisions[threading.currentThread()]
+    revision = current_revisions[-1]
+    if not isinstance(revision, Revision):
+        if len(current_revisions) > 1:
+            parent = current_revisions[-2]
+        else:
+            parent = None
+        comment, user = revision
+        revision = Revision.objects.create(comment=comment, user=user)
+        current_revisions[-1] = revision
+    return revision
+
+
 def add(model):
     """Registers a model with the given revision."""
     if is_managed():
-        current_revisions = revisions[threading.currentThread()]
         # Create Revision model if required.
-        revision = current_revisions[-1]
-        if not isinstance(revision, Revision):
-            if len(current_revisions) > 1:
-                parent = current_revisions[-2]
-            else:
-                parent = None
-            comment, user = revision
-            revision = Revision.objects.create(comment=comment, user=user)
-            current_revisions[-1] = revision
+        revision = get_current_revision()
         # Create version and add to revision.
         version = Version.objects.create(revision=revision,
                                          object_version=model)
