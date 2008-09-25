@@ -1,1 +1,0 @@
-"""Transaction control for Reversion."""
