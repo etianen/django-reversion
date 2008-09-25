@@ -6,10 +6,14 @@ from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.db import models, transaction
 
+from reversion.managers import VersionManager
+
 
 class Version(models.Model):
     
     """A saved version of a database model."""
+    
+    objects = VersionManager()
     
     date_created = models.DateTimeField(auto_now_add=True,
                                         help_text="When this version was created.")
@@ -47,7 +51,7 @@ class Version(models.Model):
         """Reverts the model data to this version."""
         self.object_version.save()
         
-    def get_transaction(self):
+    def get_transaction_set(self):
         """Returns a list of all model versions in this transaction."""
         if self.transaction_start:
             return self.transaction_start.get_transaction()
@@ -56,8 +60,5 @@ class Version(models.Model):
     @transaction.commit_on_success
     def revert_transaction(self):
         """Reverts all models in this transaction."""
-        for version in self.get_transaction():
+        for version in self.get_transaction_set():
             version.revert()
-        
-    class Meta:
-        ordering = "pk",
