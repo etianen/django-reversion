@@ -1,0 +1,8 @@
+{% extends "admin/change_form.html" %}
+
+
+{% block content %}
+	{% with 1 as is_popup %}
+		{{block.super}}
+	{% endwith %}
+{% endblock %}
