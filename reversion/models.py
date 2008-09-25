@@ -8,10 +8,14 @@ from django.core import serializers
 from django.db import models
 from django.utils.dateformat import format
 
+from reversion.managers import RevisionManager
+
 
 class Revision(models.Model):
     
     """A group of model versions that were committed together."""
+    
+    objects = RevisionManager()
     
     parent = models.ForeignKey("self",
                                blank=True,

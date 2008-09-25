@@ -2,7 +2,6 @@
 
 
 from django.contrib import admin
-from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.utils.encoding import force_unicode
@@ -48,9 +47,8 @@ class VersionAdmin(admin.ModelAdmin):
     
     def history_view(self, request, object_id, extra_context=None):
         """Renders an alternate history view"""
-        content_type = ContentType.objects.get_for_model(self.model)
-        action_list = Revision.objects.filter(version__object_id=object_id,
-                                              version__content_type=content_type).order_by("date_created")
+        obj = get_object_or_404(self.model, pk=object_id)
+        action_list = Revision.objects.get_for_object(obj)
         context = {"action_list": action_list,}
         if extra_context:
             context.update(extra_context)
