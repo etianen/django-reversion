@@ -63,7 +63,7 @@ class Version(models.Model):
         
     def get_object_version(self):
         """Returns the stored version of the model."""
-        return serializers.deserialize("xml", self.serialized_data)
+        return list(serializers.deserialize("xml", self.serialized_data))[0]
     
     object_version = property(get_object_version,
                               set_object_version,

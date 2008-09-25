@@ -40,13 +40,15 @@ class VersionAdmin(admin.ModelAdmin):
         opts = model._meta
         opts = self.model._meta
         obj = get_object_or_404(self.model, pk=object_id)
-        revision = get_object_or_404(Revision)
+        revision = get_object_or_404(Revision, pk=revision_id)
+        version = get_object_or_404(Version, object_id=object_id, revision=revision)
+        object_version = version.object_version
         app_label = opts.app_label
         ordered_objects = opts.get_ordered_objects()
         # Generate the form.
         ModelForm = self.get_form(request, obj)
         formsets = []
-        form = ModelForm(instance=obj)
+        form = ModelForm(instance=object_version.object)
         formsets = []
         # Generate the context.
         adminForm = admin.helpers.AdminForm(form, self.get_fieldsets(request, obj), self.prepopulated_fields)
