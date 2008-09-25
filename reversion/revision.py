@@ -5,22 +5,21 @@ import threading, weakref
 
 from reversion.models import Revision, Version
 
+from django.db import transaction
+
 
 revisions = weakref.WeakKeyDictionary()
 
 
 class RevisionManagementError(Exception):
-    
     """
     Exception that is thrown when something goes wrong with revision managment.
     """
-    
     pass
 
 
 def start(comment=None, user=None):
     """Enters transaction management for a running thread."""
-    print "START", comment
     current_thread = threading.currentThread()
     revisions.setdefault(current_thread, [])
     revisions[current_thread].append((comment, user))
@@ -62,3 +61,19 @@ def add(model):
         finally:
             end()
     
+    
+# Decorators.
+
+def create_revision(func):
+    """
+    Decorator that groups all saved versions into a revision.
+    
+    The function will also be wrapped in a database transaction.
+    """
+    def wrapper(*args, **kwargs):
+        start()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            end()
+    return transaction.commit_on_success(wrapper)
