@@ -18,9 +18,13 @@ from reversion import revision
 from reversion.models import Version
 
 
-def get_parents(model, revision_data):
-    """Returns a list of all the parent objects in the revision data."""
+def deserialized_model_to_dict(deserialized_model, revision_data):
+    """Converts a deserialized model to a dictionary."""
+    result = model_to_dict(deserialized_model.object)
+    result.update(deserialized_model.m2m_data)
+    # Add parent data.
     parents = []
+    model = deserialized_model.object
     for parent_class, field in model._meta.parents.items():
         attname = field.attname
         attvalue = getattr(model, attname)
@@ -29,14 +33,7 @@ def get_parents(model, revision_data):
             parent = deserialized_model.object
             if parent_class == parent.__class__ and unicode(getattr(parent, pk_name)) == unicode(getattr(model, attname)):
                 parents.append(deserialized_model)
-    return parents
-
-
-def deserialized_model_to_dict(deserialized_model, revision_data):
-    """Converts a deserialized model to a dictionary."""
-    result = model_to_dict(deserialized_model.object)
-    result.update(deserialized_model.m2m_data)
-    for parent in get_parents(deserialized_model.object, revision_data):
+    for parent in parents:
         result.update(deserialized_model_to_dict(parent, revision_data))
     return result
 

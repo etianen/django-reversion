@@ -59,7 +59,8 @@ def add(model):
         thread_locals.versions.add(model)
         # Save parent models.
         for field in model._meta.parents.values():
-            delattr(model, field.get_cache_name())  # Clear parent cache.
+            if hasattr(model, field.get_cache_name()):
+                delattr(model, field.get_cache_name())  # Clear parent cache.
             add(getattr(model, field.name))
     else:
         start()
