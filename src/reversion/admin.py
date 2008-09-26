@@ -1,14 +1,17 @@
 """Admin extensions for Reversion."""
 
 
+from django.conf import settings
 from django.contrib import admin
 from django.contrib.admin.models import LogEntry
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.forms.models import model_to_dict
+from django.forms.formsets import all_valid
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
+from django.utils.dateformat import format
 from django.utils.encoding import force_unicode
 from django.utils.html import mark_safe
 from django.utils.text import capfirst
@@ -80,24 +83,46 @@ class VersionAdmin(admin.ModelAdmin):
         revision = [version.object_version for version in version.get_revision()]
         ModelForm = self.get_form(request, obj)
         formsets = []
-        form = ModelForm(instance=obj, initial=deserialized_model_to_dict(object_version, revision))
-        for FormSet in self.get_formsets(request, obj):
-            formset = FormSet(instance=obj)
-            attname = FormSet.fk.attname
-            pk_name = FormSet.model._meta.pk.name
-            initial_overrides = dict(((getattr(version.object, pk_name), version) for version in revision if version.object.__class__ == FormSet.model and unicode(getattr(version.object, attname)) == object_id))
-            initial = formset.initial
-            for initial_row in initial:
-                pk = initial_row[pk_name]
-                if pk in initial_overrides:
-                     initial_row.update(deserialized_model_to_dict(initial_overrides[pk], revision))
-                     del initial_overrides[pk]
-            initial.extend(initial_overrides.values())
-            # HACK: no way to specify initial values.
-            formset._total_form_count = len(initial)
-            formset.initial = initial
-            formset._construct_forms()
-            formsets.append(formset)
+        if request.method == "POST":
+            form = ModelForm(request.POST, request.FILES, instance=obj)
+            if form.is_valid():
+                form_validated = True
+                new_object = self.save_form(request, form, change=True)
+            else:
+                form_validated = False
+                new_object = obj
+            for FormSet in self.get_formsets(request, new_object):
+                formset = FormSet(request.POST, request.FILES,
+                                  instance=new_object)
+                formsets.append(formset)
+            if all_valid(formsets) and form_validated:
+                self.save_model(request, new_object, form, change=True)
+                form.save_m2m()
+                for formset in formsets:
+                    self.save_formset(request, form, formset, change=True)
+                change_message = _("Reverted to previous version, saved on %(datetime)s") % {"datetime": format(version.date_created, _(settings.DATETIME_FORMAT))}
+                self.log_change(request, new_object, change_message)
+                self.message_user(request, 'The %(model)s "%(name)s" was reverted successfully. You may edit it again below.' % {"model": opts.verbose_name, "name": unicode(obj)})
+                return HttpResponseRedirect("../../")
+        else:
+            form = ModelForm(instance=obj, initial=deserialized_model_to_dict(object_version, revision))
+            for FormSet in self.get_formsets(request, obj):
+                formset = FormSet(instance=obj)
+                attname = FormSet.fk.attname
+                pk_name = FormSet.model._meta.pk.name
+                initial_overrides = dict(((getattr(version.object, pk_name), version) for version in revision if version.object.__class__ == FormSet.model and unicode(getattr(version.object, attname)) == object_id))
+                initial = formset.initial
+                for initial_row in initial:
+                    pk = initial_row[pk_name]
+                    if pk in initial_overrides:
+                         initial_row.update(deserialized_model_to_dict(initial_overrides[pk], revision))
+                         del initial_overrides[pk]
+                initial.extend(initial_overrides.values())
+                # HACK: no way to specify initial values.
+                formset._total_form_count = len(initial)
+                formset.initial = initial
+                formset._construct_forms()
+                formsets.append(formset)
         # Generate the context.
         adminForm = admin.helpers.AdminForm(form, self.get_fieldsets(request, obj), self.prepopulated_fields)
         media = self.media + adminForm.media
