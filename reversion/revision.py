@@ -3,9 +3,12 @@
 
 import threading, weakref
 
-from reversion.models import Revision, Version
+try:
+    from functools import wraps
+except ImportError:
+    from django.utils.functional import wraps  # Python 2.3, 2.4 fallback.
 
-from django.db import transaction
+from reversion.models import Version
 
 
 revisions = weakref.WeakKeyDictionary()
@@ -18,47 +21,41 @@ class RevisionManagementError(Exception):
     pass
 
 
-def start(comment=None, user=None):
+def get_revision_stack():
+    """Returns the stack of revisions for the current thread."""
+    return revisions.setdefault(threading.currentThread(), [])
+
+
+def start():
     """Enters transaction management for a running thread."""
-    current_thread = threading.currentThread()
-    revisions.setdefault(current_thread, [])
-    revisions[current_thread].append((comment, user))
+    get_revision_stack().append(None)
     
     
 def end():
     """Leaves transaction managment for a running thread."""
     # Clear revision state.
-    revisions[threading.currentThread()].pop()
+    try:
+        revisions[threading.currentThread()].pop()
+    except IndexError:
+        raise RevisionManagementError, "There is no active revision for this thread."
     
     
 def is_managed():
     """Returns whether the current thread is under revision management."""
-    return bool(revisions.get(threading.currentThread()))
-
-
-def get_current_revision():
-    """Returns the currently open revision."""
-    current_revisions = revisions[threading.currentThread()]
-    revision = current_revisions[-1]
-    if not isinstance(revision, Revision):
-        if len(current_revisions) > 1:
-            parent = current_revisions[-2]
-        else:
-            parent = None
-        comment, user = revision
-        revision = Revision.objects.create(comment=comment, user=user)
-        current_revisions[-1] = revision
-    return revision
+    return bool(get_revision_stack())
 
 
 def add(model):
     """Registers a model with the given revision."""
     if is_managed():
-        # Create Revision model if required.
-        revision = get_current_revision()
-        # Create version and add to revision.
-        version = Version.objects.create(revision=revision,
+        revision_stack = get_revision_stack()
+        revision_start = revision_stack[-1]
+        if not revision_start and len(revision_stack) > 1:
+            revision_start = revision_stack[-2]
+        version = Version.objects.create(revision_start=revision_start,
                                          object_version=model)
+        if not revision_stack[-1]:
+            revision_stack[-1] = version
         return version
     else:
         start()
@@ -71,15 +68,11 @@ def add(model):
 # Decorators.
 
 def create_revision(func):
-    """
-    Decorator that groups all saved versions into a revision.
-    
-    The function will also be wrapped in a database transaction.
-    """
-    def wrapper(*args, **kwargs):
+    """Decorator that groups all saved versions into a revision."""
+    def _create_revision(*args, **kwargs):
         start()
         try:
             return func(*args, **kwargs)
         finally:
             end()
-    return transaction.commit_on_success(wrapper)
+    return wraps(func)(_create_revision)

@@ -12,7 +12,7 @@ from django.utils.text import capfirst
 from django.utils.translation import ugettext as _
 
 from reversion import revision
-from reversion.models import Revision, Version
+from reversion.models import Version
 
 
 class VersionAdmin(admin.ModelAdmin):

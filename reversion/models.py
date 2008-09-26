@@ -1,50 +1,25 @@
 """Database models used by Reversion."""
 
 
-from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.generic import GenericForeignKey
 from django.core import serializers
 from django.db import models
-from django.utils.dateformat import format
 
 from reversion.managers import RevisionManager
-
-
-class Revision(models.Model):
-    
-    """A group of model versions that were committed together."""
-    
-    objects = RevisionManager()
-    
-    parent = models.ForeignKey("self",
-                               blank=True,
-                               null=True,
-                               help_text="The parent revision.")
-    
-    date_created = models.DateTimeField(auto_now_add=True,
-                                        help_text="When this transaction was created.")
-
-    comment = models.TextField(blank=True,
-                               null=True,
-                               help_text="A comment about what took place in this revision.")
-
-    user = models.ForeignKey("auth.User",
-                             blank=True,
-                             null=True,
-                             help_text="The user who made this revision.")
-
-    def __unicode__(self):
-        """Returns a unicode representation."""
-        return format(self.date_created, settings.DATETIME_FORMAT)
 
 
 class Version(models.Model):
     
     """A saved version of a database model."""
     
-    revision = models.ForeignKey("Revision",
-                                 help_text="The transaction that contains this model version.")
+    date_created = models.DateTimeField(auto_now_add=True,
+                                        help_text="The date and time this version was created.")
+    
+    revision_start = models.ForeignKey("self",
+                                          blank=True,
+                                          null=True,
+                                          help_text="The Version that started this transaction.")
     
     object_id = models.TextField(help_text="Primary key of the model under version control.")
     
@@ -68,3 +43,7 @@ class Version(models.Model):
     object_version = property(get_object_version,
                               set_object_version,
                               doc="The stored version of the model.")
+    
+    def __unicode__(self):
+        """Returns a unicode representation."""
+        return unicode(self.get_object_version().object)
