@@ -17,9 +17,10 @@ class Version(models.Model):
                                         help_text="The date and time this version was created.")
     
     revision_start = models.ForeignKey("self",
-                                          blank=True,
-                                          null=True,
-                                          help_text="The Version that started this transaction.")
+                                       blank=True,
+                                       null=True,
+                                       related_name="revision_content",
+                                       help_text="The Version that started this transaction.")
     
     object_id = models.TextField(help_text="Primary key of the model under version control.")
     
@@ -43,6 +44,12 @@ class Version(models.Model):
     object_version = property(get_object_version,
                               set_object_version,
                               doc="The stored version of the model.")
+    
+    def get_revision(self):
+        """Returns all the versions in the given revision."""
+        if self.revision_start:
+            return self.revision_start.get_revision()
+        return [self] + list(self.revision_content.all())
     
     def __unicode__(self):
         """Returns a unicode representation."""

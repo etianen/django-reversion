@@ -2,8 +2,10 @@
 
 
 from django.contrib import admin
+from django.contrib.admin.models import LogEntry
 from django.contrib.contenttypes.models import ContentType
-from django.core import serializers
+from django.db import transaction
+from django.forms.models import model_to_dict
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.utils.encoding import force_unicode
@@ -13,6 +15,13 @@ from django.utils.translation import ugettext as _
 
 from reversion import revision
 from reversion.models import Version
+
+
+def deserialized_model_to_dict(deserialized_model):
+    """Converts a deserialized model to a dictionary."""
+    result = model_to_dict(deserialized_model.object)
+    result.update(deserialized_model.m2m_data)
+    return result
 
 
 class VersionAdmin(admin.ModelAdmin):
@@ -33,15 +42,19 @@ class VersionAdmin(admin.ModelAdmin):
         else:
             return super(VersionAdmin, self).__call__(request, url)
     
+    @transaction.commit_on_success
     @revision.create_revision
-    def revision_view(self, request, object_id, revision_id):
+    def revision_view(self, request, object_id, log_entry_id):
         """Displays the contents of the given revision."""
         model = self.model
+        content_type = ContentType.objects.get_for_model(model)
         opts = model._meta
         opts = self.model._meta
         obj = get_object_or_404(self.model, pk=object_id)
-        revision = get_object_or_404(Revision, pk=revision_id)
-        version = get_object_or_404(Version, object_id=object_id, revision=revision)
+        log_entry = get_object_or_404(LogEntry, pk=log_entry_id)
+        version = Version.objects.filter(object_id=object_id,
+                                         content_type=content_type,
+                                         date_created__lte=log_entry.action_time).latest("date_created")
         object_version = version.object_version
         app_label = opts.app_label
         ordered_objects = opts.get_ordered_objects()
@@ -49,7 +62,15 @@ class VersionAdmin(admin.ModelAdmin):
         ModelForm = self.get_form(request, obj)
         formsets = []
         form = ModelForm(instance=object_version.object)
-        formsets = []
+        for FormSet in self.get_formsets(request, obj):
+            revision = [version for version in version.get_revision() if version.content_type.model_class() == FormSet.model]
+            initial = [deserialized_model_to_dict(version.object_version) for version in revision]
+            formset = FormSet(instance=object_version.object)
+            # HACK: no way to specify initial values.
+            formset._total_form_count = len(initial)
+            formset.initial = initial
+            formset._construct_forms()
+            formsets.append(formset)
         # Generate the context.
         adminForm = admin.helpers.AdminForm(form, self.get_fieldsets(request, obj), self.prepopulated_fields)
         media = self.media + adminForm.media
@@ -78,7 +99,7 @@ class VersionAdmin(admin.ModelAdmin):
             "has_file_field": True, # FIXME - this should check if form or formsets have a FileField,
             "has_absolute_url": hasattr(self.model, "get_absolute_url"),
             "ordered_objects": ordered_objects,
-            "form_url": mark_safe("FOOBAR"),
+            "form_url": mark_safe(request.path),
             "opts": opts,
             "content_type_id": ContentType.objects.get_for_model(self.model).id,
             "save_as": self.save_as,
@@ -87,38 +108,9 @@ class VersionAdmin(admin.ModelAdmin):
         }
         return render_to_response(self.revision_form_template, context, context_instance=RequestContext(request))
     
-    def log_addition(self, request, object):
-        """Add the user to the current revision."""
-        super(VersionAdmin, self).log_addition(request, object)
-        current_revision = revision.get_current_revision()
-        current_revision.user = request.user
-        current_revision.save()
-    
-    def log_change(self, request, object, message):
-        """Add the change message to the current revision."""
-        super(VersionAdmin, self).log_change(request, object, message)
-        current_revision = revision.get_current_revision()
-        current_revision.comment = message
-        current_revision.user = request.user
-        current_revision.save()
-        
-    def log_deletion(self, request, object, object_repr):
-        """Add the user to the current revision."""
-        super(VersionAdmin, self).log_deletion(request, object, object_repr)
-        current_revision = revision.get_current_revision()
-        current_revision.user = request.user
-        current_revision.save()
-        
     # Wrap the data-modifying views in revisions.
     add_view = revision.create_revision(admin.ModelAdmin.add_view)
     change_view = revision.create_revision(admin.ModelAdmin.change_view)
     delete_view = revision.create_revision(admin.ModelAdmin.delete_view)
     
-    def history_view(self, request, object_id, extra_context=None):
-        """Renders an alternate history view"""
-        obj = get_object_or_404(self.model, pk=object_id)
-        action_list = Revision.objects.get_for_object(obj)
-        context = {"action_list": action_list,}
-        if extra_context:
-            context.update(extra_context)
-        return super(VersionAdmin, self).history_view(request, object_id, context)
+    

@@ -17,9 +17,9 @@
 			        <tbody>
 				        {% for action in action_list %}
 					        <tr>
-					            <th scope="row"><a href="./{{action.pk}}/">{{action.date_created|date:_("DATETIME_FORMAT")}}</a></th>
+					            <th scope="row"><a href="./{{action.pk}}/">{{action.action_time|date:_("DATETIME_FORMAT")}}</a></th>
 					            <td>{{action.user.username}}{% if action.user.first_name %} ({{action.user.first_name}} {{action.user.last_name}}){% endif %}</td>
-					            <td>{{action.comment}}</td>
+					            <td>{{action.change_message}}</td>
 					        </tr>
 				        {% endfor %}
 			        </tbody>
