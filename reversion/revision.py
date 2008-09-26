@@ -57,6 +57,10 @@ def add(model):
     """Registers a model with the given revision."""
     if is_managed():
         thread_locals.versions.add(model)
+        # Save parent models.
+        for field in model._meta.parents.values():
+            delattr(model, field.get_cache_name())  # Clear parent cache.
+            add(getattr(model, field.name))
     else:
         start()
         try:

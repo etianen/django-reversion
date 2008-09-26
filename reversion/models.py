@@ -47,7 +47,7 @@ class Version(models.Model):
         """Returns all the versions in the given revision."""
         if self.revision_start:
             return self.revision_start.get_revision()
-        return [self] + list(self.revision_content.all())
+        return [self] + list(self.revision_content.all().order_by("pk"))
     
     def __unicode__(self):
         """Returns a unicode representation."""

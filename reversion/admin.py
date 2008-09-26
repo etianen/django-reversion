@@ -18,10 +18,26 @@ from reversion import revision
 from reversion.models import Version
 
 
-def deserialized_model_to_dict(deserialized_model):
+def get_parents(model, revision_data):
+    """Returns a list of all the parent objects in the revision data."""
+    parents = []
+    for parent_class, field in model._meta.parents.items():
+        attname = field.attname
+        attvalue = getattr(model, attname)
+        pk_name = parent_class._meta.pk.name
+        for deserialized_model in revision_data:
+            parent = deserialized_model.object
+            if parent_class == parent.__class__ and unicode(getattr(parent, pk_name)) == unicode(getattr(model, attname)):
+                parents.append(deserialized_model)
+    return parents
+
+
+def deserialized_model_to_dict(deserialized_model, revision_data):
     """Converts a deserialized model to a dictionary."""
     result = model_to_dict(deserialized_model.object)
     result.update(deserialized_model.m2m_data)
+    for parent in get_parents(deserialized_model.object, revision_data):
+        result.update(deserialized_model_to_dict(parent, revision_data))
     return result
 
 
@@ -43,6 +59,8 @@ class VersionAdmin(admin.ModelAdmin):
         else:
             return super(VersionAdmin, self).__call__(request, url)
     
+    # TODO fieldset ordering needs to be sorted.
+    # TODO inlines only recover if their specific revision is recalled.
     @transaction.commit_on_success
     @revision.create_revision
     def revision_view(self, request, object_id, log_entry_id):
@@ -62,13 +80,22 @@ class VersionAdmin(admin.ModelAdmin):
         object_version = version.object_version
         ordered_objects = opts.get_ordered_objects()
         # Generate the form.
+        revision = [version.object_version for version in version.get_revision()]
         ModelForm = self.get_form(request, obj)
         formsets = []
-        form = ModelForm(instance=obj, initial=deserialized_model_to_dict(object_version))
+        form = ModelForm(instance=obj, initial=deserialized_model_to_dict(object_version, revision))
         for FormSet in self.get_formsets(request, obj):
-            revision = [version for version in version.get_revision() if version.content_type.model_class() == FormSet.model]
-            initial = [deserialized_model_to_dict(version.object_version) for version in revision]
             formset = FormSet(instance=obj)
+            attname = FormSet.fk.attname
+            pk_name = FormSet.model._meta.pk.name
+            initial_overrides = dict(((getattr(version.object, pk_name), version) for version in revision if version.object.__class__ == FormSet.model and unicode(getattr(version.object, attname)) == object_id))
+            initial = formset.initial
+            for initial_row in initial:
+                pk = initial_row[pk_name]
+                if pk in initial_overrides:
+                     initial_row.update(deserialized_model_to_dict(initial_overrides[pk], revision))
+                     del initial_overrides[pk]
+            initial.extend(initial_overrides.values())
             # HACK: no way to specify initial values.
             formset._total_form_count = len(initial)
             formset.initial = initial
