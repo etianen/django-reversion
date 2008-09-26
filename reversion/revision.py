@@ -28,16 +28,35 @@ def get_revision_stack():
 
 def start():
     """Enters transaction management for a running thread."""
-    get_revision_stack().append(None)
+    get_revision_stack().append(([], []))
+    
+    
+def commit_revision(revision, revision_start=None):
+    """Saves this revision and all child revisions."""
+    models, nested = revision
+    if models:
+        parent = Version.objects.create(object_version=models[0], revision_start=revision_start)
+    for model in models[1:]:
+        Version.objects.create(object_version=models[0], revision_start=revision_start)
+    for sub_revision in nested:
+        commit_revision(sub_revision, parent)
     
     
 def end():
     """Leaves transaction managment for a running thread."""
     # Clear revision state.
+    current_revisions = get_revision_stack()
     try:
-        revisions[threading.currentThread()].pop()
+        revision = current_revisions.pop()
     except IndexError:
         raise RevisionManagementError, "There is no active revision for this thread."
+    if current_revisions:
+        # This was a nested revision.
+        current_revisions[-1][1].append(revision)
+    else:
+        # This was the top-level revision... time to commit.
+        commit_revision(revision)
+        
     
     
 def is_managed():
@@ -48,15 +67,7 @@ def is_managed():
 def add(model):
     """Registers a model with the given revision."""
     if is_managed():
-        revision_stack = get_revision_stack()
-        revision_start = revision_stack[-1]
-        if not revision_start and len(revision_stack) > 1:
-            revision_start = revision_stack[-2]
-        version = Version.objects.create(revision_start=revision_start,
-                                         object_version=model)
-        if not revision_stack[-1]:
-            revision_stack[-1] = version
-        return version
+        revision_stack = get_revision_stack()[-1][0].append(model)
     else:
         start()
         try:

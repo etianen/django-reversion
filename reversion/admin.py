@@ -54,7 +54,7 @@ class VersionAdmin(admin.ModelAdmin):
         log_entry = get_object_or_404(LogEntry, pk=log_entry_id)
         version = Version.objects.filter(object_id=object_id,
                                          content_type=content_type,
-                                         date_created__lte=log_entry.action_time).latest("date_created")
+                                         date_created__gte=log_entry.action_time).order_by("date_created")[0]
         object_version = version.object_version
         app_label = opts.app_label
         ordered_objects = opts.get_ordered_objects()
