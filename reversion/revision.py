@@ -1,7 +1,7 @@
 """Revision management for Reversion."""
 
 
-import threading, weakref
+import threading
 
 try:
     from functools import wraps
@@ -11,7 +11,7 @@ except ImportError:
 from reversion.models import Version
 
 
-revisions = weakref.WeakKeyDictionary()
+thread_locals = threading.local()
 
 
 class RevisionManagementError(Exception):
@@ -21,53 +21,42 @@ class RevisionManagementError(Exception):
     pass
 
 
-def get_revision_stack():
-    """Returns the stack of revisions for the current thread."""
-    return revisions.setdefault(threading.currentThread(), [])
-
-
 def start():
-    """Enters transaction management for a running thread."""
-    get_revision_stack().append(([], []))
-    
-    
-def commit_revision(revision, revision_start=None):
-    """Saves this revision and all child revisions."""
-    models, nested = revision
-    if models:
-        parent = Version.objects.create(object_version=models[0], revision_start=revision_start)
-    for model in models[1:]:
-        Version.objects.create(object_version=models[0], revision_start=revision_start)
-    for sub_revision in nested:
-        commit_revision(sub_revision, parent)
-    
-    
-def end():
-    """Leaves transaction managment for a running thread."""
-    # Clear revision state.
-    current_revisions = get_revision_stack()
-    try:
-        revision = current_revisions.pop()
-    except IndexError:
-        raise RevisionManagementError, "There is no active revision for this thread."
-    if current_revisions:
-        # This was a nested revision.
-        current_revisions[-1][1].append(revision)
-    else:
-        # This was the top-level revision... time to commit.
-        commit_revision(revision)
+    """Enters revision management for a running thread."""
+    if not hasattr(thread_locals, "versions"):
+        thread_locals.versions = set()
+    if not hasattr(thread_locals, "depth"):
+        thread_locals.depth = 0
+    thread_locals.depth += 1
         
     
-    
+def end():
+    """Leaves revision managment for a running thread."""
+    try:
+        thread_locals.depth -= 1
+    except AttributeError:
+        raise RevisionManagementError, "There is no active revision for this thread."
+    if thread_locals.depth == 0:
+        # This is the top-level in the revision stack... time to commit.
+        try:
+            revision_start = None
+            for version in thread_locals.versions:
+                saved_version = Version.objects.create(object_version=version, revision_start=revision_start)
+                revision_start = revision_start or saved_version
+        finally:
+            del thread_locals.depth
+            del thread_locals.versions
+        
+        
 def is_managed():
     """Returns whether the current thread is under revision management."""
-    return bool(get_revision_stack())
+    return hasattr(thread_locals, "versions")
 
 
 def add(model):
     """Registers a model with the given revision."""
     if is_managed():
-        revision_stack = get_revision_stack()[-1][0].append(model)
+        thread_locals.versions.add(model)
     else:
         start()
         try:

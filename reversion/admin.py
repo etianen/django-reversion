@@ -6,6 +6,7 @@ from django.contrib.admin.models import LogEntry
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.forms.models import model_to_dict
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.utils.encoding import force_unicode
@@ -49,14 +50,16 @@ class VersionAdmin(admin.ModelAdmin):
         model = self.model
         content_type = ContentType.objects.get_for_model(model)
         opts = model._meta
-        opts = self.model._meta
+        app_label = opts.app_label
         obj = get_object_or_404(self.model, pk=object_id)
         log_entry = get_object_or_404(LogEntry, pk=log_entry_id)
-        version = Version.objects.filter(object_id=object_id,
-                                         content_type=content_type,
-                                         date_created__gte=log_entry.action_time).order_by("date_created")[0]
+        try:
+            version = Version.objects.filter(object_id=object_id,
+                                             content_type=content_type,
+                                             date_created__gte=log_entry.action_time).order_by("date_created")[0]
+        except IndexError:
+            return HttpResponseRedirect("%s%s/%s/%s/" % (self.admin_site.root_path, app_label, model.__name__.lower(), object_id))
         object_version = version.object_version
-        app_label = opts.app_label
         ordered_objects = opts.get_ordered_objects()
         # Generate the form.
         ModelForm = self.get_form(request, obj)

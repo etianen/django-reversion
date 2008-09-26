@@ -6,8 +6,6 @@ from django.contrib.contenttypes.generic import GenericForeignKey
 from django.core import serializers
 from django.db import models
 
-from reversion.managers import RevisionManager
-
 
 class Version(models.Model):
     
