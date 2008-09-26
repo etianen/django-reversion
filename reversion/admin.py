@@ -106,7 +106,7 @@ class VersionAdmin(admin.ModelAdmin):
             "save_on_top": self.save_on_top,
             "root_path": self.admin_site.root_path,
         }
-        return render_to_response(self.revision_form_template, context, context_instance=RequestContext(request))
+        return render_to_response(self.revision_form_template, context, RequestContext(request))
     
     # Wrap the data-modifying views in revisions.
     add_view = revision.create_revision(admin.ModelAdmin.add_view)
