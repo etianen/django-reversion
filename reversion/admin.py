@@ -61,11 +61,11 @@ class VersionAdmin(admin.ModelAdmin):
         # Generate the form.
         ModelForm = self.get_form(request, obj)
         formsets = []
-        form = ModelForm(instance=object_version.object)
+        form = ModelForm(instance=obj, initial=deserialized_model_to_dict(object_version))
         for FormSet in self.get_formsets(request, obj):
             revision = [version for version in version.get_revision() if version.content_type.model_class() == FormSet.model]
             initial = [deserialized_model_to_dict(version.object_version) for version in revision]
-            formset = FormSet(instance=object_version.object)
+            formset = FormSet(instance=obj)
             # HACK: no way to specify initial values.
             formset._total_form_count = len(initial)
             formset.initial = initial
