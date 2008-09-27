@@ -8,6 +8,8 @@ try:
 except ImportError:
     from django.utils.functional import wraps  # Python 2.3, 2.4 fallback.
 
+from django.contrib.contenttypes.models import ContentType
+from django.core import serializers
 from django.db import transaction
 
 from reversion.models import Version
@@ -26,9 +28,11 @@ class RevisionManagementError(Exception):
 def start():
     """Enters revision management for a running thread."""
     if not hasattr(thread_locals, "versions"):
-        thread_locals.versions = set()
+        thread_locals.versions = {}
     if not hasattr(thread_locals, "depth"):
         thread_locals.depth = 0
+    if not hasattr(thread_locals, "committed"):
+        thread_locals.committed = {}
     thread_locals.depth += 1
     # Start a database transaction.
     transaction.enter_transaction_management()
@@ -44,13 +48,27 @@ def end():
     if thread_locals.depth == 0:
         # This is the top-level in the revision stack... time to commit.
         try:
-            revision_start = None
-            for version in thread_locals.versions:
-                saved_version = Version.objects.create(object_version=version, revision_start=revision_start)
-                revision_start = revision_start or saved_version
+            try:
+                revision_start = None
+                for version, object_id in thread_locals.versions.items():
+                    if not (version.__class__, object_id) in thread_locals.committed:
+                        thread_locals.committed[(version.__class__, object_id)] = serializers.serialize("xml", [version])
+                    serialized_data = thread_locals.committed[(version.__class__, object_id)]
+                    saved_version = Version.objects.create(content_type=ContentType.objects.get_for_model(version),
+                                                           object_id=object_id,
+                                                           serialized_data=serialized_data,
+                                                           revision_start=revision_start)
+                    revision_start = revision_start or saved_version
+                if transaction.is_dirty():
+                    transaction.commit()
+            except:
+                if transaction.is_dirty():
+                    transaction.rollback()
+                raise
         finally:
             del thread_locals.depth
             del thread_locals.versions
+            del thread_locals.committed
             transaction.leave_transaction_management()
         
         
@@ -59,15 +77,22 @@ def is_managed():
     return hasattr(thread_locals, "versions")
 
 
-def add(model):
-    """Registers a model with the given revision."""
+def add(model, commit=False):
+    """
+    Registers a model with the given revision.
+    
+    If commit is True, then the model will be serialized immediately.  It is
+    best to leave this as False, so as to catch any M2M relationships.
+    """
     if is_managed():
-        thread_locals.versions.add(model)
+        thread_locals.versions[model] = model.pk
+        if commit:
+            thread_locals.committed[(model.__class__, model.pk)] = serializers.serialize("xml", [model]) 
         # Save parent models.
         for field in model._meta.parents.values():
             if hasattr(model, field.get_cache_name()):
                 delattr(model, field.get_cache_name())  # Clear parent cache.
-            add(getattr(model, field.name))
+            add(getattr(model, field.name), commit)
     else:
         start()
         try:
@@ -83,7 +108,12 @@ def create_revision(func):
     def _create_revision(*args, **kwargs):
         start()
         try:
-            return func(*args, **kwargs)
+            try:
+                return func(*args, **kwargs)
+            except:
+                if transaction.is_dirty():
+                    transaction.rollback()
+                raise
         finally:
             end()
     return wraps(func)(_create_revision)
