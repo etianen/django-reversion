@@ -164,7 +164,6 @@ class VersionAdmin(admin.ModelAdmin):
                         "root_path": self.admin_site.root_path,})
         return render_to_response(template, context, RequestContext(request))
         
-    @revision.create_revision
     def recover_view(self, request, log_entry_id, extra_context=None):
         """Displays a form that can recover a deleted model."""
         model = self.model
@@ -185,8 +184,8 @@ class VersionAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         context.update(extra_context)
         return self.render_revision_form(request, obj, version, log_entry, revision, context, self.recover_form_template, "../../%s/" % object_id)
+    recover_view = revision.create_revision(recover_view)
         
-    @revision.create_revision
     def revision_view(self, request, object_id, log_entry_id, extra_context=None):
         """Displays the contents of the given revision."""
         model = self.model
@@ -209,6 +208,7 @@ class VersionAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         context.update(extra_context)
         return self.render_revision_form(request, obj, version, log_entry, revision, context, self.revision_form_template, "../../")
+    revision_view = revision.create_revision(revision_view)
     
     # Wrap the data-modifying views in revisions.
     add_view = revision.create_revision(admin.ModelAdmin.add_view)
