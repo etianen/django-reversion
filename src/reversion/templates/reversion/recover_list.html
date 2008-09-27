@@ -1,0 +1,40 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="../../../">{% trans 'Home' %}</a> &rsaquo; 
+    <a href="../../">{{app_label|capfirst|escape}}</a> &rsaquo; 
+    <a href="../">{{module_name}}</a> &rsaquo; 
+    {% blocktrans with opts.verbose_name_plural|escape as name %}Recover deleted {{name}}{% endblocktrans %}
+</div>
+{% endblock %}
+
+{% block content %}
+	<div id="content-main">
+		<div class="module">
+			{% if deleted %}
+			    <table id="change-history">
+			        <thead>
+			        <tr>
+			            <th scope="col">{% trans 'Date/time' %}</th>
+			            <th scope="col">{{opts.verbose_name|capfirst}}</th>
+			            <th scope="col">{% trans 'User' %}</th>
+			        </tr>
+			        </thead>
+			        <tbody>
+			        {% for deletion in deleted %}
+			        <tr>
+			            <th scope="row"><a href="{{deletion.pk}}/">{{deletion.action_time|date:_("DATETIME_FORMAT")}}</a></th>
+			            <td>{{deletion.object_repr}}</td>
+			            <td>{{deletion.user.username}}{% if deletion.user.first_name %} ({{deletion.user.first_name}} {{deletion.user.last_name}}){% endif %}</td>
+			        </tr>
+			        {% endfor %}
+			        </tbody>
+			    </table>
+			{% else %}
+			    <p>{% trans "There are no deleted objects to recover." %}</p>
+			{% endif %}
+		</div>
+	</div>
+{% endblock %}

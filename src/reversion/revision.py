@@ -8,6 +8,8 @@ try:
 except ImportError:
     from django.utils.functional import wraps  # Python 2.3, 2.4 fallback.
 
+from django.db import transaction
+
 from reversion.models import Version
 
 
@@ -28,6 +30,9 @@ def start():
     if not hasattr(thread_locals, "depth"):
         thread_locals.depth = 0
     thread_locals.depth += 1
+    # Start a database transaction.
+    transaction.enter_transaction_management()
+    transaction.managed(True)
         
     
 def end():
@@ -46,6 +51,7 @@ def end():
         finally:
             del thread_locals.depth
             del thread_locals.versions
+            transaction.leave_transaction_management()
         
         
 def is_managed():

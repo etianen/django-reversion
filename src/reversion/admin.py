@@ -3,9 +3,8 @@
 
 from django.conf import settings
 from django.contrib import admin
-from django.contrib.admin.models import LogEntry
+from django.contrib.admin.models import LogEntry, DELETION
 from django.contrib.contenttypes.models import ContentType
-from django.db import transaction
 from django.forms.models import model_to_dict
 from django.forms.formsets import all_valid
 from django.http import Http404, HttpResponseRedirect
@@ -47,6 +46,8 @@ class VersionAdmin(admin.ModelAdmin):
 
     revision_form_template = "reversion/revision_form.html"
     object_history_template = "reversion/object_history.html"
+    change_list_template = "reversion/change_list.html"
+    recover_list_template = "reversion/recover_list.html"
     
     def __call__(self, request, url):
         """Adds additional functionality to the admin class."""
@@ -56,12 +57,32 @@ class VersionAdmin(admin.ModelAdmin):
             object_id = parts[0]
             revision_id = parts[2]
             return self.revision_view(request, object_id, revision_id)
+        elif len(parts) == 1 and parts[0] == "recover":
+            return self.recover_list_view(request)
+        elif len(parts) == 2 and parts[0] == "recover":
+            return self.recover_view(request, parts[1])
         else:
             return super(VersionAdmin, self).__call__(request, url)
     
-    # TODO fieldset ordering needs to be sorted.
-    # TODO inlines only recover if their specific revision is recalled.
-    @transaction.commit_on_success
+    def recover_list_view(self, request):
+        """Displays a deleted model to allow recovery."""
+        model = self.model
+        opts = model._meta
+        app_label = opts.app_label
+        deleted = LogEntry.objects.filter(content_type=ContentType.objects.get_for_model(self.model),
+                                          action_flag=DELETION)
+        context = {"opts": opts,
+                   "app_label": app_label,
+                   "module_name": capfirst(opts.verbose_name),
+                   "title": _("Recover deleted %(name)s") % {"name": opts.verbose_name_plural},
+                   "deleted": deleted}
+        return render_to_response(self.recover_list_template, context, RequestContext(request))
+        
+    @revision.create_revision
+    def recover_view(self, request, log_entry_id):
+        """Displays a form that can recover a deleted model."""
+        
+        
     @revision.create_revision
     def revision_view(self, request, object_id, log_entry_id):
         """Displays the contents of the given revision."""
@@ -163,4 +184,8 @@ class VersionAdmin(admin.ModelAdmin):
     change_view = revision.create_revision(admin.ModelAdmin.change_view)
     delete_view = revision.create_revision(admin.ModelAdmin.delete_view)
     
-    
+    def changelist_view(self, request, extra_context=None):
+        """Renders the modified change list."""
+        extra_context = extra_context or {}
+        extra_context.update({"has_change_permission": self.has_change_permission(request)})
+        return super(VersionAdmin, self).changelist_view(request, extra_context)
