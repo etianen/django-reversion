@@ -11,3 +11,8 @@
 		{% blocktrans with original|truncatewords:18 as name %}Recover {{name}}{% endblocktrans %}
 	</div>
 {% endblock %}
+
+
+{% block form_top %}
+	<p>{% blocktrans %}Press the save button below to recover this version of the object.{% endblocktrans %}</p>
+{% endblock %}

@@ -4,6 +4,9 @@
 
 {% block content %}
 	<div id="content-main">
+	
+		<p>{% blocktrans %}Choose a date from the list below to revert to a previous version of this object.{% endblocktrans %}</p>
+	
 		<div class="module">
 			{% if action_list %}
 			    <table id="change-history">
