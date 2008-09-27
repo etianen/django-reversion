@@ -116,7 +116,7 @@ class VersionAdmin(admin.ModelAdmin):
                 formset = FormSet(instance=obj)
                 attname = FormSet.fk.attname
                 pk_name = FormSet.model._meta.pk.name
-                initial_overrides = dict(((getattr(version.object, pk_name), version) for version in revision if version.object.__class__ == FormSet.model and unicode(getattr(version.object, attname)) == unicode(object_id)))
+                initial_overrides = dict([(getattr(version.object, pk_name), version) for version in revision if version.object.__class__ == FormSet.model and unicode(getattr(version.object, attname)) == unicode(object_id)])
                 initial = []
                 for initial_row in formset.initial:
                     pk = initial_row[pk_name]
