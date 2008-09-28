@@ -1,7 +1,7 @@
 """Default settings for Reversion."""
 
 
-from django.db import settings
+from django.conf import settings
 
 
 # The file storage implementation used by the version file storage mechanism.
