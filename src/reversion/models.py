@@ -7,6 +7,7 @@ from django.core import serializers
 from django.db import models
 from django.db.models.signals import class_prepared, post_save, pre_delete
 
+from reversion import revision
 from reversion.managers import VersionManager
 
 
@@ -55,6 +56,7 @@ class Version(models.Model):
         """Recovers all models of all versions in this revision."""
         for version in self.get_revision():
             version.revert()
+    revert_revision = revision.create_revision(revert_revision)
     
     def __unicode__(self):
         """Returns a unicode representation."""

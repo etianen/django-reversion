@@ -12,8 +12,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.db import transaction
 
-from reversion.models import Version
-
 
 thread_locals = threading.local()
 
@@ -46,6 +44,7 @@ def end():
     except AttributeError:
         raise RevisionManagementError, "There is no active revision for this thread."
     if thread_locals.depth == 0:
+        from reversion.models import Version
         # This is the top-level in the revision stack... time to commit.
         try:
             try:
