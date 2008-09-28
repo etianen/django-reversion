@@ -117,12 +117,11 @@ class VersionAdmin(admin.ModelAdmin):
                 attname = FormSet.fk.attname
                 pk_name = FormSet.model._meta.pk.name
                 initial_overrides = dict([(getattr(version.object, pk_name), version) for version in revision if version.object.__class__ == FormSet.model and unicode(getattr(version.object, attname)) == unicode(object_id)])
-                initial = []
-                for initial_row in formset.initial:
+                initial = formset.initial
+                for initial_row in initial:
                     pk = initial_row[pk_name]
                     if pk in initial_overrides:
                          initial_row.update(deserialized_model_to_dict(initial_overrides[pk], revision))
-                         initial.append(initial_row)
                          del initial_overrides[pk]
                 initial.extend([deserialized_model_to_dict(override, revision) for override in initial_overrides.values()])
                 # HACK: no way to specify initial values.
