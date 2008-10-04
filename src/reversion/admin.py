@@ -68,8 +68,11 @@ class VersionAdmin(admin.ModelAdmin):
         opts = model._meta
         app_label = opts.app_label
         alive_ids = model._default_manager.all().values_list("pk")
-        deleted = LogEntry.objects.filter(content_type=ContentType.objects.get_for_model(self.model),
-                                          action_flag=DELETION).exclude(object_id__in=alive_ids.query).order_by("action_time")
+        content_type = ContentType.objects.get_for_model(self.model)
+        deleted_ids = Version.objects.filter(content_type=content_type).exclude(object_id__in=alive_ids.query).values_list("object_id").distinct()
+        deleted = []
+        for object_id, in deleted_ids:
+            deleted.append(Version.objects.filter(object_id=object_id, content_type=content_type).order_by("-pk")[0])
         context = {"opts": opts,
                    "app_label": app_label,
                    "module_name": capfirst(opts.verbose_name),
@@ -79,7 +82,7 @@ class VersionAdmin(admin.ModelAdmin):
         context.update(extra_context)
         return render_to_response(self.recover_list_template, context, RequestContext(request))
         
-    def render_revision_form(self, request, obj, version, log_entry, revision, context, template, redirect_url):
+    def render_revision_form(self, request, obj, version, revision, context, template, redirect_url):
         """Renders the object revision form."""
         model = self.model
         opts = model._meta
@@ -163,26 +166,20 @@ class VersionAdmin(admin.ModelAdmin):
                         "root_path": self.admin_site.root_path,})
         return render_to_response(template, context, RequestContext(request))
         
-    def recover_view(self, request, log_entry_id, extra_context=None):
+    def recover_view(self, request, version_id, extra_context=None):
         """Displays a form that can recover a deleted model."""
         model = self.model
         opts = model._meta
         app_label = opts.app_label
-        log_entry = get_object_or_404(LogEntry, pk=log_entry_id)
-        object_id = log_entry.object_id
+        version = get_object_or_404(Version, pk=version_id)
+        object_id = version.object_id
         content_type = ContentType.objects.get_for_model(self.model)
-        try:
-            version = Version.objects.filter(object_id=object_id,
-                                             content_type=content_type,
-                                             date_created__gte=log_entry.action_time).order_by("id")[0]
-        except IndexError:
-            return HttpResponseRedirect("%s%s/%s/" % (self.admin_site.root_path, app_label, model.__name__.lower()))
         obj = version.object_version.object
         revision = [version.object_version for version in version.get_revision()]
         context = {"title": _("Recover %s") % force_unicode(obj),}
         extra_context = extra_context or {}
         context.update(extra_context)
-        return self.render_revision_form(request, obj, version, log_entry, revision, context, self.recover_form_template, "../../%s/" % object_id)
+        return self.render_revision_form(request, obj, version, revision, context, self.recover_form_template, "../../%s/" % object_id)
     recover_view = revision.create_revision(recover_view)
         
     def revision_view(self, request, object_id, log_entry_id, extra_context=None):
@@ -206,7 +203,7 @@ class VersionAdmin(admin.ModelAdmin):
         context = {"title": _("Revert %(name)s") % {"name": opts.verbose_name},}
         extra_context = extra_context or {}
         context.update(extra_context)
-        return self.render_revision_form(request, obj, version, log_entry, revision, context, self.revision_form_template, "../../")
+        return self.render_revision_form(request, obj, version, revision, context, self.revision_form_template, "../../")
     revision_view = revision.create_revision(revision_view)
     
     # Wrap the data-modifying views in revisions.

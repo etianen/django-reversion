@@ -20,15 +20,13 @@
 			        <tr>
 			            <th scope="col">{% trans 'Date/time' %}</th>
 			            <th scope="col">{{opts.verbose_name|capfirst}}</th>
-			            <th scope="col">{% trans 'User' %}</th>
 			        </tr>
 			        </thead>
 			        <tbody>
 			        {% for deletion in deleted %}
 			        <tr>
-			            <th scope="row"><a href="{{deletion.pk}}/">{{deletion.action_time|date:_("DATETIME_FORMAT")}}</a></th>
-			            <td>{{deletion.object_repr}}</td>
-			            <td>{{deletion.user.username}}{% if deletion.user.first_name %} ({{deletion.user.first_name}} {{deletion.user.last_name}}){% endif %}</td>
+			            <th scope="row"><a href="{{deletion.pk}}/">{{deletion.date_created|date:_("DATETIME_FORMAT")}}</a></th>
+			            <td>{{deletion.object_version.object}}</td>
 			        </tr>
 			        {% endfor %}
 			        </tbody>
