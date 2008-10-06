@@ -36,7 +36,10 @@ class Version(models.Model):
     
     def get_object_version(self):
         """Returns the stored version of the model."""
-        return list(serializers.deserialize("xml", self.serialized_data))[0]
+        data = self.serialized_data
+        if isinstance(data, unicode):
+            data = data.encode("utf8")
+        return list(serializers.deserialize("xml", data))[0]
     
     object_version = property(get_object_version,
                               doc="The stored version of the model.")
