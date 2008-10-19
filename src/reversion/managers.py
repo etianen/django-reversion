@@ -12,7 +12,7 @@ class VersionManager(models.Manager):
     def get_for_object(self, object):
         """Returns all the versions of the given, ordered by date created."""
         content_type = ContentType.objects.get_for_model(object)
-        return self.filter(content_type=content_type, object_id=object.pk).order_by("pk")
+        return self.filter(content_type=content_type, object_id=unicode(object.pk)).order_by("pk")
     
     def get_for_date(self, object, date):
         """Returns the latest version of an object for the given date."""
@@ -33,6 +33,6 @@ class VersionManager(models.Manager):
         the given id.
         """
         try:
-            return self.get_deleted(model_class).filter(object_id=object_id).order_by("-pk")[0]
+            return self.get_deleted(model_class).filter(object_id=unicode(object_id)).order_by("-pk")[0]
         except IndexError:
             raise self.model.DoesNotExist

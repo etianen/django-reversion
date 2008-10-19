@@ -96,7 +96,7 @@ def commit():
         if not serialized_data:
             serialized_data = serializers.serialize("xml", [version])
         saved_version = Version.objects.create(content_type=ContentType.objects.get_for_model(version),
-                                               object_id=object_id,
+                                               object_id=unicode(object_id),
                                                serialized_data=serialized_data,
                                                revision_start=revision_start)
         revision_start = revision_start or saved_version
