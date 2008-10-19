@@ -91,7 +91,6 @@ def commit():
     from reversion.models import Version
     revision_start = None
     for version, version_data in get_versions().items():
-        print version_data
         object_id, serialized_data = version_data
         if not serialized_data:
             serialized_data = serializers.serialize("xml", [version])
