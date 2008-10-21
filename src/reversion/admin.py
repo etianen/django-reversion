@@ -67,9 +67,9 @@ class VersionAdmin(admin.ModelAdmin):
         model = self.model
         opts = model._meta
         app_label = opts.app_label
-        alive_ids = model._default_manager.all().values_list("pk")
+        alive_ids = [unicode(id) for id, in model._default_manager.all().values_list("pk")]
         content_type = ContentType.objects.get_for_model(self.model)
-        deleted_ids = Version.objects.filter(content_type=content_type).exclude(object_id__in=alive_ids.query).values_list("object_id").distinct()
+        deleted_ids = Version.objects.filter(content_type=content_type).exclude(object_id__in=alive_ids).values_list("object_id").distinct()
         deleted = []
         for object_id, in deleted_ids:
             deleted.append(Version.objects.filter(object_id=object_id, content_type=content_type).order_by("-pk")[0])
