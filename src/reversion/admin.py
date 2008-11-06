@@ -175,7 +175,7 @@ class VersionAdmin(admin.ModelAdmin):
         object_id = version.object_id
         content_type = ContentType.objects.get_for_model(self.model)
         obj = version.object_version.object
-        revision = [version.object_version for version in version.get_revision()]
+        revision = [related_version.object_version for related_version in version.get_revision()]
         context = {"title": _("Recover %s") % force_unicode(obj),}
         extra_context = extra_context or {}
         context.update(extra_context)
