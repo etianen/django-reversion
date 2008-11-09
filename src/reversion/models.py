@@ -1,13 +1,34 @@
 """Database models used by Reversion."""
 
 
+from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes.generic import GenericForeignKey
 from django.core import serializers
 from django.db import models
 
-from reversion import revision
 from reversion.managers import VersionManager
+
+
+class Revision(models.Model):
+    
+    """A group of related object versions."""
+    
+    date_created = models.DateTimeField(auto_now_add=True,
+                                        help_text="The date and time this revision was created.")
+
+    user = models.ForeignKey(User,
+                             blank=True,
+                             null=True,
+                             help_text="The user who created this revision.")
+    
+    comment = models.TextField(blank=True,
+                               null=True,
+                               help_text="A text comment on this revision.")
+    
+    def revert(self):
+        """Reverts all objects in this revision."""
+        for version in self.version_set.all():
+            version.revert()
 
 
 class Version(models.Model):
@@ -16,21 +37,16 @@ class Version(models.Model):
     
     objects = VersionManager()
     
-    date_created = models.DateTimeField(auto_now_add=True,
-                                        help_text="The date and time this version was created.")
-    
-    revision_start = models.ForeignKey("self",
-                                       blank=True,
-                                       null=True,
-                                       related_name="revision_content",
-                                       help_text="The Version that started this transaction.")
+    revision = models.ForeignKey(Revision,
+                                 help_text="The revision that contains this version.")
     
     object_id = models.TextField(help_text="Primary key of the model under version control.")
     
-    content_type = models.ForeignKey("contenttypes.ContentType",
+    content_type = models.ForeignKey(ContentType,
                                      help_text="Content type of the model under version control.")
     
-    content_object = GenericForeignKey()
+    format = models.CharField(max_length=255,
+                              help_text="The serialization format used by this model.")
     
     serialized_data = models.TextField(help_text="The serialized form of this version of the model.")
     
@@ -39,29 +55,13 @@ class Version(models.Model):
         data = self.serialized_data
         if isinstance(data, unicode):
             data = data.encode("utf8")
-        return list(serializers.deserialize("xml", data))[0]
+        return list(serializers.deserialize(self.format, data))[0]
     
     object_version = property(get_object_version,
                               doc="The stored version of the model.")
-    
-    def get_revision(self):
-        """Returns all the versions in the given revision."""
-        if self.revision_start:
-            return self.revision_start.get_revision()
-        return [self] + list(self.revision_content.all().order_by("pk"))
-    
+       
     def revert(self):
         """Recovers the model in this version."""
         self.object_version.save()
+        
     
-    def revert_revision(self):
-        """Recovers all models of all versions in this revision."""
-        for version in self.get_revision():
-            version.revert()
-    revert_revision = revision.create_revision(revert_revision)
-    
-    def __unicode__(self):
-        """Returns a unicode representation."""
-        return unicode(self.get_object_version().object)
-    
-

@@ -1,32 +1,27 @@
 """Middleware used by Reversion."""
 
 
-from django.middleware.transaction import TransactionMiddleware
+import sys
 
-from reversion import revision
+from reversion.revisions import revision
 
 
-class RevisionMiddleware(TransactionMiddleware):
+class RevisionMiddleware(object):
     
     """Wraps the entire request in a Revision."""
     
     def process_request(self, request):
         """Starts a new revision."""
-        super(RevisionMiddleware, self).process_request(request)
         revision.start()
+        if request.user.is_authenticated():
+            revision.user = request.user
         
     def process_response(self, request, response):
         """Closes the revision."""
-        try:
-            revision.commit()
-            return super(RevisionMiddleware, self).process_response(request, response)
-        finally:
+        if revision.is_active():
             revision.end()
+        return response
         
     def process_exception(self, request, exception):
         """Closes the revision."""
-        try:
-            revision.rollback()
-            return super(RevisionMiddleware, self).process_exception(request, exception)
-        finally:
-            revision.end()
+        revision.invalidate()

@@ -1,6 +1,7 @@
 """Admin extensions for Reversion."""
 
 
+from django.db import models, transaction
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.admin.models import LogEntry, DELETION
@@ -16,25 +17,9 @@ from django.utils.html import mark_safe
 from django.utils.text import capfirst
 from django.utils.translation import ugettext as _
 
-from reversion import revision
+from reversion.registration import is_registered, register
+from reversion.revisions import revision
 from reversion.models import Version
-
-
-def deserialized_model_to_dict(deserialized_model, revision_data):
-    """Converts a deserialized model to a dictionary."""
-    result = model_to_dict(deserialized_model.object)
-    result.update(deserialized_model.m2m_data)
-    # Add parent data.
-    model = deserialized_model.object
-    for parent_class, field in model._meta.parents.items():
-        attname = field.attname
-        attvalue = getattr(model, attname)
-        pk_name = parent_class._meta.pk.name
-        for deserialized_model in revision_data:
-            parent = deserialized_model.object
-            if parent_class == parent.__class__ and unicode(getattr(parent, pk_name)) == unicode(getattr(model, attname)):
-                result.update(deserialized_model_to_dict(deserialized_model, revision_data))
-    return result
 
 
 class VersionAdmin(admin.ModelAdmin):
@@ -47,14 +32,41 @@ class VersionAdmin(admin.ModelAdmin):
     recover_list_template = "reversion/recover_list.html"
     recover_form_template = "reversion/recover_form.html"
     
+    def _autoregister(self, model, follow=None):
+        """Registers a model with reversion, if required."""
+        if not is_registered(model):
+            follow = follow or []
+            for parent_cls, field in model._meta.parents.items():
+                follow.append(field.name)
+                self._autoregister(parent_cls)
+            register(model, follow=follow)
+    
+    def __init__(self, *args, **kwargs):
+        """Initializes the VersionAdmin"""
+        super(VersionAdmin, self).__init__(*args, **kwargs)
+        # Automatically register models if required.
+        if not is_registered(self.model):
+            inline_fields = []
+            for inline in self.inlines:
+                inline_model = inline.model
+                self._autoregister(inline_model)
+                fk_name = inline.fk_name
+                if not fk_name:
+                    for field in inline_model._meta.fields:
+                        if isinstance(field, models.ForeignKey) and field.rel.to == self.model:
+                            fk_name = field.name
+                accessor = inline_model._meta.get_field(fk_name).rel.related_name or inline_model.__name__.lower() + "_set"
+                inline_fields.append(accessor)
+            self._autoregister(self.model, inline_fields)
+    
     def __call__(self, request, url):
         """Adds additional functionality to the admin class."""
         path = url or ""
         parts = path.strip("/").split("/")
         if len(parts) == 3 and parts[1] == "history":
             object_id = parts[0]
-            revision_id = parts[2]
-            return self.revision_view(request, object_id, revision_id)
+            version_id = parts[2]
+            return self.revision_view(request, object_id, version_id)
         elif len(parts) == 1 and parts[0] == "recover":
             return self.recover_list_view(request)
         elif len(parts) == 2 and parts[0] == "recover":
@@ -62,17 +74,40 @@ class VersionAdmin(admin.ModelAdmin):
         else:
             return super(VersionAdmin, self).__call__(request, url)
     
+    def log_addition(self, request, object):
+        """Sets the version meta information."""
+        super(VersionAdmin, self).log_addition(request, object)
+        revision.user = request.user
+        
+    def log_change(self, request, object, message):
+        """Sets the version meta information."""
+        super(VersionAdmin, self).log_change(request, object, message)
+        revision.user = request.user
+        revision.comment = message
+    
+    def _deserialized_model_to_dict(self, deserialized_model, revision_data):
+        """Converts a deserialized model to a dictionary."""
+        model = deserialized_model.object
+        result = model_to_dict(model)
+        result.update(deserialized_model.m2m_data)
+        # Add parent data.
+        for parent_class, field in model._meta.parents.items():
+            attname = field.attname
+            attvalue = getattr(model, attname)
+            pk_name = parent_class._meta.pk.name
+            for deserialized_model in revision_data:
+                parent = deserialized_model.object
+                if parent_class == parent.__class__ and unicode(getattr(parent, pk_name)) == unicode(getattr(model, attname)):
+                    result.update(self._deserialized_model_to_dict(deserialized_model, revision_data))
+        return result
+    
     def recover_list_view(self, request, extra_context=None):
         """Displays a deleted model to allow recovery."""
         model = self.model
         opts = model._meta
         app_label = opts.app_label
         alive_ids = [unicode(id) for id, in model._default_manager.all().values_list("pk")]
-        content_type = ContentType.objects.get_for_model(self.model)
-        deleted_ids = Version.objects.filter(content_type=content_type).exclude(object_id__in=alive_ids).values_list("object_id").distinct()
-        deleted = []
-        for object_id, in deleted_ids:
-            deleted.append(Version.objects.filter(object_id=object_id, content_type=content_type).order_by("-pk")[0])
+        deleted = Version.objects.get_deleted(self.model)
         context = {"opts": opts,
                    "app_label": app_label,
                    "module_name": capfirst(opts.verbose_name),
@@ -109,12 +144,12 @@ class VersionAdmin(admin.ModelAdmin):
                 form.save_m2m()
                 for formset in formsets:
                     self.save_formset(request, form, formset, change=True)
-                change_message = _("Reverted to previous version, saved on %(datetime)s") % {"datetime": format(version.date_created, _(settings.DATETIME_FORMAT))}
+                change_message = _("Reverted to previous version, saved on %(datetime)s") % {"datetime": format(version.revision.date_created, _(settings.DATETIME_FORMAT))}
                 self.log_change(request, new_object, change_message)
                 self.message_user(request, 'The %(model)s "%(name)s" was reverted successfully. You may edit it again below.' % {"model": opts.verbose_name, "name": unicode(obj)})
                 return HttpResponseRedirect(redirect_url)
         else:
-            form = ModelForm(instance=obj, initial=deserialized_model_to_dict(object_version, revision))
+            form = ModelForm(instance=obj, initial=self._deserialized_model_to_dict(object_version, revision))
             for FormSet in self.get_formsets(request, obj):
                 formset = FormSet(instance=obj)
                 attname = FormSet.fk.attname
@@ -124,9 +159,9 @@ class VersionAdmin(admin.ModelAdmin):
                 for initial_row in initial:
                     pk = initial_row[pk_name]
                     if pk in initial_overrides:
-                         initial_row.update(deserialized_model_to_dict(initial_overrides[pk], revision))
+                         initial_row.update(self._deserialized_model_to_dict(initial_overrides[pk], revision))
                          del initial_overrides[pk]
-                initial.extend([deserialized_model_to_dict(override, revision) for override in initial_overrides.values()])
+                initial.extend([self._deserialized_model_to_dict(override, revision) for override in initial_overrides.values()])
                 # HACK: no way to specify initial values.
                 formset._total_form_count = len(initial)
                 formset.initial = initial
@@ -175,41 +210,33 @@ class VersionAdmin(admin.ModelAdmin):
         object_id = version.object_id
         content_type = ContentType.objects.get_for_model(self.model)
         obj = version.object_version.object
-        revision = [related_version.object_version for related_version in version.get_revision()]
+        revision = [related_version.object_version for related_version in version.revision.version_set.all()]
         context = {"title": _("Recover %s") % force_unicode(obj),}
         extra_context = extra_context or {}
         context.update(extra_context)
         return self.render_revision_form(request, obj, version, revision, context, self.recover_form_template, "../../%s/" % object_id)
-    recover_view = revision.create_revision(recover_view)
+    recover_view = transaction.commit_on_success(revision.create_on_success(recover_view))
         
-    def revision_view(self, request, object_id, log_entry_id, extra_context=None):
+    def revision_view(self, request, object_id, version_id, extra_context=None):
         """Displays the contents of the given revision."""
         model = self.model
         content_type = ContentType.objects.get_for_model(model)
         opts = model._meta
         app_label = opts.app_label
         obj = get_object_or_404(self.model, pk=object_id)
-        log_entry = get_object_or_404(LogEntry, pk=log_entry_id)
-        try:
-            version = Version.objects.filter(object_id=object_id,
-                                             content_type=content_type,
-                                             date_created__gte=log_entry.action_time).order_by("id")[0]
-        except IndexError:
-            return HttpResponseRedirect("%s%s/%s/%s/" % (self.admin_site.root_path, app_label, model.__name__.lower(), object_id))
-        object_version = version.object_version
-        ordered_objects = opts.get_ordered_objects()
+        version = get_object_or_404(Version, pk=version_id)
         # Generate the form.
-        revision = [related_version.object_version for related_version in version.get_revision()]
+        revision = [related_version.object_version for related_version in version.revision.version_set.all()]
         context = {"title": _("Revert %(name)s") % {"name": opts.verbose_name},}
         extra_context = extra_context or {}
         context.update(extra_context)
         return self.render_revision_form(request, obj, version, revision, context, self.revision_form_template, "../../")
-    revision_view = revision.create_revision(revision_view)
+    revision_view = transaction.commit_on_success(revision.create_on_success(revision_view))
     
     # Wrap the data-modifying views in revisions.
-    add_view = revision.create_revision(admin.ModelAdmin.add_view)
-    change_view = revision.create_revision(admin.ModelAdmin.change_view)
-    delete_view = revision.create_revision(admin.ModelAdmin.delete_view)
+    add_view = transaction.commit_on_success(revision.create_on_success(admin.ModelAdmin.add_view))
+    change_view = transaction.commit_on_success(revision.create_on_success(admin.ModelAdmin.change_view))
+    delete_view = transaction.commit_on_success(revision.create_on_success(admin.ModelAdmin.delete_view))
     
     def changelist_view(self, request, extra_context=None):
         """Renders the modified change list."""
@@ -218,8 +245,10 @@ class VersionAdmin(admin.ModelAdmin):
         return super(VersionAdmin, self).changelist_view(request, extra_context)
     
     def history_view(self, request, object_id, extra_context=None):
+        """Renders the history view."""
         extra_context = extra_context or {}
-        action_list = LogEntry.objects.filter(object_id = object_id,
-                                              content_type__id__exact = ContentType.objects.get_for_model(self.model).id).exclude(action_flag=DELETION).select_related().order_by('action_time')
+        content_type = ContentType.objects.get_for_model(self.model)
+        obj = content_type.get_object_for_this_type(pk=object_id) 
+        action_list = Version.objects.get_for_object(obj)
         extra_context.update({"action_list": action_list})
         return super(VersionAdmin, self).history_view(request, object_id, extra_context)

@@ -14,15 +14,15 @@
 				        <tr>
 				            <th scope="col">{% trans 'Date/time' %}</th>
 				            <th scope="col">{% trans 'User' %}</th>
-				            <th scope="col">{% trans 'Action' %}</th>
+				            <th scope="col">{% trans 'Comment' %}</th>
 				        </tr>
 			        </thead>
 			        <tbody>
 				        {% for action in action_list %}
 					        <tr>
-					            <th scope="row"><a href="./{{action.pk}}/">{{action.action_time|date:_("DATETIME_FORMAT")}}</a></th>
-					            <td>{{action.user.username}}{% if action.user.first_name %} ({{action.user.first_name}} {{action.user.last_name}}){% endif %}</td>
-					            <td>{{action.change_message}}</td>
+					            <th scope="row"><a href="./{{action.pk}}/">{{action.revision.date_created|date:_("DATETIME_FORMAT")}}</a></th>
+					            <td>{{action.revision.user.username}}{% if action.revision.user.first_name %} ({{action.revision.user.first_name}} {{action.revision.user.last_name}}){% endif %}</td>
+					            <td>{{action.revision.comment|default:""}}</td>
 					        </tr>
 				        {% endfor %}
 			        </tbody>
