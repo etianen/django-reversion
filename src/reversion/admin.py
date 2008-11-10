@@ -94,7 +94,7 @@ class VersionAdmin(admin.ModelAdmin):
         for parent_class, field in model._meta.parents.items():
             attname = field.attname
             attvalue = getattr(model, attname)
-            pk_name = parent_class._meta.pk.name
+            pk_name = parent_class._meta.pk.attname
             for deserialized_model in revision_data:
                 parent = deserialized_model.object
                 if parent_class == parent.__class__ and unicode(getattr(parent, pk_name)) == unicode(getattr(model, attname)):
@@ -149,7 +149,8 @@ class VersionAdmin(admin.ModelAdmin):
                 self.message_user(request, 'The %(model)s "%(name)s" was reverted successfully. You may edit it again below.' % {"model": opts.verbose_name, "name": unicode(obj)})
                 return HttpResponseRedirect(redirect_url)
         else:
-            form = ModelForm(instance=obj, initial=self._deserialized_model_to_dict(object_version, revision))
+            initial = self._deserialized_model_to_dict(object_version, revision)
+            form = ModelForm(instance=obj, initial=initial)
             for FormSet in self.get_formsets(request, obj):
                 formset = FormSet(instance=obj)
                 attname = FormSet.fk.attname
