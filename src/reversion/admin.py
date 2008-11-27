@@ -55,7 +55,7 @@ class VersionAdmin(admin.ModelAdmin):
                     fk_name = inline.fk_name
                     if not fk_name:
                         for field in inline_model._meta.fields:
-                            if isinstance(field, models.ForeignKey) and field.rel.to == self.model:
+                            if isinstance(field, models.ForeignKey) and issubclass(self.model, field.rel.to):
                                 fk_name = field.name
                     accessor = inline_model._meta.get_field(fk_name).rel.related_name or inline_model.__name__.lower() + "_set"
                     inline_fields.append(accessor)
