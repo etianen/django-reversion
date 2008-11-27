@@ -128,7 +128,8 @@ class RevisionManager(local):
                                object_id=object_id,
                                content_type=content_type,
                                format=format,
-                               serialized_data=serialized_data)
+                               serialized_data=serialized_data,
+                               object_repr=unicode(obj))
         # Follow relationships.
         if follow:
             for relationship in follow:

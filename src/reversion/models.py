@@ -50,6 +50,8 @@ class Version(models.Model):
     
     serialized_data = models.TextField(help_text="The serialized form of this version of the model.")
     
+    object_repr = models.TextField(help_text="A string representation of the object.")
+    
     def get_object_version(self):
         """Returns the stored version of the model."""
         data = self.serialized_data

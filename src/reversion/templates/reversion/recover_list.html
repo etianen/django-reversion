@@ -26,7 +26,7 @@
 			        {% for deletion in deleted %}
 			        <tr>
 			            <th scope="row"><a href="{{deletion.pk}}/">{{deletion.revision.date_created|date:_("DATETIME_FORMAT")}}</a></th>
-			            <td>{{deletion.object_version.object}}</td>
+			            <td>{{deletion.object_repr}}</td>
 			        </tr>
 			        {% endfor %}
 			        </tbody>

@@ -154,7 +154,11 @@ class VersionAdmin(admin.ModelAdmin):
             form = ModelForm(instance=obj, initial=initial)
             for FormSet in self.get_formsets(request, obj):
                 formset = FormSet(instance=obj)
-                attname = FormSet.fk.attname
+                try:
+                    attname = FormSet.fk.attname
+                except AttributeError:
+                    # This is a GenericInlineFormset, or similar.
+                    attname = FormSet.ct_fk_field_name
                 pk_name = FormSet.model._meta.pk.name
                 initial_overrides = dict([(getattr(version.object, pk_name), version) for version in revision if version.object.__class__ == FormSet.model and unicode(getattr(version.object, attname)) == unicode(object_id)])
                 initial = formset.initial
