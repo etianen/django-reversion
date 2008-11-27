@@ -55,8 +55,9 @@ class VersionAdmin(admin.ModelAdmin):
                     for field in inline_model._meta.fields:
                         if isinstance(field, models.ForeignKey) and field.rel.to == self.model:
                             fk_name = field.name
-                accessor = inline_model._meta.get_field(fk_name).rel.related_name or inline_model.__name__.lower() + "_set"
-                inline_fields.append(accessor)
+                if fk_name is not None:
+                    accessor = inline_model._meta.get_field(fk_name).rel.related_name or inline_model.__name__.lower() + "_set"
+                    inline_fields.append(accessor)
             self._autoregister(self.model, inline_fields)
     
     def __call__(self, request, url):
