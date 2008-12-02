@@ -152,9 +152,9 @@ class VersionAdmin(admin.ModelAdmin):
                 form.save_m2m()
                 for formset in formsets:
                     self.save_formset(request, form, formset, change=True)
-                change_message = _("Reverted to previous version, saved on %(datetime)s") % {"datetime": format(version.revision.date_created, _(settings.DATETIME_FORMAT))}
+                change_message = _(u"Reverted to previous version, saved on %(datetime)s") % {"datetime": format(version.revision.date_created, _(settings.DATETIME_FORMAT))}
                 self.log_change(request, new_object, change_message)
-                self.message_user(request, 'The %(model)s "%(name)s" was reverted successfully. You may edit it again below.' % {"model": opts.verbose_name, "name": unicode(obj)})
+                self.message_user(request, u'The %(model)s "%(name)s" was reverted successfully. You may edit it again below.' % {"model": opts.verbose_name, "name": unicode(obj)})
                 return HttpResponseRedirect(redirect_url)
         else:
             initial = self._deserialized_model_to_dict(object_version, revision)
