@@ -1,4 +1,9 @@
 from distutils.core import setup
+from distutils.command.install import INSTALL_SCHEMES
+
+
+for scheme in INSTALL_SCHEMES.values():
+    scheme['data'] = scheme['purelib']
 
 
 setup(name="django-reversion",
@@ -10,6 +15,11 @@ setup(name="django-reversion",
       download_url="http://django-reversion.googlecode.com/files/django-reversion-1.1.tar.gz",
       packages=["reversion",],
       package_dir={"reversion": "reversion"},
+      data_files=[['reversion/templates/reversion', ['reversion/templates/reversion/object_history.html',
+                                                     'reversion/templates/reversion/change_list.html',
+                                                     'reversion/templates/reversion/recover_form.html',
+                                                     'reversion/templates/reversion/revision_form.html',
+                                                     'reversion/templates/reversion/recover_list.html']]],
       classifiers=["Development Status :: 5 - Production/Stable",
                    "Environment :: Web Environment",
                    "Intended Audience :: Developers",

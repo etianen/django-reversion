@@ -1,0 +1,1 @@
+include reversion/templates/reversion/*.html
