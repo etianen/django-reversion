@@ -1,5 +1,9 @@
 """Model managers for Reversion."""
 
+try:
+    set
+except NameError:
+    from sets import Set as set  # Python 2.3 fallback.
 
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -7,12 +11,25 @@ from django.db import models
 
 class VersionManager(models.Manager):
     
-    """Manager for Revision models."""
+    """Manager for Version models."""
     
     def get_for_object(self, object):
         """Returns all the versions of the given Revision, ordered by date created."""
         content_type = ContentType.objects.get_for_model(object)
         return self.filter(content_type=content_type, object_id=unicode(object.pk)).order_by("pk").select_related().order_by("pk")
+    
+    def get_unique_for_object(self,obj):
+        """Returns unique versions associated with the object."""
+        versions = self.get_for_object(obj)
+        changed_versions = []
+        known_serialized_data = set()
+        for version in versions:
+            serialized_data = version.serialized_data
+            if serialized_data in known_serialized_data:
+                continue
+            known_serialized_data.add(serialized_data)
+            changed_versions.append(version)
+        return changed_versions
     
     def get_for_date(self, object, date):
         """Returns the latest version of an object for the given date."""
