@@ -7,7 +7,6 @@ from django.contrib import admin
 from django.contrib.admin.models import LogEntry, DELETION
 from django.contrib.contenttypes.generic import GenericInlineModelAdmin, GenericRelation
 from django.contrib.contenttypes.models import ContentType
-from django.forms.models import model_to_dict
 from django.forms.formsets import all_valid
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
@@ -18,6 +17,7 @@ from django.utils.html import mark_safe
 from django.utils.text import capfirst
 from django.utils.translation import ugettext as _
 
+from reversion.helpers import deserialized_model_to_dict
 from reversion.registration import is_registered, register
 from reversion.revisions import revision
 from reversion.models import Version
@@ -93,22 +93,6 @@ class VersionAdmin(admin.ModelAdmin):
         revision.user = request.user
         revision.comment = message
     
-    def _deserialized_model_to_dict(self, deserialized_model, revision_data):
-        """Converts a deserialized model to a dictionary."""
-        model = deserialized_model.object
-        result = model_to_dict(model)
-        result.update(deserialized_model.m2m_data)
-        # Add parent data.
-        for parent_class, field in model._meta.parents.items():
-            attname = field.attname
-            attvalue = getattr(model, attname)
-            pk_name = parent_class._meta.pk.attname
-            for deserialized_model in revision_data:
-                parent = deserialized_model.object
-                if parent_class == parent.__class__ and unicode(getattr(parent, pk_name)) == unicode(getattr(model, attname)):
-                    result.update(self._deserialized_model_to_dict(deserialized_model, revision_data))
-        return result
-    
     def recover_list_view(self, request, extra_context=None):
         """Displays a deleted model to allow recovery."""
         model = self.model
@@ -157,7 +141,7 @@ class VersionAdmin(admin.ModelAdmin):
                 self.message_user(request, _(u'The %(model)s "%(name)s" was reverted successfully. You may edit it again below.') % {"model": opts.verbose_name, "name": unicode(obj)})
                 return HttpResponseRedirect(redirect_url)
         else:
-            initial = self._deserialized_model_to_dict(object_version, revision)
+            initial = deserialized_model_to_dict(object_version, revision)
             form = ModelForm(instance=obj, initial=initial)
             for FormSet in self.get_formsets(request, obj):
                 formset = FormSet(instance=obj)
@@ -172,11 +156,11 @@ class VersionAdmin(admin.ModelAdmin):
                 for initial_row in initial:
                     pk = initial_row[pk_name]
                     if pk in initial_overrides:
-                         initial_row.update(self._deserialized_model_to_dict(initial_overrides[pk], revision))
+                         initial_row.update(deserialized_model_to_dict(initial_overrides[pk], revision))
                          del initial_overrides[pk]
                     else:
                        initial_row["DELETE"] = True
-                initial.extend([self._deserialized_model_to_dict(override, revision) for override in initial_overrides.values()])
+                initial.extend([deserialized_model_to_dict(override, revision) for override in initial_overrides.values()])
                 # HACK: no way to specify initial values.
                 formset._total_form_count = len(initial)
                 formset.initial = initial
