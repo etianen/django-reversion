@@ -1,6 +1,8 @@
 """A number of useful helper functions to automate common tasks."""
 
 
+from django.contrib import admin
+from django.contrib.admin.sites import NotRegistered
 from django.forms.models import model_to_dict
 
 
@@ -34,6 +36,28 @@ def version_to_dict(version):
     revision = version.revision
     object_version = version.object_version
     return deserialized_model_to_dict(object_version, revision)
+
+
+def patch_admin(model, admin_site=None):
+    """
+    Enables version control with full admin integration for a model that has
+    already been registered with the django admin site.
+    
+    This is excellent for adding version control to existing Django contrib
+    applications. 
+    """
+    from reversion.admin import VersionAdmin
+    admin_site = admin_site or admin.site
+    try:
+        ModelAdmin = admin_site._registry[model].__class__
+    except KeyError:
+        raise NotRegistered, "The model %s has not been registered with the admin site." % model
+    # Unregister existing admin class.
+    admin_site.unregister(model)
+    # Register patched admin class.
+    class PatchedModelAdmin(VersionAdmin, ModelAdmin):
+        pass
+    admin_site.register(model, PatchedModelAdmin)
 
 
 # Patch generation methods, only available if the google-diff-match-patch
