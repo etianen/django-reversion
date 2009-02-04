@@ -174,6 +174,8 @@ class VersionAdmin(admin.ModelAdmin):
                     if pk in initial_overrides:
                          initial_row.update(self._deserialized_model_to_dict(initial_overrides[pk], revision))
                          del initial_overrides[pk]
+                    else:
+                       initial_row["DELETE"] = True
                 initial.extend([self._deserialized_model_to_dict(override, revision) for override in initial_overrides.values()])
                 # HACK: no way to specify initial values.
                 formset._total_form_count = len(initial)
