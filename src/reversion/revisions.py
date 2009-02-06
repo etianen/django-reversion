@@ -18,6 +18,7 @@ from django.core import serializers
 from django.db import models
 from django.db.models.query import QuerySet
 
+from reversion.helpers import add_to_revision
 from reversion.models import Revision, Version
 from reversion.registration import get_registration_info
 
@@ -113,43 +114,6 @@ class RevisionManager(local):
         self._assert_active()
         self._is_invalid = True
         
-    def _save_version(self, already_saved, revision, obj):
-        """Follows all relationships on the given object."""
-        # Prevent recursion.
-        if obj in already_saved:
-            return
-        already_saved.add(obj)
-        # Save the version.
-        fields, follow, format = get_registration_info(obj.__class__)
-        object_id = unicode(obj.pk)
-        content_type = ContentType.objects.get_for_model(obj)
-        serialized_data = serializers.serialize(format, [obj])
-        Version.objects.create(revision=revision,
-                               object_id=object_id,
-                               content_type=content_type,
-                               format=format,
-                               serialized_data=serialized_data,
-                               object_repr=unicode(obj))
-        # Follow relationships.
-        if follow:
-            for relationship in follow:
-                try:
-                    # Clear foreign key cache.
-                    related_field = obj._meta.get_field(relationship)
-                    if isinstance(related_field, models.ForeignKey):
-                        if hasattr(obj, related_field.get_cache_name()):
-                            delattr(obj, related_field.get_cache_name())
-                except models.FieldDoesNotExist:
-                    pass
-                related = getattr(obj, relationship, None)
-                if isinstance(related, models.Model):
-                    self._save_version(already_saved, revision, related)
-                elif isinstance(related, (models.Manager, QuerySet)):
-                    for related_object in related.all():
-                        self._save_version(already_saved, revision, related_object)
-                elif related is not None:
-                    raise RevisionManagementError, "Cannot follow the relationship '%s', unexpected type %s" % (relationship, type(related).__name__)
-        
     def end(self):
         """Ends a revision."""
         self._assert_active()
@@ -161,9 +125,22 @@ class RevisionManager(local):
                     # Save a new revision.
                     revision = Revision.objects.create(user=self._user,
                                                        comment=self._comment)
-                    already_saved = sets.Set()
+                    revision_set = sets.Set()
+                    # Follow relationships.
                     for version in self._versions:
-                        self._save_version(already_saved, revision, version)
+                        add_to_revision(version, revision_set)
+                    # Save version models.
+                    for obj in revision_set:
+                        fields, follow, format = get_registration_info(obj.__class__)
+                        object_id = unicode(obj.pk)
+                        content_type = ContentType.objects.get_for_model(obj)
+                        serialized_data = serializers.serialize(format, [obj])
+                        Version.objects.create(revision=revision,
+                                               object_id=object_id,
+                                               content_type=content_type,
+                                               format=format,
+                                               serialized_data=serialized_data,
+                                               object_repr=unicode(obj))
                     for meta_cls, meta_kwargs in self._meta:
                         meta_cls._default_manager.create(revision=revision, **meta_kwargs)
             finally:

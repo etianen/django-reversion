@@ -1,12 +1,16 @@
 """Database models used by Reversion."""
 
 
+import sets
+
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.db import models
 
+from reversion.helpers import add_to_revision
 from reversion.managers import VersionManager
+from reversion.registration import get_registration_info
 
 
 class Revision(models.Model):
@@ -25,11 +29,27 @@ class Revision(models.Model):
                                null=True,
                                help_text="A text comment on this revision.")
     
-    def revert(self):
+    def revert(self, delete=False):
         """Reverts all objects in this revision."""
-        for version in self.version_set.all():
+        versions = self.version_set.all()
+        for version in versions:
             version.revert()
-
+        if delete:
+            # Get a set of all objects in this revision.
+            old_revision_set = sets.Set([version.latest_object_version for version in versions])
+            # Calculate the set of all objects that would be in the revision now.
+            current_revision_set = sets.Set()
+            for latest_object_version in old_revision_set:
+                add_to_revision(latest_object_version, current_revision_set)
+            for current_object in current_revision_set:
+                if not current_object in old_revision_set:
+                    current_object.delete()
+            
+    def __unicode__(self):
+        """Returns a unicode representation."""
+        return u", ".join(unicode(version)
+                          for version in self.version_set.all())
+            
 
 class Version(models.Model):
     
@@ -62,8 +82,27 @@ class Version(models.Model):
     object_version = property(get_object_version,
                               doc="The stored version of the model.")
        
+    def get_latest_object_version(self):
+        """
+        Returns the latest version of the stored object.
+        
+        If the object no longer exists, returns None.
+        """
+        model_class = self.content_type.model_class()
+        try:
+            return model_class._default_manager.get(pk=self.object_id)
+        except model_class.DoesNotExist:
+            return None
+        
+    latest_object_version = property(get_latest_object_version,
+                              doc="The latest version of the model.")
+       
     def revert(self):
         """Recovers the model in this version."""
         self.object_version.save()
         
+    def __unicode__(self):
+        """Returns a unicode representation."""
+        return self.object_repr
+    
     
