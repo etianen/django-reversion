@@ -210,7 +210,7 @@ class VersionAdmin(admin.ModelAdmin):
         content_type = ContentType.objects.get_for_model(self.model)
         obj = version.object_version.object
         revision = [related_version.object_version for related_version in version.revision.version_set.all()]
-        context = {"title": _("Recover %s") % force_unicode(obj),}
+        context = {"title": _("Recover %s") % force_unicode(version.object_repr),}
         extra_context = extra_context or {}
         context.update(extra_context)
         return self.render_revision_form(request, obj, version, revision, context, self.recover_form_template, "../../%s/" % object_id)
