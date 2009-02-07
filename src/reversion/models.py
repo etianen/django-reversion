@@ -47,8 +47,8 @@ class Revision(models.Model):
             
     def __unicode__(self):
         """Returns a unicode representation."""
-        return u", ".join(unicode(version)
-                          for version in self.version_set.all())
+        return u", ".join([unicode(version)
+                           for version in self.version_set.all()])
             
 
 class Version(models.Model):
