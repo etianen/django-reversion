@@ -2,6 +2,7 @@
 
 
 from django.db import models, transaction
+from django.conf.urls.defaults import *
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.admin.models import LogEntry, DELETION
@@ -67,6 +68,7 @@ class VersionAdmin(admin.ModelAdmin):
                             inline_fields.append(field.name)
             self._autoregister(self.model, inline_fields)
     
+    # TODO: This is deprecated in Django 1.1
     def __call__(self, request, url):
         """Adds additional functionality to the admin class."""
         path = url or ""
@@ -81,6 +83,15 @@ class VersionAdmin(admin.ModelAdmin):
             return self.recover_view(request, parts[1])
         else:
             return super(VersionAdmin, self).__call__(request, url)
+    
+    def get_urls(self):
+        """Returns the additional urls used by the Reversion admin."""
+        urls = super(VersionAdmin, self).get_urls()
+        reversion_urls = patterns("",
+                                  url("^recover/$", self.recover_list_view),
+                                  url("^recover/([^/]+)/$", self.recover_view),
+                                  url("^([^/]+)/history/([^/]+)/$", self.revision_view),)
+        return reversion_urls + urls
     
     def log_addition(self, request, object):
         """Sets the version meta information."""
