@@ -24,7 +24,7 @@ def register(model_class, fields=None, follow=None, format="xml"):
         raise RegistrationError, "%s has already been registered with Reversion." % model_class.__name__
     registered_models[model_class] = (fields, follow, format)
     for field in model_class._meta.fields:
-        if (fields is None or field in fields) and isinstance(field, models.FileField):
+        if (fields is None or field.name in fields) and isinstance(field, models.FileField):
             field.storage = VersionFileStorageWrapper(field.storage)
     post_save.connect(revision.post_save_receiver, model_class)
 
