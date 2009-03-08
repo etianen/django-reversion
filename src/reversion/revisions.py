@@ -134,7 +134,7 @@ class RevisionManager(local):
                         fields, follow, format = get_registration_info(obj.__class__)
                         object_id = unicode(obj.pk)
                         content_type = ContentType.objects.get_for_model(obj)
-                        serialized_data = serializers.serialize(format, [obj])
+                        serialized_data = serializers.serialize(format, [obj], fields=fields)
                         Version.objects.create(revision=revision,
                                                object_id=object_id,
                                                content_type=content_type,
