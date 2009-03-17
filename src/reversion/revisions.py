@@ -1,7 +1,12 @@
 """Revision management for Reversion."""
 
 
-import sets, sys
+try:
+    set
+except NameError:
+    from sets import Set as set  # Python 2.3 fallback.
+
+import sys
 
 try:
     from threading import local
@@ -42,7 +47,7 @@ class RevisionManager(local):
     
     def _clear(self):
         """Puts the revision manager back into its default state."""
-        self._versions = sets.Set()
+        self._versions = set()
         self._user = None
         self._comment = None
         self._depth = 0
@@ -125,7 +130,7 @@ class RevisionManager(local):
                     # Save a new revision.
                     revision = Revision.objects.create(user=self._user,
                                                        comment=self._comment)
-                    revision_set = sets.Set()
+                    revision_set = set()
                     # Follow relationships.
                     for version in self._versions:
                         add_to_revision(version, revision_set)

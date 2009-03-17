@@ -1,8 +1,6 @@
 """A number of useful helper functions to automate common tasks."""
 
 
-import sets
-
 from django.contrib import admin
 from django.contrib.admin.sites import NotRegistered
 from django.db import models

@@ -1,7 +1,10 @@
 """Database models used by Reversion."""
 
 
-import sets
+try:
+    set
+except NameError:
+    from sets import Set as set  # Python 2.3 fallback.
 
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
@@ -36,9 +39,9 @@ class Revision(models.Model):
             version.revert()
         if delete:
             # Get a set of all objects in this revision.
-            old_revision_set = sets.Set([version.latest_object_version for version in versions])
+            old_revision_set = set([version.latest_object_version for version in versions])
             # Calculate the set of all objects that would be in the revision now.
-            current_revision_set = sets.Set()
+            current_revision_set = set()
             for latest_object_version in old_revision_set:
                 add_to_revision(latest_object_version, current_revision_set)
             for current_object in current_revision_set:
