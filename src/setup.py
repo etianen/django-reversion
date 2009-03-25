@@ -7,12 +7,12 @@ for scheme in INSTALL_SCHEMES.values():
 
 
 setup(name="django-reversion",
-      version="1.2",
+      version="1.1.1",
       description="An extension to the Django web framework that provides comprehensive version control facilities",
       author="David Hall",
       author_email="david@etianen.com",
       url="http://code.google.com/p/django-reversion/",
-      download_url="http://django-reversion.googlecode.com/files/django-reversion-1.2.tar.gz",
+      download_url="http://django-reversion.googlecode.com/files/django-reversion-1.1.1.tar.gz",
       packages=["reversion",],
       package_dir={"reversion": "reversion"},
       data_files=[["reversion/templates/reversion", ["reversion/templates/reversion/object_history.html",
