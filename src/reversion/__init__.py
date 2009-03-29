@@ -7,5 +7,11 @@ Project sponsored by Etianen.com
 """
 
 
-from reversion.registration import register, unregister, is_registered
 from reversion.revisions import revision
+
+
+# Legacy registration methods, now delegating to the revision object.
+register = revision.register
+is_registered = revision.is_registered
+unregister = revision.unregister
+

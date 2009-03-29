@@ -1,19 +1,14 @@
 """Database models used by Reversion."""
 
 
-try:
-    set
-except NameError:
-    from sets import Set as set  # Python 2.3 fallback.
-
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.db import models
+from django.forms.models import model_to_dict
 
-from reversion.helpers import add_to_revision
+import reversion
 from reversion.managers import VersionManager
-from reversion.registration import get_registration_info
 
 
 class Revision(models.Model):
@@ -39,11 +34,11 @@ class Revision(models.Model):
             version.revert()
         if delete:
             # Get a set of all objects in this revision.
-            old_revision_set = set([version.latest_object_version for version in versions])
-            # Calculate the set of all objects that would be in the revision now.
-            current_revision_set = set()
-            for latest_object_version in old_revision_set:
-                add_to_revision(latest_object_version, current_revision_set)
+            old_revision_set = [ContentType.objects.get_for_id(version.content_type_id).get_object_for_this_type(pk=version.object_id)
+                                    for version in versions]
+            # Calculate the set of all objects that are in the revision now.
+            current_revision_set = reversion.revision.follow_relationships(old_revision_set)
+            # Delete objects that are no longer in the current revision.
             for current_object in current_revision_set:
                 if not current_object in old_revision_set:
                     current_object.delete()
@@ -85,20 +80,35 @@ class Version(models.Model):
     object_version = property(get_object_version,
                               doc="The stored version of the model.")
        
-    def get_latest_object_version(self):
+    def get_field_dict(self):
         """
-        Returns the latest version of the stored object.
+        Returns a dictionary mapping field names to field values in this version
+        of the model.
         
-        If the object no longer exists, returns None.
+        This method will follow parent links, if present.
         """
-        model_class = self.content_type.model_class()
-        try:
-            return model_class._default_manager.get(pk=self.object_id)
-        except model_class.DoesNotExist:
-            return None
-        
-    latest_object_version = property(get_latest_object_version,
-                              doc="The latest version of the model.")
+        if not hasattr(self, "_field_dict_cache"):
+            object_version = self.object_version
+            obj = object_version.object
+            result = model_to_dict(obj)
+            result.update(object_version.m2m_data)
+            # Add parent data.
+            for parent_class, field in obj._meta.parents.items():
+                content_type = ContentType.objects.get_for_model(parent_class)
+                parent_id = unicode(getattr(obj, field.attname))
+                try:
+                    parent_version = Version.objects.get(revision__id=self.revision_id,
+                                                         content_type=content_type,
+                                                         object_id=parent_id)
+                except parent_class.DoesNotExist:
+                    pass
+                else:
+                    result.update(parent_version.get_field_dict())
+            setattr(self, "_field_dict_cache", result)
+        return getattr(self, "_field_dict_cache")
+       
+    field_dict = property(get_field_dict,
+                          doc="A dictionary mapping field names to field values in this version of the model.")
        
     def revert(self):
         """Recovers the model in this version."""

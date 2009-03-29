@@ -1,5 +1,6 @@
 """Model managers for Reversion."""
 
+
 try:
     set
 except NameError:
@@ -13,48 +14,79 @@ class VersionManager(models.Manager):
     
     """Manager for Version models."""
     
+    def get_for_object_reference(self, model, object_id):
+        """Returns all versions for the given object reference."""
+        content_type = ContentType.objects.get_for_model(model)
+        object_id = unicode(object_id)
+        versions = self.filter(content_type=content_type, object_id=object_id)
+        versions = versions.order_by("pk")
+        return versions
+    
     def get_for_object(self, object):
-        """Returns all the versions of the given Revision, ordered by date created."""
-        content_type = ContentType.objects.get_for_model(object)
-        return self.filter(content_type=content_type, object_id=unicode(object.pk)).order_by("pk").select_related().order_by("pk")
+        """
+        Returns all the versions of the given object, ordered by date created.
+        """
+        return self.get_for_object_reference(object.__class__, object.pk)
     
     def get_unique_for_object(self,obj):
         """Returns unique versions associated with the object."""
         versions = self.get_for_object(obj)
         changed_versions = []
-        known_serialized_data = set()
+        last_serialized_data = None
         for version in versions:
-            serialized_data = version.serialized_data
-            if serialized_data in known_serialized_data:
-                continue
-            known_serialized_data.add(serialized_data)
-            changed_versions.append(version)
+            if last_serialized_data != version.serialized_data:
+                changed_versions.append(version)
+            last_serialized_data = version.serialized_data
         return changed_versions
     
     def get_for_date(self, object, date):
         """Returns the latest version of an object for the given date."""
+        versions = self.get_for_object(object)
+        versions = versions.filter(revision__date_created__lte=date)
+        versions = versions.order_by("-pk")
         try:
-            return self.get_for_object(object).filter(revision__date_created__lte=date).order_by("-pk")[0]
+            version = versions[0]
         except IndexError:
             raise self.model.DoesNotExist
+        else:
+            return version
     
-    def get_deleted(self, model_class):
-        """Returns all the deleted versions for the given model class."""
-        live_ids = [unicode(row[0]) for row in model_class._default_manager.all().values_list("pk")]
-        content_type = ContentType.objects.get_for_model(model_class)
-        deleted_ids = self.filter(content_type=content_type).exclude(object_id__in=live_ids).order_by().values_list("object_id").distinct()
-        deleted = []
-        for object_id, in deleted_ids:
-            deleted.append(self.get_deleted_object(model_class, object_id))
-        return deleted
-    
-    def get_deleted_object(self, model_class, object_id):
+    def get_deleted_object(self, model_class, object_id, select_related=None):
         """
         Returns the version corresponding to the deletion of the object with
         the given id.
+        
+        You can specify a tuple of related fields to fetch using the
+        `select_related` argument.
         """
+        content_type = ContentType.objects.get_for_model(model_class)
+        object_id = unicode(object_id)
+        versions = self.filter(content_type=content_type, object_id=object_id)
+        versions = versions.order_by("-pk")
+        if select_related:
+            versions = versions.select_related(*select_related)
         try:
-            content_type = ContentType.objects.get_for_model(model_class)
-            return self.filter(content_type=content_type, object_id=unicode(object_id)).order_by("-pk").select_related()[0]
+            version = versions[0]
         except IndexError:
             raise self.model.DoesNotExist
+        else:
+            return version
+    
+    def get_deleted(self, model_class, select_related=None):
+        """
+        Returns all the deleted versions for the given model class.
+        
+        You can specify a tuple of related fields to fetch using the
+        `select_related` argument.
+        """
+        content_type = ContentType.objects.get_for_model(model_class)
+        # Get a list of all existing primary keys for the model class.
+        live_pks = [unicode(pk) 
+                    for pk in model_class._default_manager.all().values_list("pk", flat=True)]
+        # Get a list of primary keys that did exist, but now do not.
+        deleted_ids = self.filter(content_type=content_type).exclude(object_id__in=live_pks).values_list("object_id", flat=True).distinct()
+        deleted = [self.get_deleted_object(model_class, object_id, select_related)
+                   for object_id in deleted_ids]
+        return deleted
+        
+        

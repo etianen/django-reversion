@@ -7,7 +7,7 @@ for scheme in INSTALL_SCHEMES.values():
 
 
 setup(name="django-reversion",
-      version="1.1.1",
+      version="1.2",
       description="An extension to the Django web framework that provides comprehensive version control facilities",
       author="David Hall",
       author_email="david@etianen.com",
@@ -27,3 +27,4 @@ setup(name="django-reversion",
                    "Operating System :: OS Independent",
                    "Programming Language :: Python",
                    "Framework :: Django",])
+

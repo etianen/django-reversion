@@ -4,11 +4,10 @@
 
 {% block object-tools %}
 	<ul class="object-tools">
-		{% if has_change_permission %}
-			<li><a href="recover/" class="recoverlink">{% blocktrans with cl.opts.verbose_name_plural|escape as name %}Recover deleted {{name}}{% endblocktrans %}</a></li>
-		{% endif %}
+		<li><a href="recover/" class="recoverlink">{% blocktrans with cl.opts.verbose_name_plural|escape as name %}Recover deleted {{name}}{% endblocktrans %}</a></li>
 		{% if has_add_permission %}
 			<li><a href="add/{% if is_popup %}?_popup=1{% endif %}" class="addlink">{% blocktrans with cl.opts.verbose_name|escape as name %}Add {{name}}{% endblocktrans %}</a></li>
 		{% endif %}
 	</ul>
 {% endblock %}
+
