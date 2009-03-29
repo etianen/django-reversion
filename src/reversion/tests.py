@@ -234,12 +234,12 @@ Check that follow functionality works for one-to-many relationships:
     ...     user.save()
     ...     log_entry_2 = LogEntry.objects.create(user=user, object_repr="entry_2_rev_2", content_type=ContentType.objects.all()[0], action_flag=DELETION)
     ...
-    >>> [entry.object_repr for entry in user.logentry_set.all()]
-    [u'entry_2_rev_2', u'entry_1_rev_2']
+    >>> sorted([entry.object_repr for entry in user.logentry_set.all()])
+    [u'entry_1_rev_2', u'entry_2_rev_2']
     >>> Version.objects.get_for_object(user)[0].revision.revert()
     >>> user = User.objects.get(username="user_rev_1")
-    >>> [entry.object_repr for entry in user.logentry_set.all()]
-    [u'entry_2_rev_2', u'entry_1_rev_1']
+    >>> sorted([entry.object_repr for entry in user.logentry_set.all()])
+    [u'entry_1_rev_1', u'entry_2_rev_2']
     >>> Version.objects.get_for_object(user)[0].revision.revert(delete=True)
     >>> user = User.objects.get(username="user_rev_1")
     >>> [entry.object_repr for entry in user.logentry_set.all()]
