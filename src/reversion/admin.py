@@ -193,7 +193,7 @@ class VersionAdmin(admin.ModelAdmin):
                                          if ContentType.objects.get_for_id(related_version.content_type_id).model_class() == FormSet.model
                                          and unicode(related_version.field_dict[fk_name]) == unicode(object_id)])
                 pk_name = FormSet.model._meta.pk.name
-                initial = formset.initial
+                initial = formset.initial or []
                 for initial_row in initial:
                     pk = unicode(initial_row[pk_name])
                     if pk in related_versions:
