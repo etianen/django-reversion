@@ -5,7 +5,6 @@ from django.db import models
 import reversion
 from reversion.helpers import patch_admin
 
-# Create your models here.
 
 class ParentModel(models.Model):
     
@@ -18,6 +17,8 @@ class ParentModel(models.Model):
 class ChildModel(ParentModel):
     
     child_name = models.CharField(max_length=255)
+    
+    file = models.FileField(upload_to="test")
     
     def __unicode__(self):
         return u"%s > %s" % (self.parent_name, self.child_name)

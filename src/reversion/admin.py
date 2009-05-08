@@ -136,7 +136,7 @@ class VersionAdmin(admin.ModelAdmin):
         if request.method == "POST":
             # This section is copied directly from the model admin change view
             # method.  Maybe one day there will be a hook for doing this better.
-            form = ModelForm(request.POST, request.FILES, instance=obj)
+            form = ModelForm(request.POST, request.FILES, instance=obj, initial=version.field_dict)
             if form.is_valid():
                 form_validated = True
                 new_object = self.save_form(request, form, change=True)
