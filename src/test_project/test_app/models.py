@@ -46,3 +46,9 @@ class GenericRelatedModel(models.Model):
         return self.generic_related_name
     
     
+class ProxyModel(ChildModel):
+    
+    class Meta:
+        proxy = True
+        
+        
