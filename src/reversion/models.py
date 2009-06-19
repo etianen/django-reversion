@@ -5,7 +5,6 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.db import models
-from django.forms.models import model_to_dict
 
 import reversion
 from reversion.managers import VersionManager
@@ -90,7 +89,9 @@ class Version(models.Model):
         if not hasattr(self, "_field_dict_cache"):
             object_version = self.object_version
             obj = object_version.object
-            result = model_to_dict(obj)
+            result = {}
+            for field in obj._meta.fields:
+                result[field.name] = field.value_from_object(obj)
             result.update(object_version.m2m_data)
             # Add parent data.
             for parent_class, field in obj._meta.parents.items():
