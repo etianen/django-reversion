@@ -127,6 +127,13 @@ class VersionAdmin(admin.ModelAdmin):
         context.update(extra_context)
         return render_to_response(self.recover_list_template, context, template.RequestContext(request))
         
+    def get_revision_form_data(self, request, obj, version):
+        """
+        Returns a dictionary of data to set in the admin form in order to revert
+        to the given revision.
+        """
+        return version.field_dict
+        
     def render_revision_form(self, request, obj, version, context, revert=False, recover=False):
         """Renders the object revision form."""
         model = self.model
@@ -138,7 +145,7 @@ class VersionAdmin(admin.ModelAdmin):
         if request.method == "POST":
             # This section is copied directly from the model admin change view
             # method.  Maybe one day there will be a hook for doing this better.
-            form = ModelForm(request.POST, request.FILES, instance=obj, initial=version.field_dict)
+            form = ModelForm(request.POST, request.FILES, instance=obj, initial=self.get_revision_form_data(request, obj, version))
             if form.is_valid():
                 form_validated = True
                 new_object = self.save_form(request, form, change=True)
@@ -174,7 +181,7 @@ class VersionAdmin(admin.ModelAdmin):
             # change_view.  Once again, a hook for this kind of functionality
             # would be nice.  Unfortunately, it results in doubling the number
             # of queries required to construct the formets.
-            form = ModelForm(instance=obj, initial=version.field_dict)
+            form = ModelForm(instance=obj, initial=self.get_revision_form_data(request, obj, version))
             prefixes = {}
             revision_versions = version.revision.version_set.all()
             for FormSet in self.get_formsets(request, obj):
