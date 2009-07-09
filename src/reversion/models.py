@@ -23,7 +23,6 @@ class Revision(models.Model):
                              help_text="The user who created this revision.")
     
     comment = models.TextField(blank=True,
-                               null=True,
                                help_text="A text comment on this revision.")
     
     def revert(self, delete=False):
