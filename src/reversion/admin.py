@@ -19,6 +19,7 @@ from django.utils.translation import ugettext as _
 
 import reversion
 from reversion.models import Version
+from reversion.revisions import DEFAULT_SERIALIZATION_FORMAT
 
 
 class VersionAdmin(admin.ModelAdmin):
@@ -35,6 +36,9 @@ class VersionAdmin(admin.ModelAdmin):
     
     recover_form_template = "reversion/recover_form.html"
     
+    # The serialization format to use when registering models with reversion.
+    reversion_format = DEFAULT_SERIALIZATION_FORMAT
+    
     def _autoregister(self, model, follow=None):
         """Registers a model with reversion, if required."""
         if not reversion.is_registered(model):
@@ -44,7 +48,7 @@ class VersionAdmin(admin.ModelAdmin):
                     # Proxy models do not have a parent field.
                     follow.append(field.name)
                 self._autoregister(parent_cls)
-            reversion.register(model, follow=follow)
+            reversion.register(model, follow=follow, format=self.reversion_format)
     
     def __init__(self, *args, **kwargs):
         """Initializes the VersionAdmin"""

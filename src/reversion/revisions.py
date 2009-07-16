@@ -66,10 +66,13 @@ class RevisionState(local):
         """Puts the revision manager back into its default state."""
         self.objects = set()
         self.user = None
-        self.comment = None
+        self.comment = ""
         self.depth = 0
         self.is_invalid = False
         self.meta = []
+   
+
+DEFAULT_SERIALIZATION_FORMAT = "xml"
    
    
 class RevisionManager(object):
@@ -92,7 +95,7 @@ class RevisionManager(object):
         """
         return model_class in self._registry
         
-    def register(self, model_class, fields=None, follow=(), format="xml"):
+    def register(self, model_class, fields=None, follow=(), format=DEFAULT_SERIALIZATION_FORMAT):
         """Registers a model with this revision manager."""
         # Prevent multiple registration.
         if self.is_registered(model_class):
