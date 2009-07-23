@@ -3,7 +3,7 @@
 
 from django import template
 from django.db import models, transaction
-from django.conf.urls.defaults import *
+from django.conf.urls.defaults import patterns, url
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.admin import helpers
@@ -210,10 +210,10 @@ class VersionAdmin(admin.ModelAdmin):
                 for initial_row in initial:
                     pk = unicode(initial_row[pk_name])
                     if pk in related_versions:
-                         initial_row.update(related_versions[pk].field_dict)
-                         del related_versions[pk]
+                        initial_row.update(related_versions[pk].field_dict)
+                        del related_versions[pk]
                     else:
-                       initial_row["DELETE"] = True
+                        initial_row["DELETE"] = True
                 initial.extend([related_version.field_dict
                                 for related_version in related_versions.values()])
                 # Reconstruct the forms with the new revision data.

@@ -3,6 +3,7 @@
 	<name>reversion</name>
 	<comment></comment>
 	<projects>
+		<project>django-1.0.2</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
