@@ -36,6 +36,7 @@ Check that the revision is abandoned in the case of error:
    ...         versioned_site.save()
    ... except:
    ...     "Exception caught"
+   ...     transaction.rollback()
    ...
    'Exception caught'
    >>> Version.objects.get_for_object(versioned_site)
@@ -59,6 +60,7 @@ Check that the revision is abandoned in the case of error:
    ...     save_new_version(versioned_site)
    ... except:
    ...     "Exception caught"
+   ...     transaction.rollback()
    ...
    'Exception caught'
    >>> Version.objects.get_for_object(versioned_site)
@@ -258,7 +260,7 @@ from django.contrib.admin.models import LogEntry, DELETION
 from django.contrib.auth.models import User, Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
-from django.db import models
+from django.db import models, transaction
 
 import reversion
 from reversion.admin import VersionAdmin
