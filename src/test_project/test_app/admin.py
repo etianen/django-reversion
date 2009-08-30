@@ -21,6 +21,10 @@ class ChildModelAdmin(VersionAdmin):
     
     inlines = RelatedModelInline, GenericRelatedInline,
     
+    list_display = ("parent_name", "child_name",)
+    
+    list_editable = ("child_name",)
+    
     
 admin.site.register(ChildModel, ChildModelAdmin)
 

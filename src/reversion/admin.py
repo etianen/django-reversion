@@ -287,6 +287,8 @@ class VersionAdmin(admin.ModelAdmin):
     
     change_view = transaction.commit_on_success(reversion.revision.create_on_success(admin.ModelAdmin.change_view))
     
+    changelist_view = transaction.commit_on_success(reversion.revision.create_on_success(admin.ModelAdmin.changelist_view))
+    
     def history_view(self, request, object_id, extra_context=None):
         """Renders the history view."""
         action_list = Version.objects.get_for_object_reference(self.model, object_id).select_related("revision__user")
