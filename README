@@ -1,0 +1,39 @@
+Reversion is an extension to the Django web framework that provides
+comprehensive version control facilities.
+
+Features:
+
+    * Roll back to any point in a model's history - an unlimited undo facility!
+  
+    * Recover deleted models - never lose data again!
+  
+    * Admin integration for maximum usability.
+  
+    * Group related changes into revisions that can be rolled back in a single
+      transaction.
+    
+    * Automatically save a new version whenever your model changes using
+      Django's flexible signalling framework.
+
+    * Automate your revision management with easy-to-use middleware.
+
+Reversion can be easily added to your existing Django project with an absolute
+minimum of code changes.
+
+Please read the Getting Started guide for more information:
+
+    * http://code.google.com/p/django-reversion/wiki/GettingStarted
+    
+Download instructsions, bug reporting and links to full documentation can be
+found at the main project website:
+
+    * http://code.google.com/p/django-reversion/
+
+You can keep up to date with the latest announcements by joining the Reversion
+discussion group at the following URL:
+
+    * http://groups.google.com/group/django-reversion
+    
+This project was developed by Etianen.com
+
+    * http://www.etianen.com/
