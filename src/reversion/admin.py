@@ -206,7 +206,6 @@ class VersionAdmin(admin.ModelAdmin):
                                          for related_version in revision_versions
                                          if ContentType.objects.get_for_id(related_version.content_type_id).model_class() == FormSet.model
                                          and unicode(related_version.field_dict[fk_name]) == unicode(object_id)])
-                print related_versions
                 initial = []
                 for related_obj in formset.queryset:
                     if unicode(related_obj.pk) in related_versions:
