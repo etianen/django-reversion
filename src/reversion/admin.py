@@ -10,6 +10,7 @@ from django.contrib.admin import helpers
 from django.contrib.contenttypes.generic import GenericInlineModelAdmin, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.forms.formsets import all_valid
+from django.forms.models import model_to_dict
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
 from django.utils.dateformat import format
@@ -205,21 +206,18 @@ class VersionAdmin(admin.ModelAdmin):
                                          for related_version in revision_versions
                                          if ContentType.objects.get_for_id(related_version.content_type_id).model_class() == FormSet.model
                                          and unicode(related_version.field_dict[fk_name]) == unicode(object_id)])
-                pk_name = FormSet.model._meta.pk.name
-                initial = formset.initial or []
-                for initial_row in initial:
-                    pk = unicode(initial_row[pk_name])
-                    if pk in related_versions:
-                        initial_row.update(related_versions[pk].field_dict)
-                        del related_versions[pk]
+                print related_versions
+                initial = []
+                for related_obj in formset.queryset:
+                    if unicode(related_obj.pk) in related_versions:
+                        initial.append(related_versions.pop(unicode(related_obj.pk)).field_dict)
                     else:
-                        initial_row["DELETE"] = True
-                initial.extend([related_version.field_dict
-                                for related_version in related_versions.values()])
+                        initial_data = model_to_dict(related_obj)
+                        initial_data["DELETE"] = True
+                        initial.append(initial_data)
                 # Reconstruct the forms with the new revision data.
-                formset._total_form_count = len(initial)
                 formset.initial = initial
-                formset._construct_forms()
+                formset.forms = [formset._construct_form(n) for n in xrange(len(initial))]
                 # Add this hacked formset to the form.
                 formsets.append(formset)
         # Generate admin form helper.
