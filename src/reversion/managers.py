@@ -1,11 +1,6 @@
 """Model managers for Reversion."""
 
 
-try:
-    set
-except NameError:
-    from sets import Set as set  # Python 2.3 fallback.
-
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 

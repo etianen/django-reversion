@@ -95,7 +95,10 @@ class Version(models.Model):
             # Add parent data.
             for parent_class, field in obj._meta.parents.items():
                 content_type = ContentType.objects.get_for_model(parent_class)
-                parent_id = unicode(getattr(obj, field.attname))
+                if field:
+                    parent_id = unicode(getattr(obj, field.attname))
+                else:
+                    parent_id = obj.pk
                 try:
                     parent_version = Version.objects.get(revision__id=self.revision_id,
                                                          content_type=content_type,

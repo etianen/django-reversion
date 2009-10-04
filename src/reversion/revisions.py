@@ -100,6 +100,9 @@ class RevisionManager(object):
         # Prevent multiple registration.
         if self.is_registered(model_class):
             raise RegistrationError, "%r has already been registered with Reversion." % model_class
+        # Ensure the parent model of proxy models is registered.
+        if model_class._meta.proxy and not self.is_registered(model_class._meta.parents.keys()[0]):
+            raise RegistrationError, "%r is a proxy model, and its parent has not been registered with Reversion." % model_class
         # Calculate serializable model fields.
         opts = model_class._meta
         local_fields = opts.local_fields + opts.local_many_to_many
@@ -241,6 +244,12 @@ class RevisionManager(object):
                         _follow_relationships(related_obj)
                 elif related is not None:
                     raise TypeError, "Cannot follow the relationship %r. Expected a model or QuerySet, found %r." % (relationship, related)
+            # If a proxy model's parent is registered, add it.
+            if obj._meta.proxy:
+                parent_cls = obj._meta.parents.keys()[0]
+                if self.is_registered(parent_cls):
+                    parent_obj = parent_cls.objects.get(pk=obj.pk)
+                    _follow_relationships(parent_obj)
         map(_follow_relationships, object_set)
         return result_set
         
@@ -260,6 +269,9 @@ class RevisionManager(object):
                     revision_set = self.follow_relationships(self._state.objects)
                     # Save version models.
                     for obj in revision_set:
+                        # Proxy models should not actually be saved to the revision set.
+                        if obj._meta.proxy:
+                            continue
                         registration_info = self.get_registration_info(obj.__class__)
                         object_id = unicode(obj.pk)
                         content_type = ContentType.objects.get_for_model(obj)
