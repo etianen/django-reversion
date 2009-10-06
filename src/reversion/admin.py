@@ -148,6 +148,7 @@ class VersionAdmin(admin.ModelAdmin):
                     prefix = "%s-%s" % (prefix, prefixes[prefix])
                 formset = FormSet(request.POST, request.FILES,
                                   instance=new_object, prefix=prefix)
+                print formset.errors
                 formsets.append(formset)
             if all_valid(formsets) and form_validated:
                 self.save_model(request, new_object, form, change=True)
@@ -197,6 +198,10 @@ class VersionAdmin(admin.ModelAdmin):
                         initial_data = model_to_dict(related_obj)
                         initial_data["DELETE"] = True
                         initial.append(initial_data)
+                for related_version in related_versions.values():
+                    initial_row = related_version.field_dict
+                    del initial_row["id"]
+                    initial.append(initial_row)
                 # Reconstruct the forms with the new revision data.
                 formset.initial = initial
                 formset.forms = [formset._construct_form(n) for n in xrange(len(initial))]
