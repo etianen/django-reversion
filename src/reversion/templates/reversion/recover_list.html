@@ -4,9 +4,9 @@
 
 {% block breadcrumbs %}
     <div class="breadcrumbs">
-        <a href="../../../">{% trans 'Home' %}</a> &rsaquo; 
-        <a href="../../">{{app_label|capfirst|escape}}</a> &rsaquo; 
-        <a href="../">{{module_name}}</a> &rsaquo; 
+        <a href="{% url admin:index %}">{% trans 'Home' %}</a> &rsaquo; 
+        <a href="{% url admin:app_list app_label %}">{{app_label|capfirst|escape}}</a> &rsaquo; 
+        <a href="{{changelist_url}}">{{opts.verbose_name_plural|capfirst}}</a> &rsaquo; 
         {% blocktrans with opts.verbose_name_plural|escape as name %}Recover deleted {{name}}{% endblocktrans %}
     </div>
 {% endblock %}

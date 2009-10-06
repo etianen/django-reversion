@@ -9,6 +9,7 @@ from django.contrib import admin
 from django.contrib.admin import helpers
 from django.contrib.contenttypes.generic import GenericInlineModelAdmin, GenericRelation
 from django.contrib.contenttypes.models import ContentType
+from django.core.urlresolvers import reverse
 from django.forms.formsets import all_valid
 from django.forms.models import model_to_dict
 from django.http import HttpResponseRedirect
@@ -81,31 +82,12 @@ class VersionAdmin(admin.ModelAdmin):
         urls = super(VersionAdmin, self).get_urls()
         admin_site = self.admin_site
         opts = self.model._meta
-        info = admin_site.name, opts.app_label, opts.module_name,
+        info = opts.app_label, opts.module_name,
         reversion_urls = patterns("",
-                                  url("^recover/$", admin_site.admin_view(self.recoverlist_view), name='%sadmin_%s_%s_recoverlist' % info),
-                                  url("^recover/([^/]+)/$", admin_site.admin_view(self.recover_view), name='%sadmin_%s_%s_recover' % info),
-                                  url("^([^/]+)/history/([^/]+)/$", admin_site.admin_view(self.revision_view), name='%sadmin_%s_%s_revision' % info),)
+                                  url("^recover/$", admin_site.admin_view(self.recoverlist_view), name='%s_%s_recoverlist' % info),
+                                  url("^recover/([^/]+)/$", admin_site.admin_view(self.recover_view), name='%s_%s_recover' % info),
+                                  url("^([^/]+)/history/([^/]+)/$", admin_site.admin_view(self.revision_view), name='%s_%s_revision' % info),)
         return reversion_urls + urls
-    
-    def __call__(self, request, url):
-        """
-        Adds additional functionality to the admin class.
-        
-        This method is deprecated as of Django 1.1.
-        """
-        path = url or ""
-        parts = path.strip("/").split("/")
-        if len(parts) == 3 and parts[1] == "history":
-            object_id = parts[0]
-            version_id = parts[2]
-            return self.revision_view(request, object_id, version_id)
-        elif len(parts) == 1 and parts[0] == "recover":
-            return self.recoverlist_view(request)
-        elif len(parts) == 2 and parts[0] == "recover":
-            return self.recover_view(request, parts[1])
-        else:
-            return super(VersionAdmin, self).__call__(request, url)
     
     def log_addition(self, request, object):
         """Sets the version meta information."""
@@ -127,7 +109,8 @@ class VersionAdmin(admin.ModelAdmin):
                    "app_label": opts.app_label,
                    "module_name": capfirst(opts.verbose_name),
                    "title": _("Recover deleted %(name)s") % {"name": opts.verbose_name_plural},
-                   "deleted": deleted}
+                   "deleted": deleted,
+                   "changelist_url": reverse("admin:%s_%s_changelist" % (opts.app_label, opts.module_name)),}
         extra_context = extra_context or {}
         context.update(extra_context)
         return render_to_response(self.recover_list_template, context, template.RequestContext(request))
@@ -237,7 +220,6 @@ class VersionAdmin(admin.ModelAdmin):
                         "media": mark_safe(media),
                         "inline_admin_formsets": inline_admin_formsets,
                         "errors": helpers.AdminErrorList(form, formsets),
-                        "root_path": self.admin_site.root_path,
                         "app_label": opts.app_label,
                         "add": False,
                         "change": True,
@@ -251,7 +233,11 @@ class VersionAdmin(admin.ModelAdmin):
                         "opts": opts,
                         "content_type_id": ContentType.objects.get_for_model(self.model).id,
                         "save_as": False,
-                        "save_on_top": self.save_on_top,})
+                        "save_on_top": self.save_on_top,
+                        "changelist_url": reverse("admin:%s_%s_changelist" % (opts.app_label, opts.module_name)),
+                        "change_url": reverse("admin:%s_%s_change" % (opts.app_label, opts.module_name), args=(obj.pk,)),
+                        "history_url": reverse("admin:%s_%s_history" % (opts.app_label, opts.module_name), args=(obj.pk,)),
+                        "recoverlist_url": reverse("admin:%s_%s_recoverlist" % (opts.app_label, opts.module_name))})
         # Render the form.
         if revert:
             form_template = self.revision_form_template
@@ -284,7 +270,14 @@ class VersionAdmin(admin.ModelAdmin):
     
     change_view = transaction.commit_on_success(reversion.revision.create_on_success(admin.ModelAdmin.change_view))
     
-    changelist_view = transaction.commit_on_success(reversion.revision.create_on_success(admin.ModelAdmin.changelist_view))
+    def changelist_view(self, request, extra_context=None):
+        """Renders the change view."""
+        opts = self.model._meta
+        context = {"recoverlist_url": reverse("admin:%s_%s_recoverlist" % (opts.app_label, opts.module_name)),
+                   "add_url": reverse("admin:%s_%s_add" % (opts.app_label, opts.module_name)),}
+        context.update(extra_context or {})
+        return super(VersionAdmin, self).changelist_view(request, context)
+    changelist_view = transaction.commit_on_success(reversion.revision.create_on_success(changelist_view))
     
     def history_view(self, request, object_id, extra_context=None):
         """Renders the history view."""
