@@ -286,7 +286,10 @@ class VersionAdmin(admin.ModelAdmin):
     
     def history_view(self, request, object_id, extra_context=None):
         """Renders the history view."""
-        action_list = Version.objects.get_for_object_reference(self.model, object_id).select_related("revision__user")
+        opts = self.model._meta
+        action_list = [{"revision": version.revision,
+                        "url": reverse("admin:%s_%s_revision" % (opts.app_label, opts.module_name), args=(version.object_id, version.id))}
+                       for version in Version.objects.get_for_object_reference(self.model, object_id).select_related("revision__user")]
         # Compile the context.
         context = {"action_list": action_list}
         context.update(extra_context or {})
