@@ -270,9 +270,15 @@ class VersionAdmin(admin.ModelAdmin):
         return self.render_revision_form(request, obj, version, context, revert=True)
     revision_view = transaction.commit_on_success(reversion.revision.create_on_success(revision_view))
     
-    add_view = transaction.commit_on_success(reversion.revision.create_on_success(admin.ModelAdmin.add_view))
+    def add_view(self, *args, **kwargs):
+        """Adds a new model to the application."""
+        return super(VersionAdmin, self).add_view(*args, **kwargs)
+    add_view = transaction.commit_on_success(reversion.revision.create_on_success(add_view))
     
-    change_view = transaction.commit_on_success(reversion.revision.create_on_success(admin.ModelAdmin.change_view))
+    def change_view(self, *args, **kwargs):
+        """Modifies an existing model."""
+        return super(VersionAdmin, self).change_view(*args, **kwargs)
+    change_view = transaction.commit_on_success(reversion.revision.create_on_success(change_view))
     
     def changelist_view(self, request, extra_context=None):
         """Renders the change view."""
