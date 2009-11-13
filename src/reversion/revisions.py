@@ -267,6 +267,11 @@ class RevisionManager(object):
                                                        comment=self._state.comment)
                     # Follow relationships.
                     revision_set = self.follow_relationships(self._state.objects)
+                    # Because we might have uncomitted data in models, we need to 
+                    # replace the models in revision_set which might have come from the
+                    # db, with the actual models sent to reversion.
+                    diff = revision_set.difference(models)
+                    revision_set = models.union(diff)
                     # Save version models.
                     for obj in revision_set:
                         # Proxy models should not actually be saved to the revision set.
