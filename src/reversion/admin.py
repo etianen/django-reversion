@@ -184,7 +184,7 @@ class VersionAdmin(admin.ModelAdmin):
                     fk_name = FormSet.fk.name
                 except AttributeError:
                     # This is a GenericInlineFormset, or similar.
-                    fk_name = FormSet.ct_fk_field_name
+                    fk_name = FormSet.ct_fk_field.name
                 related_versions = dict([(related_version.object_id, related_version)
                                          for related_version in revision_versions
                                          if ContentType.objects.get_for_id(related_version.content_type_id).model_class() == FormSet.model
