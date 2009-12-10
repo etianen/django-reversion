@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.utils.translation import ugettext_lazy as _
 
 import reversion
 from reversion.helpers import patch_admin
@@ -22,6 +23,10 @@ class ChildModel(ParentModel):
     
     def __unicode__(self):
         return u"%s > %s" % (self.parent_name, self.child_name)
+    
+    class Meta:
+        verbose_name = _("child model")
+        verbose_name_plural = _("child models")
     
     
 class RelatedModel(models.Model):

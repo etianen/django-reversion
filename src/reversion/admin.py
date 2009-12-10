@@ -18,6 +18,7 @@ from django.utils.dateformat import format
 from django.utils.html import mark_safe
 from django.utils.text import capfirst
 from django.utils.translation import ugettext as _
+from django.utils.encoding import force_unicode
 
 import reversion
 from reversion.models import Version
@@ -108,7 +109,7 @@ class VersionAdmin(admin.ModelAdmin):
         context = {"opts": opts,
                    "app_label": opts.app_label,
                    "module_name": capfirst(opts.verbose_name),
-                   "title": _("Recover deleted %(name)s") % {"name": opts.verbose_name_plural},
+                   "title": _("Recover deleted %(name)s") % {"name": force_unicode(opts.verbose_name_plural)},
                    "deleted": deleted,
                    "changelist_url": reverse("admin:%s_%s_changelist" % (opts.app_label, opts.module_name)),}
         extra_context = extra_context or {}
@@ -156,7 +157,7 @@ class VersionAdmin(admin.ModelAdmin):
                     self.save_formset(request, form, formset, change=True)
                 change_message = _(u"Reverted to previous version, saved on %(datetime)s") % {"datetime": format(version.revision.date_created, _(settings.DATETIME_FORMAT))}
                 self.log_change(request, new_object, change_message)
-                self.message_user(request, _(u'The %(model)s "%(name)s" was reverted successfully. You may edit it again below.') % {"model": opts.verbose_name, "name": unicode(obj)})
+                self.message_user(request, _(u'The %(model)s "%(name)s" was reverted successfully. You may edit it again below.') % {"model": force_unicode(opts.verbose_name), "name": unicode(obj)})
                 # Redirect to the model change form.
                 if revert:
                     return HttpResponseRedirect("../../")
@@ -265,7 +266,7 @@ class VersionAdmin(admin.ModelAdmin):
         obj = get_object_or_404(self.model, pk=object_id)
         version = get_object_or_404(Version, pk=version_id, object_id=unicode(obj.pk))
         # Generate the context.
-        context = {"title": _("Revert %(name)s") % {"name": self.model._meta.verbose_name},}
+        context = {"title": _("Revert %(name)s") % {"name": force_unicode(self.model._meta.verbose_name)},}
         context.update(extra_context or {})
         return self.render_revision_form(request, obj, version, context, revert=True)
     revision_view = transaction.commit_on_success(reversion.revision.create_on_success(revision_view))
