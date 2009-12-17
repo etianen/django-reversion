@@ -2,13 +2,6 @@
 {% load i18n %}
 
 
-{% block extrahead %}
-    {{block.super.super.super}}
-    <script type="text/javascript" src="../../../../jsi18n/"></script>
-    {{media}}
-{% endblock %}
-
-
 {% block breadcrumbs %}
 	<div class="breadcrumbs">
 		<a href="{% url admin:index %}">{% trans "Home" %}</a> &rsaquo;

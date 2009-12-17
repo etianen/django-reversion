@@ -1,12 +1,8 @@
 {% extends "admin/change_form.html" %}
-{% load i18n %}
+{% load i18n reversion_admin %}
 
 
-{% block extrahead %}
-    {{block.super.super}}
-    <script type="text/javascript" src="../../../../../jsi18n/"></script>
-    {{media}}
-{% endblock %}
+{% block extrahead %}{{block.super|fix_jsi18n}}{% endblock %}
 
 
 {% block breadcrumbs %}
