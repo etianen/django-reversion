@@ -160,7 +160,8 @@ Check that field limitations work correctly:
 Check that the follow functionality works for many-to-one relationships:
 
     >>> reversion.register(LogEntry, follow=("user",))
-    >>> reversion.register(User)
+    >>> if not reversion.is_registered(User):
+    ...     reversion.register(User)
     >>> user = User.objects.create(username="user_rev_1", password="password")
     >>> with reversion.revision:
     ...     log_entry = LogEntry.objects.create(user=user, object_repr="entry_rev_1", content_type=ContentType.objects.all()[0], action_flag=DELETION)
