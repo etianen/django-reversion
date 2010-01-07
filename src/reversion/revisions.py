@@ -72,7 +72,7 @@ class RevisionState(local):
         self.meta = []
    
 
-DEFAULT_SERIALIZATION_FORMAT = "xml"
+DEFAULT_SERIALIZATION_FORMAT = "json"
    
    
 class RevisionManager(object):
