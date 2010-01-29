@@ -1,2 +1,0 @@
-"""Reversion management commands."""
-
