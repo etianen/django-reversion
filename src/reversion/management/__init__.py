@@ -19,14 +19,14 @@ def version_save(obj):
 version_save = revision.create_on_success(version_save)
 
 
-def create_initial_revisions(verbosity=2, **kwargs):
+def create_initial_revisions(app, verbosity=2, **kwargs):
     """
     Post-syncdb hook to create an initial revision for all registered models.
     """
     # Load in admin modules.
     admin.autodiscover()
     # Check all models for empty revisions.
-    for model_class in models.get_models():
+    for model_class in models.get_models(app):
         if revision.is_registered(model_class):
             content_type = ContentType.objects.get_for_model(model_class)
             # Get the id for all models that have not got at least one revision.
