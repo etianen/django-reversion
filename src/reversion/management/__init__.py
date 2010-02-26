@@ -36,7 +36,7 @@ def create_initial_revisions(app, verbosity=2, **kwargs):
             # Get the id for all models that have not got at least one revision.
             # HACK: This join can't be done in the database, for potential incompatibilities
             # between unicode object_ids and integer pks on strict backends like postgres.
-            versioned_ids = frozenset(Version.objects.filter(content_type=content_type).values_list("object_id", flat=True).iterator())
+            versioned_ids = frozenset(Version.objects.filter(content_type=content_type).values_list("object_id", flat=True).distinct().iterator())
             all_ids = frozenset(unicode(id) for id in model_class._default_manager.values_list("pk", flat=True).iterator())
             unversioned_ids = all_ids - versioned_ids
             # Create the initial revision for all unversioned models.

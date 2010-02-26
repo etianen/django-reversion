@@ -76,11 +76,13 @@ class VersionManager(models.Manager):
         """
         content_type = ContentType.objects.get_for_model(model_class)
         # Get a list of all existing primary keys for the model class.
-        live_pks = model_class._default_manager.all().values_list("pk", flat=True)
+        live_pks = frozenset(unicode(pk) for pk in model_class._default_manager.all().values_list("pk", flat=True))
         # Get a list of primary keys that did exist, but now do not.
-        deleted_ids = self.filter(content_type=content_type).exclude(object_id__in=live_pks).values_list("object_id", flat=True).distinct()
+        versioned_pks = frozenset(self.filter(content_type=content_type).values_list("object_id", flat=True).distinct())
+        deleted_pks = versioned_pks - live_pks
         deleted = [self.get_deleted_object(model_class, object_id, select_related)
-                   for object_id in deleted_ids]
+                   for object_id in deleted_pks]
+        deleted.sort(lambda a, b: cmp(a.revision.date_created, b.revision.date_created))
         return deleted
         
         
