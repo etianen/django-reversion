@@ -1,10 +1,7 @@
 """Middleware used by Reversion."""
 
 
-import sys
-
 import reversion
-from reversion.revisions import RevisionManagementError
 
 
 class RevisionMiddleware(object):
@@ -19,10 +16,8 @@ class RevisionMiddleware(object):
         
     def process_response(self, request, response):
         """Closes the revision."""
-        if reversion.revision.is_active():
+        while reversion.revision.is_active():
             reversion.revision.end()
-            if reversion.revision.is_active():
-                raise RevisionManagementError, "Request terminated with pending revision."
         return response
         
     def process_exception(self, request, exception):
