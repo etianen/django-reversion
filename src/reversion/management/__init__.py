@@ -6,6 +6,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models.signals import post_syncdb
 from django.utils.translation import ugettext as _
+from django.utils.importlib import import_module
 
 from reversion import models as reversion_app, revision
 from reversion.models import Version 
@@ -23,8 +24,11 @@ def create_initial_revisions(app, verbosity=2, **kwargs):
     """
     Post-syncdb hook to create an initial revision for all registered models.
     """
-    # Load in admin modules.
-    admin.autodiscover()
+    # Import the relevant admin module.
+    try:
+        import_module("%s.admin" % app.__name__.rsplit(".", 1)[0])
+    except ImportError:
+        pass
     # Check all models for empty revisions.
     for model_class in models.get_models(app):
         if revision.is_registered(model_class):
