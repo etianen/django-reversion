@@ -41,7 +41,7 @@ def create_initial_revisions(app, verbosity=2, **kwargs):
             unversioned_ids = all_ids - versioned_ids
             # Create the initial revision for all unversioned models.
             created_count = 0
-            for unversioned_obj in model_class._default_manager.filter(id__in=unversioned_ids).iterator():
+            for unversioned_obj in model_class._default_manager.filter(pk__in=unversioned_ids).iterator():
                 version_save(unversioned_obj)
                 created_count += 1
             # Print out a message, if feeling verbose.
