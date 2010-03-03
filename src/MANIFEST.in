@@ -1,2 +1,4 @@
 include reversion/templates/reversion/*.html
 include reversion/locale/*/LC_MESSAGES/django.*
+include LICENSE
+include README
