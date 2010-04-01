@@ -251,7 +251,9 @@ class VersionAdmin(admin.ModelAdmin):
         else:
             assert False
         return render_to_response(form_template, context, template.RequestContext(request))
-        
+    
+    @transaction.commit_on_success
+    @reversion.revision.create_on_success
     def recover_view(self, request, version_id, extra_context=None):
         """Displays a form that can recover a deleted model."""
         version = get_object_or_404(Version, pk=version_id)
@@ -259,8 +261,9 @@ class VersionAdmin(admin.ModelAdmin):
         context = {"title": _("Recover %(name)s") % {"name": version.object_repr},}
         context.update(extra_context or {})
         return self.render_revision_form(request, obj, version, context, recover=True)
-    recover_view = transaction.commit_on_success(reversion.revision.create_on_success(recover_view))
         
+    @transaction.commit_on_success
+    @reversion.revision.create_on_success
     def revision_view(self, request, object_id, version_id, extra_context=None):
         """Displays the contents of the given revision."""
         obj = get_object_or_404(self.model, pk=object_id)
@@ -269,18 +272,21 @@ class VersionAdmin(admin.ModelAdmin):
         context = {"title": _("Revert %(name)s") % {"name": force_unicode(self.model._meta.verbose_name)},}
         context.update(extra_context or {})
         return self.render_revision_form(request, obj, version, context, revert=True)
-    revision_view = transaction.commit_on_success(reversion.revision.create_on_success(revision_view))
     
+    @transaction.commit_on_success
+    @reversion.revision.create_on_success
     def add_view(self, *args, **kwargs):
         """Adds a new model to the application."""
         return super(VersionAdmin, self).add_view(*args, **kwargs)
-    add_view = transaction.commit_on_success(reversion.revision.create_on_success(add_view))
     
+    @transaction.commit_on_success
+    @reversion.revision.create_on_success
     def change_view(self, *args, **kwargs):
         """Modifies an existing model."""
         return super(VersionAdmin, self).change_view(*args, **kwargs)
-    change_view = transaction.commit_on_success(reversion.revision.create_on_success(change_view))
     
+    @transaction.commit_on_success
+    @reversion.revision.create_on_success
     def changelist_view(self, request, extra_context=None):
         """Renders the change view."""
         opts = self.model._meta
@@ -288,7 +294,6 @@ class VersionAdmin(admin.ModelAdmin):
                    "add_url": reverse("admin:%s_%s_add" % (opts.app_label, opts.module_name)),}
         context.update(extra_context or {})
         return super(VersionAdmin, self).changelist_view(request, context)
-    changelist_view = transaction.commit_on_success(reversion.revision.create_on_success(changelist_view))
     
     def history_view(self, request, object_id, extra_context=None):
         """Renders the history view."""
