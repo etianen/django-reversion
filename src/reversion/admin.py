@@ -142,13 +142,16 @@ class VersionAdmin(admin.ModelAdmin):
                 form_validated = False
                 new_object = obj
             prefixes = {}
-            for FormSet in self.get_formsets(request, new_object):
+            for FormSet, inline in zip(self.get_formsets(request, new_object),
+                                       self.inline_instances):
                 prefix = FormSet.get_default_prefix()
                 prefixes[prefix] = prefixes.get(prefix, 0) + 1
                 if prefixes[prefix] != 1:
                     prefix = "%s-%s" % (prefix, prefixes[prefix])
                 formset = FormSet(request.POST, request.FILES,
-                                  instance=new_object, prefix=prefix)
+                                  instance=new_object, prefix=prefix,
+                                  queryset=inline.queryset(request))
+                
                 formsets.append(formset)
             if all_valid(formsets) and form_validated:
                 self.save_model(request, new_object, form, change=True)
@@ -173,13 +176,14 @@ class VersionAdmin(admin.ModelAdmin):
             form = ModelForm(instance=obj, initial=self.get_revision_form_data(request, obj, version))
             prefixes = {}
             revision_versions = version.revision.version_set.all()
-            for FormSet in self.get_formsets(request, obj):
+            for FormSet, inline in zip(self.get_formsets(request, obj), self.inline_instances):
                 # This code is standard for creating the formset.
                 prefix = FormSet.get_default_prefix()
                 prefixes[prefix] = prefixes.get(prefix, 0) + 1
                 if prefixes[prefix] != 1:
                     prefix = "%s-%s" % (prefix, prefixes[prefix])
-                formset = FormSet(instance=obj, prefix=prefix)
+                formset = FormSet(instance=obj, prefix=prefix,
+                                  queryset=inline.queryset(request))
                 # Now we hack it to push in the data from the revision!
                 try:
                     fk_name = FormSet.fk.name
