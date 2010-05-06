@@ -151,6 +151,11 @@ class VersionAdmin(admin.ModelAdmin):
                 formset = FormSet(request.POST, request.FILES,
                                   instance=new_object, prefix=prefix,
                                   queryset=inline.queryset(request))
+                # Strip extra empty forms from the formset.
+                num_forms = formset.total_form_count() - formset.extra
+                del formset.forms[num_forms:]
+                formset.total_form_count = lambda: num_forms
+                # Add this hacked formset to the form.
                 formsets.append(formset)
             if all_valid(formsets) and form_validated:
                 self.save_model(request, new_object, form, change=True)
