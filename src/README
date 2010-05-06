@@ -1,3 +1,6 @@
+Flexible Version Control
+========================
+
 Reversion is an extension to the Django web framework that provides
 comprehensive version control facilities.
 
@@ -20,6 +23,10 @@ Features:
 Reversion can be easily added to your existing Django project with an absolute
 minimum of code changes.
 
+
+Documentation
+-------------
+
 Please read the Getting Started guide for more information:
 
     * http://code.google.com/p/django-reversion/wiki/GettingStarted
@@ -33,7 +40,22 @@ You can keep up to date with the latest announcements by joining the Reversion
 discussion group at the following URL:
 
     * http://groups.google.com/group/django-reversion
+
     
-This project was developed by Etianen.com
+More information
+----------------
+
+The django-reversion project was developed by Dave Hall, and is hosted on
+Google Code at the following URL:
+
+    * http://code.google.com/p/django-reversion/
+    
+Dave Hall is a freelance web developer, based in Cambridge, UK. You can usually
+find him on the Internet in a number of different places:
 
     * http://www.etianen.com/
+    * http://www.etianen.com/feeds/latest/
+    * http://twitter.com/etianen
+    * http://www.google.com/profiles/david.etianen
+    
+    
