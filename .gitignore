@@ -1,0 +1,10 @@
+.DS_Store
+Thumbs.db
+.project
+.pydevproject
+.settings
+*.pyc
+*.pyo
+dist
+build
+MANIFEST
