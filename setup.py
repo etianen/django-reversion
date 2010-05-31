@@ -1,14 +1,13 @@
-from glob import glob
 from distutils.core import setup
 
 
 setup(name="django-reversion",
-      version="1.3",
+      version="1.3.1",
       description="An extension to the Django web framework that provides comprehensive version control facilities",
       author="Dave Hall",
       author_email="dave@etianen.com",
       url="http://code.google.com/p/django-reversion/",
-      download_url="http://django-reversion.googlecode.com/files/django-reversion-1.3.tar.gz",
+      download_url="http://django-reversion.googlecode.com/files/django-reversion-1.3.1.tar.gz",
       zip_safe=False,
       packages=["reversion", "reversion.management", "reversion.templatetags"],
       package_dir={"reversion": "src/reversion"},
