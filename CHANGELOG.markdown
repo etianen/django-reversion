@@ -41,13 +41,13 @@ This release is compatible with Django 1.1.
 
 This release is compatible with Django 1.0.4.
 
-*    Doc tests. 
-*    German translation update. 
-*    Better compatibility with the Django trunk.  
-*    The ability to specify a serialization format used by the  ReversionAdmin
-     class when models are auto-registered. 
-*    Reduction in the number of database queries performed by the Reversion   
-     admin interface.
+*   Doc tests. 
+*   German translation update. 
+*   Better compatibility with the Django trunk.  
+*   The ability to specify a serialization format used by the  ReversionAdmin
+    class when models are auto-registered. 
+*   Reduction in the number of database queries performed by the Reversion   
+    admin interface.
      
      
 1.1.1 - 25/03/2010
