@@ -2,21 +2,11 @@
 
 
 try:
-    set
-except NameError:
-    from sets import Set as set  # Python 2.3 fallback.
-
-try:
-    from threading import local
-except ImportError:
-    from django.utils._threading_local import local  # Python 2.3 fallback.
-
-try:
     from functools import wraps
 except ImportError:
     from django.utils.functional import wraps  # Python 2.3, 2.4 fallback.
 
-import sys
+from threading import local
 
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
