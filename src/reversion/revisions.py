@@ -225,8 +225,11 @@ class RevisionManager(object):
                     if isinstance(related_field, models.ForeignKey):
                         if hasattr(obj, related_field.get_cache_name()):
                             delattr(obj, related_field.get_cache_name())
-                # Get the references obj(s).
-                related = getattr(obj, relationship, None)
+                # Get the referenced obj(s).
+                try:
+                    related = getattr(obj, relationship, None)
+                except obj._meta.get_field_by_name(relationship)[0].model.DoesNotExist:
+                    continue
                 if isinstance(related, models.Model):
                     _follow_relationships(related) 
                 elif isinstance(related, (models.Manager, QuerySet)):
