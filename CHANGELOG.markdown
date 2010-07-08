@@ -1,5 +1,5 @@
-Reversion Changelog
-===================
+django-reversion changelog
+==========================
 
 
 HEAD
