@@ -1,7 +1,7 @@
 django-reversion
 ================
 
-django-reversion is an extension to the Django web framework that provides
+**django-reversion** is an extension to the Django web framework that provides
 comprehensive version control facilities.
 
 Features
@@ -16,7 +16,7 @@ Features
     flexible signalling framework.
 *   Automate your revision management with easy-to-use middleware.
 
-django-reversion can be easily added to your existing Django project with an
+**django-reversion** can be easily added to your existing Django project with an
 absolute minimum of code changes.
 
 
