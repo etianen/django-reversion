@@ -25,14 +25,14 @@ Documentation
 
 Please read the [Getting Started][] guide for more information.
 
-[Getting Started]: http://code.google.com/p/django-reversion/wiki/GettingStarted
+[Getting Started]: http://wiki.github.com/etianen/django-reversion/getting-started
     "Getting started with django-reversion"
     
 Download instructions, bug reporting and links to full documentation can be
 found at the [main project website][].
 
-[main project website]: http://code.google.com/p/django-reversion/
-    "django-reversion on Google Code"
+[main project website]: http://github.com/etianen/django-reversion
+    "django-reversion on GitHub"
 
 You can keep up to date with the latest announcements by joining the
 [django-reversion discussion group][].
@@ -47,8 +47,8 @@ More information
 The django-reversion project was developed by Dave Hall. You can get the code
 from the [django-reversion project site][].
 
-[django-reversion project site]: http://code.google.com/p/django-reversion/
-    "django-reversion on Google Code"
+[django-reversion project site]: http://github.com/etianen/django-reversion
+    "django-reversion on GitHub"
     
 Dave Hall is a freelance web developer, based in Cambridge, UK. You can usually
 find him on the Internet in a number of different places:
