@@ -8,10 +8,10 @@ from django.core.management.base import CommandError
 from django.db import models
 from django.utils.importlib import import_module
 from django.utils.datastructures import SortedDict
+from django.utils.translation import ugettext as _
 
 from reversion import revision
 from reversion.models import Version
-from reversion.management import version_save
 
 
 class Command(BaseCommand):
@@ -69,6 +69,13 @@ class Command(BaseCommand):
             for model_class in model_classes:
                 self.create_initial_revisions (app, model_class)
 
+    def version_save(self, obj):
+        """Saves the initial version of an object."""
+        obj.save()
+        revision.user = None
+        revision.comment = _(u"Initial version.")
+    version_save = revision.create_on_success(version_save)
+
     def create_initial_revisions(self, app, model_class, verbosity=2, **kwargs):
         """
         all stolen from management/__init__.py :)
@@ -90,7 +97,7 @@ class Command(BaseCommand):
             # Create the initial revision for all unversioned models.
             created_count = 0
             for unversioned_obj in model_class._default_manager.filter(pk__in=unversioned_ids).iterator():
-                version_save(unversioned_obj)
+                self.version_save(unversioned_obj)
                 created_count += 1
             # Print out a message, if feeling verbose.
             if created_count > 0 and verbosity >= 2:
