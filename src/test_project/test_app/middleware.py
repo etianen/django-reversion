@@ -7,7 +7,6 @@ Insipired by the method at: <http://www.djangosnippets.org/snippets/344/>
 """
 
 
-from django import template
 from django.conf import settings
 from django.db import connection
 

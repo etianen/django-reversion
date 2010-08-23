@@ -1,10 +1,6 @@
-from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-
-import reversion
-from reversion.helpers import patch_admin
 
 
 class ParentModel(models.Model):
