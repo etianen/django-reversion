@@ -1,8 +1,6 @@
-# -*- coding: utf-8 -*-
 import sys
 
 from django import VERSION
-from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management.base import BaseCommand
@@ -11,23 +9,25 @@ from django.db import models
 from django.utils.importlib import import_module
 from django.utils.datastructures import SortedDict
 
-from reversion import models as reversion_app, revision
+from reversion import revision
 from reversion.models import Version
 from reversion.management import version_save
 
+
 class Command(BaseCommand):
-    args = '[appname, appname.ModelName, ...]'
-    help = 'Creates initial revisions for a given app [and model].'
+    
+    args = "[appname, appname.ModelName, ...]"
+    help = "Creates initial revisions for a given app [and model]."
 
     def __init__(self, *args, **kwargs):
         super(Command, self).__init__(*args, **kwargs)
-        # be safe for future django versions
+        # Be safe for future django versions.
         if VERSION[0] == 1 and VERSION[1] <= 2:
             self.stdout = sys.stdout
 
     def handle(self, *app_labels, **options):
-        app_list = SortedDict ()
-        # if no apps given, use all installed
+        app_list = SortedDict()
+        # if no apps given, use all installed.
         if len(app_labels) == 0:
             for app in models.get_apps ():
                 if not app in app_list.keys():
@@ -38,7 +38,7 @@ class Command(BaseCommand):
         else:
             for label in app_labels:
                 try:
-                    app_label, model_label = label.split('.')
+                    app_label, model_label = label.split(".")
                     try:
                         app = models.get_app(app_label)
                     except ImproperlyConfigured:
@@ -53,7 +53,7 @@ class Command(BaseCommand):
                     else:
                         app_list[app] = [model_class]
                 except ValueError:
-                    # This is just an app - no model qualifier
+                    # This is just an app - no model qualifier.
                     app_label = label
                     try:
                         app = models.get_app(app_label)
@@ -64,8 +64,8 @@ class Command(BaseCommand):
                                 app_list[app].append(model_class)
                     except ImproperlyConfigured:
                         raise CommandError("Unknown application: %s" % app_label)
-        # create revisions
-        for app,model_classes in app_list.items ():
+        # Create revisions.
+        for app, model_classes in app_list.items ():
             for model_class in model_classes:
                 self.create_initial_revisions (app, model_class)
 
@@ -94,9 +94,7 @@ class Command(BaseCommand):
                 created_count += 1
             # Print out a message, if feeling verbose.
             if created_count > 0 and verbosity >= 2:
-                self.stdout.write (u"Created %s initial revisions for model %s.\n" % (created_count, model_class._meta.verbose_name))
+                self.stdout.write(u"Created %s initial revisions for model %s.\n" % (created_count, model_class._meta.verbose_name))
         else:
             if verbosity >= 2:
-                self.stdout.write (u"Model %s is not registered.\n"  % (model_class._meta.verbose_name))
-
-#kate: indent-mode python; indent-width 4; indent-spaces on; replace-tabs on; line-numbers on; folding-markers on;#kate: indent-mode python; indent-width 4; indent-spaces on; replace-tabs on; line-numbers on; folding-markers on;
+                self.stdout.write(u"Model %s is not registered.\n"  % (model_class._meta.verbose_name))
