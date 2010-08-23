@@ -5,6 +5,8 @@ django-reversion changelog
 HEAD
 ----
 
+*   Removed post_syncdb hook.
+*   Added new createinitialrevisions management command.
 *   Fixed DoesNotExistError with OneToOneFields and follow.
 
 
