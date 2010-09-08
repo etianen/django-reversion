@@ -14,7 +14,7 @@ ADMINS = (
 MANAGERS = ADMINS
 
 DATABASE_ENGINE = 'sqlite3'           # 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-DATABASE_NAME = os.path.expanduser('~/Sites/django-reversion.googlecode.com/database.sqite')             # Or path to database file if using sqlite3.
+DATABASE_NAME = os.path.expanduser('~/Sites/django-reversion/database.sqite')             # Or path to database file if using sqlite3.
 DATABASE_USER = ''             # Not used with sqlite3.
 DATABASE_PASSWORD = ''         # Not used with sqlite3.
 DATABASE_HOST = ''             # Set to empty string for localhost. Not used with sqlite3.
