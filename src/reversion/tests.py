@@ -168,6 +168,17 @@ class ReversionQueryTest(TestCase):
         """Tests that the latest version for a particular date can be loaded."""
         self.assertEqual(Version.objects.get_for_date(self.test, datetime.datetime.now()).field_dict["name"], "test1.2")
         
+    def testCanGetDeleted(self):
+        """Tests that deleted objects can be retrieved."""
+        self.assertEqual(len(Version.objects.get_deleted(TestModel)), 0)
+        # Delete the test model.
+        self.test.delete()
+        # Ensure that there is now a deleted model.
+        deleted = Version.objects.get_deleted(TestModel)
+        self.assertEqual(deleted[0].field_dict["name"], "test1.2")
+        self.assertEqual(len(deleted), 1)
+        
+        
     def tearDown(self):
         """Tears down the tests."""
         # Unregister the model.
