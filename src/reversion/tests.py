@@ -34,16 +34,12 @@ class TestModel(models.Model):
         app_label = "reversion"
         
         
-class ReversionTest(TestCase):
+class ReversionRegistrationTest(TestCase):
     
-    """Tests the core django-reversion functionality."""
+    """Tests the django-reversion registration functionality."""
     
     def setUp(self):
         """Sets up the TestModel."""
-        # Clear the database.
-        Version.objects.all().delete()
-        TestModel.objects.all().delete()
-        # Register the model.
         reversion.register(TestModel)
         
     def testCanRegisterModel(self):
@@ -67,6 +63,23 @@ class ReversionTest(TestCase):
         # Check that duplicate unregistration is disallowed.
         self.assertRaises(RegistrationError, lambda: reversion.unregister(TestModel))
         # Re-register the model.
+        reversion.register(TestModel)
+        
+    def tearDown(self):
+        """Tears down the tests."""
+        reversion.unregister(TestModel)
+        
+        
+class ReversionCreateTest(TestCase):
+    
+    """Tests the django-reversion revision creation functionality."""
+    
+    def setUp(self):
+        """Sets up the TestModel."""
+        # Clear the database.
+        Version.objects.all().delete()
+        TestModel.objects.all().delete()
+        # Register the model.
         reversion.register(TestModel)
         
     def testCanSaveWithNoRevision(self):
@@ -95,20 +108,12 @@ class ReversionTest(TestCase):
         # Create the second revision.
         try:
             with reversion.revision:
-                test.name = "FO"
+                test.name = None
                 test.save()
         except:
             transaction.rollback()
         # Check that there is still only one revision.
         self.assertEqual(Version.objects.get_for_object(test).count(), 1)
-    
-    def testCanRetrieveVersionByDate(self):
-        with reversion.revision:
-            test = TestModel.objects.create(name="test1.0")
-        with reversion.revision:
-            test.name = "test1.1"
-            test.save()
-        
         
     def tearDown(self):
         """Tears down the tests."""
@@ -117,6 +122,61 @@ class ReversionTest(TestCase):
         # Clear the database.
         Version.objects.all().delete()
         TestModel.objects.all().delete()
+        
+        
+class ReversionQueryTest(TestCase):
+    
+    """Tests that django-reversion can retrieve revisions using the api."""
+    
+    def setUp(self):
+        """Sets up the TestModel."""
+        # Clear the database.
+        Version.objects.all().delete()
+        TestModel.objects.all().delete()
+        # Register the model.
+        reversion.register(TestModel)
+        # Create some initial revisions.
+        with reversion.revision:
+            self.test = TestModel.objects.create(name="test1.0")
+        with reversion.revision:
+            self.test.name = "test1.1"
+            self.test.save()
+        with reversion.revision:
+            self.test.name = "test1.2"
+            self.test.save()
+            
+    def testCanGetVersions(self):
+        """Tests that the versions for an obj can be retrieved."""
+        versions = Version.objects.get_for_object(self.test)
+        self.assertEqual(versions[0].field_dict["name"], "test1.0")
+        self.assertEqual(versions[1].field_dict["name"], "test1.1")
+        self.assertEqual(versions[2].field_dict["name"], "test1.2")
+        
+    def testCanGetUniqueVersions(self):
+        """Tests that the unique versions for an obj can be retrieved."""
+        with reversion.revision:
+            self.test.save()
+        versions = Version.objects.get_unique_for_object(self.test)
+        # Check correct version data.
+        self.assertEqual(versions[0].field_dict["name"], "test1.0")
+        self.assertEqual(versions[1].field_dict["name"], "test1.1")
+        self.assertEqual(versions[2].field_dict["name"], "test1.2")
+        # Check correct number of versions.
+        self.assertEqual(len(versions), 3)
+        
+    def testCanGetForDate(self):
+        """Tests that the latest version for a particular date can be loaded."""
+        self.assertEqual(Version.objects.get_for_date(self.test, datetime.datetime.now()).field_dict["name"], "test1.2")
+        
+    def tearDown(self):
+        """Tears down the tests."""
+        # Unregister the model.
+        reversion.unregister(TestModel)
+        # Clear the database.
+        Version.objects.all().delete()
+        TestModel.objects.all().delete()
+        # Clear references.
+        del self.test
 
 
 # Test the patch helpers, if available.
