@@ -300,6 +300,132 @@ class ReversionRelatedTest(TestCase):
         TestRelatedModel.objects.all().delete()
 
 
+class TestManyToManyModel(models.Model):
+    
+    """A model used to test Reversion M2M relation following."""
+    
+    name = models.CharField(max_length=100)
+    
+    relations = models.ManyToManyField(TestModel)
+    
+    class Meta:
+        app_label = "reversion"
+        
+        
+class ReversionManyToManyTest(TestCase):
+    
+    """Tests the ManyToMany support."""
+    
+    def setUp(self):
+        """Sets up the TestModel."""
+        # Clear the database.
+        Version.objects.all().delete()
+        TestModel.objects.all().delete()
+        TestManyToManyModel.objects.all().delete()
+        # Register the models.
+        reversion.register(TestModel, follow=("testmanytomanymodel_set",))
+        reversion.register(TestManyToManyModel, follow=("relations",))
+    
+    def testCanCreateRevision(self):
+        """Tests that a revision containing both models is created."""
+        with reversion.revision:
+            test1 = TestModel.objects.create(name="test1.0")
+            test2 = TestModel.objects.create(name="test2.0")
+            related = TestManyToManyModel.objects.create(name="related1.0")
+            related.relations.add(test1)
+            related.relations.add(test2)
+        self.assertEqual(Version.objects.get_for_object(test1).count(), 1)
+        self.assertEqual(Version.objects.get_for_object(test2).count(), 1)
+        self.assertEqual(Version.objects.get_for_object(related).count(), 1)
+        self.assertEqual(Revision.objects.count(), 1)
+        self.assertEqual(Version.objects.get_for_object(related)[0].revision.version_set.all().count(), 3)
+        
+    def testCanCreateRevisionRelated(self):
+        """Tests that a revision containing both models is created."""
+        with reversion.revision:
+            test = TestModel.objects.create(name="test1.0")
+            related1 = TestManyToManyModel.objects.create(name="related1.0")
+            related2 = TestManyToManyModel.objects.create(name="related2.0")
+            test.testmanytomanymodel_set.add(related1)
+            test.testmanytomanymodel_set.add(related2)
+        with reversion.revision:
+            test.save()
+        self.assertEqual(Version.objects.get_for_object(test).count(), 2)
+        self.assertEqual(Version.objects.get_for_object(related1).count(), 2)
+        self.assertEqual(Version.objects.get_for_object(related2).count(), 2)
+        self.assertEqual(Revision.objects.count(), 2)
+        self.assertEqual(Version.objects.get_for_object(test)[0].revision.version_set.all().count(), 3)
+    
+    def testCanRevertRevision(self):
+        """Tests that an entire revision can be reverted."""
+        with reversion.revision:
+            test1 = TestModel.objects.create(name="test1.0")
+            test2 = TestModel.objects.create(name="test2.0")
+            related = TestManyToManyModel.objects.create(name="related1.0")
+            related.relations.add(test1)
+            related.relations.add(test2)
+        with reversion.revision:
+            test1.name = "test1.1"
+            test1.save()
+            test2.name = "test2.1"
+            test2.save()
+            related.name = "related1.1"
+            related.save()
+        # Attempt revert.
+        Version.objects.get_for_object(related)[0].revision.revert()
+        self.assertEqual(TestModel.objects.get(pk=test1.pk).name, "test1.0")
+        self.assertEqual(TestModel.objects.get(pk=test2.pk).name, "test2.0")
+        self.assertEqual(TestManyToManyModel.objects.get().name, "related1.0")
+        
+    def testCanRecoverRevision(self):
+        """Tests that an entire revision can be recovered."""
+        with reversion.revision:
+            test1 = TestModel.objects.create(name="test1.0")
+            test2 = TestModel.objects.create(name="test2.0")
+            related = TestManyToManyModel.objects.create(name="related1.0")
+            related.relations.add(test1)
+            related.relations.add(test2)
+        with reversion.revision:
+            test1.name = "test1.1"
+            test1.save()
+            test2.name = "test2.1"
+            test2.save()
+            related.name = "related1.1"
+            related.save()
+        # Save the pks.
+        test1_pk = test1.pk
+        test2_pk = test2.pk
+        # Delete the models.
+        related.delete()
+        test1.delete()
+        test2.delete()
+        # Ensure deleted.
+        self.assertEqual(TestModel.objects.count(), 0)
+        self.assertEqual(TestManyToManyModel.objects.count(), 0)
+        # Query the deleted models..
+        self.assertEqual(len(Version.objects.get_deleted(TestModel)), 2)
+        self.assertEqual(len(Version.objects.get_deleted(TestManyToManyModel)), 1)
+        # Revert the revision.
+        Version.objects.get_deleted(TestManyToManyModel)[0].revision.revert()
+        # Ensure reverted.
+        self.assertEqual(TestModel.objects.count(), 2)
+        self.assertEqual(TestManyToManyModel.objects.count(), 1)
+        # Ensure correct version.
+        self.assertEqual(TestModel.objects.get(pk=test1_pk).name, "test1.1")
+        self.assertEqual(TestModel.objects.get(pk=test2_pk).name, "test2.1")
+        self.assertEqual(TestManyToManyModel.objects.get().name, "related1.1")
+    
+    def tearDown(self):
+        """Tears down the tests."""
+        # Unregister the models.
+        reversion.unregister(TestModel)
+        reversion.unregister(TestManyToManyModel)
+        # Clear the database.
+        Version.objects.all().delete()
+        TestModel.objects.all().delete()
+        TestManyToManyModel.objects.all().delete()
+
+
 # Test the patch helpers, if available.
 
 try:
