@@ -209,7 +209,7 @@ class ReversionCustomRegistrationTest(TestCase):
         Version.objects.all().delete()
         TestModel.objects.all().delete()
         # Register the model.
-        reversion.register(TestModel, fields=("id",))
+        reversion.register(TestModel, fields=("id",), format="xml")
         # Create some initial revisions.
         with reversion.revision:
             self.test = TestModel.objects.create(name="test1.0")
@@ -223,11 +223,16 @@ class ReversionCustomRegistrationTest(TestCase):
     def testCustomRegistrationHonored(self):
         """Ensures that the custom settings were honored."""
         self.assertEqual(reversion.revision.get_registration_info(TestModel).fields, ("id",))
+        self.assertEqual(reversion.revision.get_registration_info(TestModel).format, "xml")
         
     def testCanRevertOnlySpecifiedFields(self):
         """"Ensures that only the restricted set of fields are loaded."""
         Version.objects.get_for_object(self.test)[0].revert()
         self.assertEqual(TestModel.objects.get().name, "")
+            
+    def testCustomSerializationFormat(self):
+        """Ensures that the custom serialization format is used."""
+        self.assertEquals(Version.objects.get_for_object(self.test)[0].serialized_data[0], "<");
             
     def tearDown(self):
         """Tears down the tests."""
