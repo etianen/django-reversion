@@ -13,7 +13,7 @@ from django.db import models, transaction
 from django.test import TestCase
 
 import reversion
-from reversion.models import Version
+from reversion.models import Version, Revision
 from reversion.revisions import RegistrationError, DEFAULT_SERIALIZATION_FORMAT
 
 
@@ -197,6 +197,65 @@ class ReversionQueryTest(TestCase):
         TestModel.objects.all().delete()
         # Clear references.
         del self.test
+        
+        
+class TestRelatedModel(models.Model):
+    
+    """A model used to test Reversion relation following."""
+    
+    name = models.CharField(max_length=100)
+    
+    relation = models.ForeignKey(TestModel)
+    
+    class Meta:
+        app_label = "reversion"
+        
+        
+class ReversionRelatedTest(TestCase):
+    
+    """Tests the ForeignKey and OneToMany support."""
+    
+    def setUp(self):
+        """Sets up the TestModel."""
+        # Clear the database.
+        Version.objects.all().delete()
+        TestModel.objects.all().delete()
+        TestRelatedModel.objects.all().delete()
+        # Register the models.
+        reversion.register(TestModel, follow=("testrelatedmodel_set",))
+        reversion.register(TestRelatedModel, follow=("relation",))
+    
+    def testCanCreateRevisionForiegnKey(self):
+        """Tests that a revision containing both models is created."""
+        with reversion.revision:
+            test = TestModel.objects.create(name="test1.0")
+            related = TestRelatedModel.objects.create(name="related1.0", relation=test)
+        self.assertEqual(Version.objects.get_for_object(test).count(), 1)
+        self.assertEqual(Version.objects.get_for_object(related).count(), 1)
+        self.assertEqual(Revision.objects.count(), 1)
+        self.assertEqual(Version.objects.get_for_object(test)[0].revision.version_set.all().count(), 2)
+        
+    def testCanCreateRevisionOneToMany(self):
+        """Tests that a revision containing both models is created."""
+        with reversion.revision:
+            test = TestModel.objects.create(name="test1.0")
+            related = TestRelatedModel.objects.create(name="related1.0", relation=test)
+        with reversion.revision:
+            test.save()
+        self.assertEqual(Version.objects.get_for_object(test).count(), 2)
+        self.assertEqual(Version.objects.get_for_object(related).count(), 2)
+        self.assertEqual(Revision.objects.count(), 2)
+        self.assertEqual(Version.objects.get_for_object(test)[1].revision.version_set.all().count(), 2)
+    
+    def tearDown(self):
+        """Tears down the tests."""
+        # Unregister the models.
+        reversion.unregister(TestModel)
+        reversion.unregister(TestRelatedModel)
+        # Clear the database.
+        Version.objects.all().delete()
+        TestModel.objects.all().delete()
+        TestRelatedModel.objects.all().delete()
 
 
 # Test the patch helpers, if available.
