@@ -173,8 +173,7 @@ class ReversionQueryTest(TestCase):
         oldest = Version.objects.get_for_object(self.test)[0]
         self.assertEqual(oldest.field_dict["name"], "test1.0")
         oldest.revert()
-        current = TestModel.objects.get()
-        self.assertEqual(current.name, "test1.0")
+        self.assertEqual(TestModel.objects.get().name, "test1.0")
         
     def testCanGetDeleted(self):
         """Tests that deleted objects can be retrieved."""
@@ -185,6 +184,16 @@ class ReversionQueryTest(TestCase):
         deleted = Version.objects.get_deleted(TestModel)
         self.assertEqual(deleted[0].field_dict["name"], "test1.2")
         self.assertEqual(len(deleted), 1)
+        
+    def testCanRecoverDeleted(self):
+        """Tests that a deleted object can be recovered."""
+        self.test.delete()
+        # Ensure deleted.
+        self.assertEqual(TestModel.objects.count(), 0)
+        # Recover.
+        Version.objects.get_deleted(TestModel)[0].revert()
+        # Ensure recovered.
+        self.assertEqual(TestModel.objects.get().name, "test1.2")
         
     def tearDown(self):
         """Tears down the tests."""
