@@ -254,7 +254,7 @@ All done!
 
 from __future__ import with_statement
 
-import datetime, unittest
+import datetime
 
 from django.contrib import admin
 from django.contrib.admin.models import LogEntry, DELETION
@@ -262,11 +262,13 @@ from django.contrib.auth.models import User, Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
 from django.db import models, transaction
+from django.test import TestCase
 
 import reversion
 from reversion.admin import VersionAdmin
 from reversion.helpers import patch_admin
 from reversion.models import Version, Revision
+from reversion.revisions import RegistrationError, DEFAULT_SERIALIZATION_FORMAT
 
 
 class TestModel(models.Model):
@@ -279,15 +281,53 @@ class TestModel(models.Model):
         app_label = "reversion"
         
         
-class ReversionTest(unittest.TestCase):
+class ReversionTest(TestCase):
     
     """Tests the core django-reversion functionality."""
     
     def setUp(self):
         """Sets up the TestModel."""
+        # Clear the database.
+        Version.objects.all().delete()
+        TestModel.objects.all().delete()
+        # Register the model.
+        reversion.register(TestModel)
+        
+    def testCanRegisterModel(self):
+        """Tests that a model can be registered."""
+        self.assertTrue(reversion.is_registered(TestModel))
+        # Check that duplicate registration is disallowed.
+        self.assertRaises(RegistrationError, lambda: reversion.register(TestModel))
+        
+    def testCanReadRegistrationInfo(self):
+        """Tests that the registration info for a model is obtainable."""
+        registration_info = reversion.revision.get_registration_info(TestModel)
+        self.assertEqual(registration_info.fields, ("id", "name",))
+        self.assertEqual(registration_info.file_fields, ())
+        self.assertEqual(registration_info.follow, ())
+        self.assertEqual(registration_info.format, DEFAULT_SERIALIZATION_FORMAT)
+        
+    def testCanUnregisterModel(self):
+        """Tests that a model can be unregistered."""
+        reversion.unregister(TestModel)
+        self.assertFalse(reversion.is_registered(TestModel))
+        # Check that duplicate unregistration is disallowed.
+        self.assertRaises(RegistrationError, lambda: reversion.unregister(TestModel))
+        # Re-register the model.
+        reversion.register(TestModel)
+        
+    def testCanSaveWithNoRevision(self):
+        """Tests that without an active revision, no model is saved."""
+        test = TestModel.objects.create(name="test1.0")
+        self.assertEqual(Version.objects.get_for_object(test).count(), 0)
         
     def tearDown(self):
         """Tears down the tests."""
+        # Unregister the model.
+        reversion.unregister(TestModel)
+        # Clear the database.
+        Version.objects.all().delete()
+        TestModel.objects.all().delete()
 
 
 # Test the patch helpers, if available.
@@ -298,35 +338,46 @@ except ImportError:
     pass
 else:
     
-    class PatchTest(unittest.TestCase):
+    class PatchTest(TestCase):
         
         """Tests the patch generation functionality."""
         
         def setUp(self):
             """Sets up a versioned site model to test."""
+            # Clear the database.
             Version.objects.all().delete()
+            TestModel.objects.all().delete()
+            # Register the TestModel.
             reversion.register(TestModel)
+            # Create some versions.
             with reversion.revision:
                 test = TestModel.objects.create(name="test1.0",)
             with reversion.revision:
                 test.name = "test1.1"
                 test.save()
-            self.test = test
-            
+            # Get the version data.
+            self.test_0 = Version.objects.get_for_object(test)[0]
+            self.test_1 = Version.objects.get_for_object(test)[1]
         
         def testCanGeneratePatch(self):
-            """Tests that text and HTML patches can be generated."""
-            version_0 = Version.objects.get_for_object(self.test)[0]
-            version_1 = Version.objects.get_for_object(self.test)[1] 
-            self.assertEqual(generate_patch(version_0, version_1, "name"),
+            """Tests that text patches can be generated."""
+            self.assertEqual(generate_patch(self.test_0, self.test_1, "name"),
                              "@@ -3,5 +3,5 @@\n st1.\n-0\n+1\n")
-            self.assertEqual(generate_patch_html(version_0, version_1, "name"),
+        
+        def testCanGeneratePathHtml(self):
+            """Tests that html patches can be generated."""
+            self.assertEqual(generate_patch_html(self.test_0, self.test_1, "name"),
                              u'<SPAN TITLE="i=0">test1.</SPAN><DEL STYLE="background:#FFE6E6;" TITLE="i=6">0</DEL><INS STYLE="background:#E6FFE6;" TITLE="i=6">1</INS>')
         
         def tearDown(self):
             """Deletes the versioned site model."""
+            # Unregister the model.
             reversion.unregister(TestModel)
-            self.test.delete()
+            # Clear the database.
             Version.objects.all().delete()
+            TestModel.objects.all().delete()
+            # Clear references.
+            del self.test_0
+            del self.test_1
             
             
