@@ -25,8 +25,6 @@ class ChildModelAdmin(VersionAdmin):
     
     list_editable = ("child_name",)
     
-    readonly_fields = ("parent_name",)
-    
     
 admin.site.register(ChildModel, ChildModelAdmin)
 

@@ -54,6 +54,11 @@ class VersionManager(models.Manager):
         You can specify a tuple of related fields to fetch using the
         `select_related` argument.
         """
+        # Ensure that the revision is in the select_related tuple.
+        select_related = select_related or ()
+        if not "revision" in select_related:
+            select_related = tuple(select_related) + ("revision",)
+        # Fetch the version.
         content_type = ContentType.objects.get_for_model(model_class)
         object_id = unicode(object_id)
         versions = self.filter(content_type=content_type, object_id=object_id)
@@ -75,13 +80,12 @@ class VersionManager(models.Manager):
         `select_related` argument.
         """
         content_type = ContentType.objects.get_for_model(model_class)
-        # Get a list of all existing primary keys for the model class.
-        live_pks = frozenset(unicode(pk) for pk in model_class._default_manager.all().values_list("pk", flat=True))
-        # Get a list of primary keys that did exist, but now do not.
-        versioned_pks = frozenset(self.filter(content_type=content_type).values_list("object_id", flat=True).distinct())
-        deleted_pks = versioned_pks - live_pks
-        deleted = [self.get_deleted_object(model_class, object_id, select_related)
-                   for object_id in deleted_pks]
+        deleted = []
+        # HACK: This join can't be done in the database, due to incompatibilities
+        # between unicode object_ids and integer pks on strict backends like postgres.
+        for object_id in self.filter(content_type=content_type).values_list("object_id", flat=True).distinct().iterator():
+            if model_class._default_manager.filter(pk=object_id).count() == 0:
+                deleted.append(self.get_deleted_object(model_class, object_id, select_related))
         deleted.sort(lambda a, b: cmp(a.revision.date_created, b.revision.date_created))
         return deleted
         
