@@ -95,12 +95,20 @@ class ReversionTest(TestCase):
         # Create the second revision.
         try:
             with reversion.revision:
-                test.name = None
+                test.name = "FO"
                 test.save()
         except:
             transaction.rollback()
         # Check that there is still only one revision.
         self.assertEqual(Version.objects.get_for_object(test).count(), 1)
+    
+    def testCanRetrieveVersionByDate(self):
+        with reversion.revision:
+            test = TestModel.objects.create(name="test1.0")
+        with reversion.revision:
+            test.name = "test1.1"
+            test.save()
+        
         
     def tearDown(self):
         """Tears down the tests."""
