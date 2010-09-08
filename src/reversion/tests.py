@@ -199,6 +199,47 @@ class ReversionQueryTest(TestCase):
         del self.test
         
         
+class ReversionCustomRegistrationTest(TestCase):
+    
+    """Tests the custom model registration options."""
+    
+    def setUp(self):
+        """Sets up the TestModel."""
+        # Clear the database.
+        Version.objects.all().delete()
+        TestModel.objects.all().delete()
+        # Register the model.
+        reversion.register(TestModel, fields=("id",))
+        # Create some initial revisions.
+        with reversion.revision:
+            self.test = TestModel.objects.create(name="test1.0")
+        with reversion.revision:
+            self.test.name = "test1.1"
+            self.test.save()
+        with reversion.revision:
+            self.test.name = "test1.2"
+            self.test.save()
+            
+    def testCustomRegistrationHonored(self):
+        """Ensures that the custom settings were honored."""
+        self.assertEqual(reversion.revision.get_registration_info(TestModel).fields, ("id",))
+        
+    def testCanRevertOnlySpecifiedFields(self):
+        """"Ensures that only the restricted set of fields are loaded."""
+        Version.objects.get_for_object(self.test)[0].revert()
+        self.assertEqual(TestModel.objects.get().name, "")
+            
+    def tearDown(self):
+        """Tears down the tests."""
+        # Unregister the model.
+        reversion.unregister(TestModel)
+        # Clear the database.
+        Version.objects.all().delete()
+        TestModel.objects.all().delete()
+        # Clear references.
+        del self.test
+        
+        
 class TestRelatedModel(models.Model):
     
     """A model used to test Reversion relation following."""
