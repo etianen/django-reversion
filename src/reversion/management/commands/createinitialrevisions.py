@@ -85,7 +85,6 @@ class Command(BaseCommand):
         # Check all models for empty revisions.
         if revision.is_registered(model_class):
             created_count = 0
-            # Get the id for all models that have not got at least one revision.
             # HACK: This join can't be done in the database, due to incompatibilities
             # between unicode object_ids and integer pks on strict backends like postgres.
             for obj in model_class._default_manager.iterator():
