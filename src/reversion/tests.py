@@ -269,6 +269,29 @@ from reversion.helpers import patch_admin
 from reversion.models import Version, Revision
 
 
+class TestModel(models.Model):
+    
+    """A test model for reversion."""
+    
+    name = models.CharField(max_length=100)
+    
+    class Meta:
+        app_label = "reversion"
+        
+        
+class ReversionTest(unittest.TestCase):
+    
+    """Tests the core django-reversion functionality."""
+    
+    def setUp(self):
+        """Sets up the TestModel."""
+        
+    def tearDown(self):
+        """Tears down the tests."""
+
+
+# Test the patch helpers, if available.
+
 try:
     from reversion.helpers import generate_patch, generate_patch_html
 except ImportError:
@@ -281,27 +304,29 @@ else:
         
         def setUp(self):
             """Sets up a versioned site model to test."""
-            reversion.register(Site)
+            Version.objects.all().delete()
+            reversion.register(TestModel)
             with reversion.revision:
-                site = Site.objects.create(name="site", domain="www.site-rev-1.com")
+                test = TestModel.objects.create(name="test1.0",)
             with reversion.revision:
-                site.domain = "www.site-rev-2.com"
-                site.save()
-            self.site = site
+                test.name = "test1.1"
+                test.save()
+            self.test = test
+            
         
         def testCanGeneratePatch(self):
             """Tests that text and HTML patches can be generated."""
-            version_0 = Version.objects.get_for_object(self.site)[0]
-            version_1 = Version.objects.get_for_object(self.site)[1]
-            self.assertEqual(generate_patch(version_0, version_1, "domain"),
-                             "@@ -10,9 +10,9 @@\n rev-\n-1\n+2\n .com\n")
-            self.assertEqual(generate_patch_html(version_0, version_1, "domain"),
-                             u'<SPAN TITLE="i=0">www.site-rev-</SPAN><DEL STYLE="background:#FFE6E6;" TITLE="i=13">1</DEL><INS STYLE="background:#E6FFE6;" TITLE="i=13">2</INS><SPAN TITLE="i=14">.com</SPAN>')
+            version_0 = Version.objects.get_for_object(self.test)[0]
+            version_1 = Version.objects.get_for_object(self.test)[1] 
+            self.assertEqual(generate_patch(version_0, version_1, "name"),
+                             "@@ -3,5 +3,5 @@\n st1.\n-0\n+1\n")
+            self.assertEqual(generate_patch_html(version_0, version_1, "name"),
+                             u'<SPAN TITLE="i=0">test1.</SPAN><DEL STYLE="background:#FFE6E6;" TITLE="i=6">0</DEL><INS STYLE="background:#E6FFE6;" TITLE="i=6">1</INS>')
         
         def tearDown(self):
             """Deletes the versioned site model."""
-            reversion.unregister(Site)
-            self.site.delete()
+            reversion.unregister(TestModel)
+            self.test.delete()
             Version.objects.all().delete()
             
             
