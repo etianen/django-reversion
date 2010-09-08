@@ -247,6 +247,48 @@ class ReversionRelatedTest(TestCase):
         self.assertEqual(Revision.objects.count(), 2)
         self.assertEqual(Version.objects.get_for_object(test)[1].revision.version_set.all().count(), 2)
     
+    def testCanRevertRevision(self):
+        """Tests that an entire revision can be reverted."""
+        with reversion.revision:
+            test = TestModel.objects.create(name="test1.0")
+            related = TestRelatedModel.objects.create(name="related1.0", relation=test)
+        with reversion.revision:
+            test.name = "test1.1"
+            test.save()
+            related.name = "related1.1"
+            related.save()
+        # Attempt revert.
+        Version.objects.get_for_object(test)[0].revision.revert()
+        self.assertEqual(TestModel.objects.get().name, "test1.0")
+        self.assertEqual(TestRelatedModel.objects.get().name, "related1.0")
+        
+    def testCanRecoverRevision(self):
+        """Tests that an entire revision can be recovered."""
+        with reversion.revision:
+            test = TestModel.objects.create(name="test1.0")
+            related = TestRelatedModel.objects.create(name="related1.0", relation=test)
+        with reversion.revision:
+            test.name = "test1.1"
+            test.save()
+            related.name = "related1.1"
+            related.save()
+        # Delete the models.
+        test.delete()
+        # Ensure deleted.
+        self.assertEqual(TestModel.objects.count(), 0)
+        self.assertEqual(TestRelatedModel.objects.count(), 0)
+        # Query the deleted models..
+        self.assertEqual(len(Version.objects.get_deleted(TestModel)), 1)
+        self.assertEqual(len(Version.objects.get_deleted(TestRelatedModel)), 1)
+        # Revert the revision.
+        Version.objects.get_deleted(TestModel)[0].revision.revert()
+        # Ensure reverted.
+        self.assertEqual(TestModel.objects.count(), 1)
+        self.assertEqual(TestRelatedModel.objects.count(), 1)
+        # Ensure correct version.
+        self.assertEqual(TestModel.objects.get().name, "test1.1")
+        self.assertEqual(TestRelatedModel.objects.get().name, "related1.1")
+    
     def tearDown(self):
         """Tears down the tests."""
         # Unregister the models.
