@@ -153,7 +153,7 @@ class ReversionQueryTest(TestCase):
         self.assertEqual(versions[2].field_dict["name"], "test1.2")
         
     def testCanGetUniqueVersions(self):
-        """Tests that the unique versions for an obj can be retrieved."""
+        """Tests that the unique versions for an objext can be retrieved."""
         with reversion.revision:
             self.test.save()
         versions = Version.objects.get_unique_for_object(self.test)
@@ -167,6 +167,14 @@ class ReversionQueryTest(TestCase):
     def testCanGetForDate(self):
         """Tests that the latest version for a particular date can be loaded."""
         self.assertEqual(Version.objects.get_for_date(self.test, datetime.datetime.now()).field_dict["name"], "test1.2")
+    
+    def testCanRevert(self):
+        """Tests that an object can be reverted to a previous revision."""
+        oldest = Version.objects.get_for_object(self.test)[0]
+        self.assertEqual(oldest.field_dict["name"], "test1.0")
+        oldest.revert()
+        current = TestModel.objects.get()
+        self.assertEqual(current.name, "test1.0")
         
     def testCanGetDeleted(self):
         """Tests that deleted objects can be retrieved."""
@@ -177,7 +185,6 @@ class ReversionQueryTest(TestCase):
         deleted = Version.objects.get_deleted(TestModel)
         self.assertEqual(deleted[0].field_dict["name"], "test1.2")
         self.assertEqual(len(deleted), 1)
-        
         
     def tearDown(self):
         """Tears down the tests."""
