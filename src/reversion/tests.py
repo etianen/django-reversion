@@ -321,6 +321,12 @@ class ReversionTest(TestCase):
         test = TestModel.objects.create(name="test1.0")
         self.assertEqual(Version.objects.get_for_object(test).count(), 0)
         
+    def testRevisionContextManager(self):
+        """Tests that the revision context manager works."""
+        with reversion.revision:
+            test = TestModel.objects.create(name="test1.0")
+        self.assertEqual(Version.objects.get_for_object(test).count(), 1)
+        
     def tearDown(self):
         """Tears down the tests."""
         # Unregister the model.
