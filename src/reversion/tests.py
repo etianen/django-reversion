@@ -9,18 +9,11 @@ from __future__ import with_statement
 
 import datetime
 
-from django.contrib import admin
-from django.contrib.admin.models import LogEntry, DELETION
-from django.contrib.auth.models import User, Group
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.sites.models import Site
 from django.db import models, transaction
 from django.test import TestCase
 
 import reversion
-from reversion.admin import VersionAdmin
-from reversion.helpers import patch_admin
-from reversion.models import Version, Revision
+from reversion.models import Version
 from reversion.revisions import RegistrationError, DEFAULT_SERIALIZATION_FORMAT
 
 
