@@ -5,6 +5,9 @@ django-reversion changelog
 HEAD
 ----
 
+*   Improved resilience of unit tests.
+*   Improved scaleability of Version.object.get_deleted() method.
+*   Improved scaleability of createinitialrevisions command.
 *   Removed post_syncdb hook.
 *   Added new createinitialrevisions management command.
 *   Fixed DoesNotExistError with OneToOneFields and follow.
