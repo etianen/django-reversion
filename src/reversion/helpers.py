@@ -44,8 +44,8 @@ else:
     def generate_diffs(old_version, new_version, field_name):
         """Generates a diff array for the named field between the two versions."""
         # Extract the text from the versions.
-        old_text = old_version.field_dict[field_name] or ""
-        new_text = new_version.field_dict[field_name] or ""
+        old_text = old_version.field_dict[field_name] or u""
+        new_text = new_version.field_dict[field_name] or u""
         # Generate the patch.
         diffs = dmp.diff_main(old_text, new_text)
         return diffs
