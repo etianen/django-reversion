@@ -2,9 +2,11 @@ django-reversion changelog
 ==========================
 
 
-HEAD
-----
+1.3.2 - 22/10/2010
+------------------
 
+*   Added Polish translation.
+*   Added French translation.
 *   Improved resilience of unit tests.
 *   Improved scaleability of Version.object.get_deleted() method.
 *   Improved scaleability of createinitialrevisions command.
