@@ -2,12 +2,12 @@ from distutils.core import setup
 
 
 setup(name="django-reversion",
-      version="1.3.1",
+      version="1.3.2",
       description="An extension to the Django web framework that provides comprehensive version control facilities",
       author="Dave Hall",
       author_email="dave@etianen.com",
-      url="http://code.google.com/p/django-reversion/",
-      download_url="http://django-reversion.googlecode.com/files/django-reversion-1.3.1.tar.gz",
+      url="http://github.com/etianen/django-reversion",
+      download_url="http://github.com/etianen/django-reversion/tarball/release-1.3.2",
       zip_safe=False,
       packages=["reversion", "reversion.management", "reversion.templatetags", "reversion.management.commands"],
       package_dir={"": "src"},
@@ -19,4 +19,3 @@ setup(name="django-reversion",
                    "Operating System :: OS Independent",
                    "Programming Language :: Python",
                    "Framework :: Django",])
-
