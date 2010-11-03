@@ -8,6 +8,7 @@ except ImportError:
 
 from threading import local
 
+from django.contrib.admin.util import unquote
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.db import models
@@ -309,6 +310,18 @@ class RevisionManager(object):
         """Creates a revision when the given function exist successfully."""
         def _create_on_success(*args, **kwargs):
             self.start()
+            # do not save the revision if there's no change
+            try:
+                VersionAdmin, request, object_id = args[0:3]
+                if request.method == "POST":
+                    obj = VersionAdmin.get_object(request, unquote(object_id))
+                    ModelForm = VersionAdmin.get_form(request, obj)
+                    form = ModelForm(request.POST, request.FILES, instance=obj)
+                    if not form.has_changed():
+                        self.invalidate()
+            except:
+                pass
+
             try:
                 try:
                     result = func(*args, **kwargs)
