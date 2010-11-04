@@ -93,7 +93,7 @@ class Command(BaseCommand):
                     created_count += 1
             # Print out a message, if feeling verbose.
             if created_count > 0 and verbosity >= 2:
-                self.stdout.write(u"Created %s initial revisions for model %s.\n" % (created_count, model_class._meta.verbose_name))
+                print u"Created %s initial revisions for model %s.\n" % (created_count, model_class._meta.verbose_name)
         else:
             if verbosity >= 2:
-                self.stdout.write(u"Model %s is not registered.\n"  % (model_class._meta.verbose_name))
+                print u"Model %s is not registered.\n"  % (model_class._meta.verbose_name)
