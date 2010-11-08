@@ -1,5 +1,3 @@
-import sys
-
 from django import VERSION
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management.base import BaseCommand
@@ -17,12 +15,6 @@ class Command(BaseCommand):
     
     args = "[appname, appname.ModelName, ...]"
     help = "Creates initial revisions for a given app [and model]."
-
-    def __init__(self, *args, **kwargs):
-        super(Command, self).__init__(*args, **kwargs)
-        # Be safe for future django versions.
-        if VERSION[0] == 1 and VERSION[1] <= 2:
-            self.stdout = sys.stdout
 
     def handle(self, *app_labels, **options):
         app_list = SortedDict()
@@ -93,7 +85,7 @@ class Command(BaseCommand):
                     created_count += 1
             # Print out a message, if feeling verbose.
             if created_count > 0 and verbosity >= 2:
-                self.stdout.write(u"Created %s initial revisions for model %s.\n" % (created_count, model_class._meta.verbose_name))
+                print u"Created %s initial revisions for model %s." % (created_count, model_class._meta.verbose_name)
         else:
             if verbosity >= 2:
-                self.stdout.write(u"Model %s is not registered.\n"  % (model_class._meta.verbose_name))
+                print u"Model %s is not registered."  % (model_class._meta.verbose_name)
