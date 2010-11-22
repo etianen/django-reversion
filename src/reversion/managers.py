@@ -80,12 +80,15 @@ class VersionManager(models.Manager):
         `select_related` argument.
         """
         content_type = ContentType.objects.get_for_model(model_class)
-        deleted = []
         # HACK: This join can't be done in the database, due to incompatibilities
         # between unicode object_ids and integer pks on strict backends like postgres.
-        for object_id in self.filter(content_type=content_type).values_list("object_id", flat=True).distinct().iterator():
-            if model_class._default_manager.filter(pk=object_id).count() == 0:
-                deleted.append(self.get_deleted_object(model_class, object_id, select_related))
+        versioned_pks = set(self.filter(content_type=content_type).values_list("object_id", flat=True).distinct())
+        for pk in model_class._default_manager.all().values_list("pk", flat=True).iterator():
+            try:
+                versioned_pks.remove(unicode(pk))
+            except KeyError:
+                pass
+        deleted = [self.get_deleted_object(model_class, pk, select_related) for pk in versioned_pks]
         deleted.sort(lambda a, b: cmp(a.revision.date_created, b.revision.date_created))
         return deleted
         
