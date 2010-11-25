@@ -82,7 +82,7 @@ class VersionManager(models.Manager):
         content_type = ContentType.objects.get_for_model(model_class)
         # HACK: This join can't be done in the database, due to incompatibilities
         # between unicode object_ids and integer pks on strict backends like postgres.
-        live_pks = frozenset(unicode(pk) for pk in model_class._default_manager.all().values_list("pk", flat=True))
+        live_pks = frozenset(unicode(pk) for pk in model_class._default_manager.all().values_list("pk", flat=True).iterator())
         versioned_pks = frozenset(self.filter(content_type=content_type).values_list("object_id", flat=True).iterator())
         deleted = list(self.get_deleted_object(model_class, object_id, select_related) for object_id in (versioned_pks - live_pks))
         deleted.sort(lambda a, b: cmp(a.revision.date_created, b.revision.date_created))
