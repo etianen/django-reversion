@@ -103,6 +103,7 @@ class ReversionCreateTest(TestCase):
             with reversion.revision:
                 test.name = None
                 test.save()
+                raise Exception()
         except:
             transaction.rollback()
         # Check that there is still only one revision.

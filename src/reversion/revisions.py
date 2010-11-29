@@ -307,7 +307,7 @@ class RevisionManager(object):
         return False
         
     def create_on_success(self, func):
-        """Creates a revision when the given function exist successfully."""
+        """Creates a revision when the given function exits successfully."""
         def _create_on_success(*args, **kwargs):
             self.start()
             # do not save the revision if there's no change
