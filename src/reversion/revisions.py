@@ -256,9 +256,6 @@ class RevisionManager(object):
             models = self._state.objects
             try:
                 if models and not self.is_invalid():
-                    # Save a new revision.
-                    revision = Revision.objects.create(user=self._state.user,
-                                                       comment=self._state.comment)
                     # Follow relationships.
                     revision_set = self.follow_relationships(self._state.objects)
                     # Because we might have uncomitted data in models, we need to 
@@ -266,23 +263,86 @@ class RevisionManager(object):
                     # db, with the actual models sent to reversion.
                     diff = revision_set.difference(models)
                     revision_set = models.union(diff)
-                    # Save version models.
-                    for obj in revision_set:
-                        # Proxy models should not actually be saved to the revision set.
-                        if obj._meta.proxy:
-                            continue
-                        registration_info = self.get_registration_info(obj.__class__)
-                        object_id = unicode(obj.pk)
-                        content_type = ContentType.objects.get_for_model(obj)
-                        serialized_data = serializers.serialize(registration_info.format, [obj], fields=registration_info.fields)
-                        Version.objects.create(revision=revision,
-                                               object_id=object_id,
-                                               content_type=content_type,
-                                               format=registration_info.format,
-                                               serialized_data=serialized_data,
-                                               object_repr=unicode(obj))
-                    for cls, kwargs in self._state.meta:
-                        cls._default_manager.create(revision=revision, **kwargs)
+                    # Proxy models should not actually be saved to the revision set so remove them.
+                    revision_set = [revision for revision in revision_set if not revision._meta.proxy]
+
+
+
+                    # Check if there's some change in all the revision's objects
+                    
+                    # Setting normally get from reversion.register() (in the future)
+                    save_if_no_change = False
+
+                    if not save_if_no_change:
+                        # Check that all objects related to this revision don't have change.
+                        # If at least one object have a change, save the revision.
+                        have_change = False
+                        
+                        # Find de latest revision amongst the latest previous version of each object.
+                        latest_revision = -1
+
+                        for obj in revision_set:
+                            object_id = unicode(obj.pk)
+                            content_type = ContentType.objects.get_for_model(obj)
+                            # Get the most recent version of this object.
+                            try:
+                                previous_version = Version.objects.filter(content_type=content_type, object_id=object_id).values_list('revision', flat=True).order_by('-pk')[0]
+                            except IndexError:
+                                # If it doesn't exist, save the revision.
+                                have_change = True
+                                break
+                            if latest_revision < previous_version:
+                                latest_revision = previous_version
+                            
+                         # Another way to do the previous loop with less requests.
+                         # The disadvantage is that it cannot stop the evaluation when there's no version for an object.
+                         # I don't know what's the best trade off?
+#                         subqueries = [Q(object_id=unicode(obj.pk), content_type=ContentType.objects.get_for_model(obj)) for obj in revision_set]
+#                         subqueries = reduce(operator.or_, subqueries)
+#                         latest_revision = Version.objects.filter(subqueries).aggregate(Max('id'))['id__max']
+
+                        # Another approach will be to create the versions at the beginning without saving them
+                        # to avoid calling 2 times ContentType.objects.get_for_model and other methods necesary
+                        # to create the versions. I don't know either if it's a good trade off?
+
+
+                        # If we have a newest revision, compare it to the current revision.
+                        if not have_change and latest_revision != -1:
+                            previous_versions = Version.objects.filter(revision=latest_revision).values_list('serialized_data', flat=True)
+                            if len(previous_versions) != len(revision_set):
+                                have_change = True
+                            else:
+                                new_versions = []
+                                for obj in revision_set:
+                                    registration_info = self.get_registration_info(obj.__class__)
+                                    serialized_data = serializers.serialize(registration_info.format, [obj], fields=registration_info.fields)
+                                    new_versions.append(serialized_data)
+                                if sorted(previous_versions) != sorted(new_versions):
+                                    have_change = True
+                            
+
+
+                    if save_if_no_change or have_change:
+                        # Save a new revision.
+                        revision = Revision.objects.create(user=self._state.user,
+                                                           comment=self._state.comment)
+                        # Save version models.
+                        for obj in revision_set:
+                            # Proxy models should not actually be saved to the revision set.
+#                             if obj._meta.proxy:
+#                                 continue
+                            registration_info = self.get_registration_info(obj.__class__)
+                            object_id = unicode(obj.pk)
+                            content_type = ContentType.objects.get_for_model(obj)
+                            serialized_data = serializers.serialize(registration_info.format, [obj], fields=registration_info.fields)
+                            Version.objects.create(revision=revision,
+                                                   object_id=object_id,
+                                                   content_type=content_type,
+                                                   format=registration_info.format,
+                                                   serialized_data=serialized_data,
+                                                   object_repr=unicode(obj))
+                        for cls, kwargs in self._state.meta:
+                            cls._default_manager.create(revision=revision, **kwargs)
             finally:
                 self._state.clear()
         
@@ -310,18 +370,6 @@ class RevisionManager(object):
         """Creates a revision when the given function exits successfully."""
         def _create_on_success(*args, **kwargs):
             self.start()
-            # do not save the revision if there's no change
-            try:
-                VersionAdmin, request, object_id = args[0:3]
-                if request.method == "POST":
-                    obj = VersionAdmin.get_object(request, unquote(object_id))
-                    ModelForm = VersionAdmin.get_form(request, obj)
-                    form = ModelForm(request.POST, request.FILES, instance=obj)
-                    if not form.has_changed():
-                        self.invalidate()
-            except:
-                pass
-
             try:
                 try:
                     result = func(*args, **kwargs)
