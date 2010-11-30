@@ -9,7 +9,6 @@ except ImportError:
 import operator
 from threading import local
 
-from django.contrib.admin.util import unquote
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.db import models
@@ -63,7 +62,7 @@ class RevisionState(local):
         self.depth = 0
         self.is_invalid = False
         self.meta = []
-        self.ignore_duplicates = True
+        self.ignore_duplicates = False
    
 
 DEFAULT_SERIALIZATION_FORMAT = "json"
@@ -297,11 +296,11 @@ class RevisionManager(object):
                                                     object_repr=unicode(obj)))
                     # Check if there's some change in all the revision's objects.
                     save_revision = True
-                    if self.ignore_duplicates:
+                    if self._state.ignore_duplicates:
                         # Find the latest revision amongst the latest previous version of each object.
                         subqueries = [Q(object_id=version.object_id, content_type=version.content_type) for version in new_versions]
                         subqueries = reduce(operator.or_, subqueries)
-                        latest_revision = Version.objects.filter(subqueries).aggregate(Max("revision_id"))["revision__max"]
+                        latest_revision = Version.objects.filter(subqueries).aggregate(Max("revision"))["revision__max"]
                         # If we have a latest revision, compare it to the current revision.
                         if latest_revision is not None:
                             previous_versions = Version.objects.filter(revision=latest_revision).values_list("serialized_data", flat=True)
