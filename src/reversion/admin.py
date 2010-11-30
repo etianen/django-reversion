@@ -139,8 +139,7 @@ class VersionAdmin(admin.ModelAdmin):
                                  if ContentType.objects.get_for_id(related_version.content_type_id).model_class() == FormSet.model
                                  and unicode(related_version.field_dict[fk_name]) == unicode(object_id)])
         return related_versions
-        
-        
+    
     def render_revision_form(self, request, obj, version, context, revert=False, recover=False):
         """Renders the object revision form."""
         model = self.model
@@ -176,7 +175,9 @@ class VersionAdmin(admin.ModelAdmin):
                     if formset_form.fields["DELETE"].clean(formset_form._raw_value("DELETE")):
                         new_forms.append(formset_form)
                 formset.forms = new_forms
-                formset.total_form_count = lambda: len(new_forms)
+                def total_form_count_hack(count):
+                    return lambda: count
+                formset.total_form_count = total_form_count_hack(len(new_forms))
                 # Add this hacked formset to the form.
                 formsets.append(formset)
             if all_valid(formsets) and form_validated:

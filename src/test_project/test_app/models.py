@@ -1,4 +1,5 @@
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.generic import GenericForeignKey, GenericRelation
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
@@ -17,6 +18,8 @@ class ChildModel(ParentModel):
     
     file = models.FileField(upload_to="test",
                             blank=True)
+    
+    genericrelatedmodel_set = GenericRelation("test_app.GenericRelatedModel")
     
     def __unicode__(self):
         return u"%s > %s" % (self.parent_name, self.child_name)
@@ -42,6 +45,8 @@ class GenericRelatedModel(models.Model):
     
     object_id = models.TextField()
     
+    child_model = GenericForeignKey()
+    
     generic_related_name = models.CharField(max_length=255)
     
     def __unicode__(self):
@@ -52,5 +57,4 @@ class ProxyModel(ChildModel):
     
     class Meta:
         proxy = True
-        
         
