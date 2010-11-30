@@ -155,6 +155,10 @@ class VersionAdmin(admin.ModelAdmin):
             if form.is_valid():
                 form_validated = True
                 new_object = self.save_form(request, form, change=True)
+                # HACK: If the value of a file field is None, remove the file from the model.
+                for field in new_object._meta.fields:
+                    if isinstance(field, models.FileField) and form.cleaned_data[field.name] is None:
+                        setattr(new_object, field.name, None)
             else:
                 form_validated = False
                 new_object = obj
