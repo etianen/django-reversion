@@ -81,7 +81,11 @@ class Command(BaseCommand):
             # between unicode object_ids and integer pks on strict backends like postgres.
             for obj in model_class._default_manager.iterator():
                 if Version.objects.get_for_object(obj).count() == 0:
-                    self.version_save(obj)
+                    try:
+                        self.version_save(obj)
+                    except:
+                        print "ERROR: Could not save initial version for %s %s." % (model_class.__name__, obj.pk)
+                        raise
                     created_count += 1
             # Print out a message, if feeling verbose.
             if created_count > 0 and verbosity >= 2:
