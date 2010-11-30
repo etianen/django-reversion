@@ -208,7 +208,8 @@ class VersionAdmin(admin.ModelAdmin):
                         initial.append(initial_data)
                 for related_version in related_versions.values():
                     initial_row = related_version.field_dict
-                    del initial_row["id"]
+                    pk_name = related_version.content_type.model_class()._meta.pk.name
+                    del initial_row[pk_name]
                     initial.append(initial_row)
                 # Reconstruct the forms with the new revision data.
                 formset.initial = initial

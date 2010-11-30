@@ -30,4 +30,3 @@ admin.site.register(ChildModel, ChildModelAdmin)
 
 
 admin.site.register(ProxyModel, ChildModelAdmin)
-
