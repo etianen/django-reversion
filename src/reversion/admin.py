@@ -42,6 +42,9 @@ class VersionAdmin(admin.ModelAdmin):
     # The serialization format to use when registering models with reversion.
     reversion_format = DEFAULT_SERIALIZATION_FORMAT
     
+    # Whether to ignore duplicate revision data.
+    ignore_duplicate_revisions = False
+    
     def _autoregister(self, model, follow=None):
         """Registers a model with reversion, if required."""
         if not reversion.is_registered(model):
@@ -94,12 +97,14 @@ class VersionAdmin(admin.ModelAdmin):
         """Sets the version meta information."""
         super(VersionAdmin, self).log_addition(request, object)
         reversion.revision.user = request.user
+        reversion.revision.ignore_duplicates = self.ignore_duplicate_revisions
         
     def log_change(self, request, object, message):
         """Sets the version meta information."""
         super(VersionAdmin, self).log_change(request, object, message)
         reversion.revision.user = request.user
         reversion.revision.comment = message
+        reversion.revision.ignore_duplicates = self.ignore_duplicate_revisions
     
     def recoverlist_view(self, request, extra_context=None):
         """Displays a deleted model to allow recovery."""
