@@ -6,8 +6,8 @@ try:
 except ImportError:
     from django.utils.functional import wraps  # Python 2.3, 2.4 fallback.
 
-from threading import local
 import operator
+from threading import local
 
 from django.contrib.admin.util import unquote
 from django.contrib.contenttypes.models import ContentType
@@ -63,6 +63,7 @@ class RevisionState(local):
         self.depth = 0
         self.is_invalid = False
         self.meta = []
+        self.ignore_duplicates = True
    
 
 DEFAULT_SERIALIZATION_FORMAT = "json"
@@ -194,6 +195,20 @@ class RevisionManager(object):
         """Adds a class of meta information to the current revision."""
         self.assert_active()
         self._state.meta.append((cls, kwargs))
+    
+    def set_ignore_duplicates(self, ignore_duplicates):
+        """Sets whether to ignore duplicate revisions."""
+        self.assert_active()
+        self._state.ignore_duplicates = ignore_duplicates
+        
+    def get_ignore_duplicates(self):
+        """Gets whether duplicate revisions will be ignored."""
+        self.assert_active()
+        return self._state.ignore_duplicates
+    
+    ignore_duplicates = property(get_ignore_duplicates,
+                                 set_ignore_duplicates,
+                                 doc="Whether duplicate revisions should be ignored.")
         
     def invalidate(self):
         """Marks this revision as broken, so should not be commited."""
@@ -265,8 +280,6 @@ class RevisionManager(object):
                     # db, with the actual models sent to reversion.
                     diff = revision_set.difference(models)
                     revision_set = models.union(diff)
-
-
                     # Create all the versions without saving them
                     new_versions = []
                     for obj in revision_set:
@@ -278,37 +291,26 @@ class RevisionManager(object):
                         content_type = ContentType.objects.get_for_model(obj)
                         serialized_data = serializers.serialize(registration_info.format, [obj], fields=registration_info.fields)
                         new_versions.append(Version(object_id=object_id,
-                                            content_type=content_type,
-                                            format=registration_info.format,
-                                            serialized_data=serialized_data,
-                                            object_repr=unicode(obj)))
-                    
-                    
-                    # Check if there's some change in all the revision's objects
-                    
-                    # Setting normally get from reversion.register() (in the future)
-                    save_if_no_change = False
-
-                    if not save_if_no_change:
-                        # Check that all objects related to this revision don't have change.
-                        # If at least one object have a change, save the revision.
-                        have_change = True
-                        
+                                                    content_type=content_type,
+                                                    format=registration_info.format,
+                                                    serialized_data=serialized_data,
+                                                    object_repr=unicode(obj)))
+                    # Check if there's some change in all the revision's objects.
+                    save_revision = True
+                    if self.ignore_duplicates:
                         # Find the latest revision amongst the latest previous version of each object.
                         subqueries = [Q(object_id=version.object_id, content_type=version.content_type) for version in new_versions]
                         subqueries = reduce(operator.or_, subqueries)
-                        latest_revision = Version.objects.filter(subqueries).aggregate(Max('revision'))['revision__max']
-
+                        latest_revision = Version.objects.filter(subqueries).aggregate(Max("revision_id"))["revision__max"]
                         # If we have a latest revision, compare it to the current revision.
-                        if latest_revision:
-                            previous_versions = Version.objects.filter(revision=latest_revision).values_list('serialized_data', flat=True)
+                        if latest_revision is not None:
+                            previous_versions = Version.objects.filter(revision=latest_revision).values_list("serialized_data", flat=True)
                             if len(previous_versions) == len(new_versions):
                                 all_serialized_data = [version.serialized_data for version in new_versions]
                                 if sorted(previous_versions) == sorted(all_serialized_data):
-                                    have_change = False
-
-
-                    if save_if_no_change or have_change:
+                                    save_revision = False
+                    # Only save if we're always saving, or have changes.
+                    if save_revision:
                         # Save a new revision.
                         revision = Revision.objects.create(user=self._state.user,
                                                            comment=self._state.comment)
@@ -316,7 +318,7 @@ class RevisionManager(object):
                         for version in new_versions:
                             version.revision = revision
                             version.save()
-                            
+                        # Save the meta information.
                         for cls, kwargs in self._state.meta:
                             cls._default_manager.create(revision=revision, **kwargs)
             finally:
