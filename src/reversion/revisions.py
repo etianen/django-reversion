@@ -7,10 +7,13 @@ except ImportError:
     from django.utils.functional import wraps  # Python 2.3, 2.4 fallback.
 
 from threading import local
+import operator
 
+from django.contrib.admin.util import unquote
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.db import models
+from django.db.models import Q, Max
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save
 
@@ -255,9 +258,6 @@ class RevisionManager(object):
             models = self._state.objects
             try:
                 if models and not self.is_invalid():
-                    # Save a new revision.
-                    revision = Revision.objects.create(user=self._state.user,
-                                                       comment=self._state.comment)
                     # Follow relationships.
                     revision_set = self.follow_relationships(self._state.objects)
                     # Because we might have uncomitted data in models, we need to 
@@ -265,7 +265,10 @@ class RevisionManager(object):
                     # db, with the actual models sent to reversion.
                     diff = revision_set.difference(models)
                     revision_set = models.union(diff)
-                    # Save version models.
+
+
+                    # Create all the versions without saving them
+                    new_versions = []
                     for obj in revision_set:
                         # Proxy models should not actually be saved to the revision set.
                         if obj._meta.proxy:
@@ -274,14 +277,48 @@ class RevisionManager(object):
                         object_id = unicode(obj.pk)
                         content_type = ContentType.objects.get_for_model(obj)
                         serialized_data = serializers.serialize(registration_info.format, [obj], fields=registration_info.fields)
-                        Version.objects.create(revision=revision,
-                                               object_id=object_id,
-                                               content_type=content_type,
-                                               format=registration_info.format,
-                                               serialized_data=serialized_data,
-                                               object_repr=unicode(obj))
-                    for cls, kwargs in self._state.meta:
-                        cls._default_manager.create(revision=revision, **kwargs)
+                        new_versions.append(Version(object_id=object_id,
+                                            content_type=content_type,
+                                            format=registration_info.format,
+                                            serialized_data=serialized_data,
+                                            object_repr=unicode(obj)))
+                    
+                    
+                    # Check if there's some change in all the revision's objects
+                    
+                    # Setting normally get from reversion.register() (in the future)
+                    save_if_no_change = False
+
+                    if not save_if_no_change:
+                        # Check that all objects related to this revision don't have change.
+                        # If at least one object have a change, save the revision.
+                        have_change = True
+                        
+                        # Find the latest revision amongst the latest previous version of each object.
+                        subqueries = [Q(object_id=version.object_id, content_type=version.content_type) for version in new_versions]
+                        subqueries = reduce(operator.or_, subqueries)
+                        latest_revision = Version.objects.filter(subqueries).aggregate(Max('revision'))['revision__max']
+
+                        # If we have a latest revision, compare it to the current revision.
+                        if latest_revision:
+                            previous_versions = Version.objects.filter(revision=latest_revision).values_list('serialized_data', flat=True)
+                            if len(previous_versions) == len(new_versions):
+                                all_serialized_data = [version.serialized_data for version in new_versions]
+                                if sorted(previous_versions) == sorted(all_serialized_data):
+                                    have_change = False
+
+
+                    if save_if_no_change or have_change:
+                        # Save a new revision.
+                        revision = Revision.objects.create(user=self._state.user,
+                                                           comment=self._state.comment)
+                        # Save version models.
+                        for version in new_versions:
+                            version.revision = revision
+                            version.save()
+                            
+                        for cls, kwargs in self._state.meta:
+                            cls._default_manager.create(revision=revision, **kwargs)
             finally:
                 self._state.clear()
         
