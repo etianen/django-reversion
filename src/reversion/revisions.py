@@ -273,7 +273,7 @@ class RevisionManager(object):
             try:
                 if models and not self.is_invalid():
                     # Follow relationships.
-                    revision_set = self.follow_relationships(self._state.objects)
+                    revision_set = self.follow_relationships(models)
                     # Because we might have uncomitted data in models, we need to 
                     # replace the models in revision_set which might have come from the
                     # db, with the actual models sent to reversion.
