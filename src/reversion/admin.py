@@ -174,6 +174,7 @@ class VersionAdmin(admin.ModelAdmin):
                                   queryset=inline.queryset(request))
                 # Hack the formset to stuff in the new data.
                 related_versions = self.get_related_versions(obj, version, FormSet)
+                formset.related_versions = related_versions
                 new_forms = formset.forms[:len(related_versions)]
                 for formset_form in formset.forms[len(related_versions):]:
                     if formset_form.fields["DELETE"].clean(formset_form._raw_value("DELETE")):
@@ -188,7 +189,16 @@ class VersionAdmin(admin.ModelAdmin):
                 self.save_model(request, new_object, form, change=True)
                 form.save_m2m()
                 for formset in formsets:
-                    self.save_formset(request, form, formset, change=True)
+                    # HACK: If the value of a file field is None, remove the file from the model.
+                    related_objects = formset.save(commit=False)
+                    for related_obj, related_form in zip(related_objects, formset.saved_forms):
+                        for field in related_obj._meta.fields:
+                            if isinstance(field, models.FileField) and related_form._raw_value(field.name) is None:
+                                related_info = formset.related_versions.get(unicode(related_obj.pk))
+                                if related_info:
+                                    setattr(related_obj, field.name, related_info.field_dict[field.name])
+                        related_obj.save()
+                    formset.save_m2m()
                 change_message = _(u"Reverted to previous version, saved on %(datetime)s") % {"datetime": format(version.revision.date_created, _(settings.DATETIME_FORMAT))}
                 self.log_change(request, new_object, change_message)
                 self.message_user(request, _(u'The %(model)s "%(name)s" was reverted successfully. You may edit it again below.') % {"model": force_unicode(opts.verbose_name), "name": unicode(obj)})

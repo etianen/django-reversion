@@ -35,6 +35,9 @@ class RelatedModel(models.Model):
     
     related_name = models.CharField(max_length=255)
     
+    file = models.FileField(upload_to="test",
+                            blank=True)
+    
     def __unicode__(self):
         return self.related_name
     
