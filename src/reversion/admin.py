@@ -122,6 +122,24 @@ class VersionAdmin(admin.ModelAdmin):
         to the given revision.
         """
         return version.field_dict
+    
+    def get_related_versions(self, obj, version, FormSet):
+        """Retreives all the related Version objects for the given FormSet."""
+        object_id = obj.pk
+        # Get the fk name.
+        try:
+            fk_name = FormSet.fk.name
+        except AttributeError:
+            # This is a GenericInlineFormset, or similar.
+            fk_name = FormSet.ct_fk_field.name
+        # Look up the revision data.
+        revision_versions = version.revision.version_set.all()
+        related_versions = dict([(related_version.object_id, related_version)
+                                 for related_version in revision_versions
+                                 if ContentType.objects.get_for_id(related_version.content_type_id).model_class() == FormSet.model
+                                 and unicode(related_version.field_dict[fk_name]) == unicode(object_id)])
+        return related_versions
+        
         
     def render_revision_form(self, request, obj, version, context, revert=False, recover=False):
         """Renders the object revision form."""
@@ -151,10 +169,14 @@ class VersionAdmin(admin.ModelAdmin):
                 formset = FormSet(request.POST, request.FILES,
                                   instance=new_object, prefix=prefix,
                                   queryset=inline.queryset(request))
-                # Strip extra empty forms from the formset.
-                num_forms = formset.total_form_count() - formset.extra
-                del formset.forms[num_forms:]
-                formset.total_form_count = lambda: num_forms
+                # Hack the formset to stuff in the new data.
+                related_versions = self.get_related_versions(obj, version, FormSet)
+                new_forms = formset.forms[:len(related_versions)]
+                for formset_form in formset.forms[len(related_versions):]:
+                    if formset_form.fields["DELETE"].clean(formset_form._raw_value("DELETE")):
+                        new_forms.append(formset_form)
+                formset.forms = new_forms
+                formset.total_form_count = lambda: len(new_forms)
                 # Add this hacked formset to the form.
                 formsets.append(formset)
             if all_valid(formsets) and form_validated:
@@ -179,7 +201,6 @@ class VersionAdmin(admin.ModelAdmin):
             # of queries required to construct the formets.
             form = ModelForm(instance=obj, initial=self.get_revision_form_data(request, obj, version))
             prefixes = {}
-            revision_versions = version.revision.version_set.all()
             for FormSet, inline in zip(self.get_formsets(request, obj), self.inline_instances):
                 # This code is standard for creating the formset.
                 prefix = FormSet.get_default_prefix()
@@ -189,16 +210,8 @@ class VersionAdmin(admin.ModelAdmin):
                 formset = FormSet(instance=obj, prefix=prefix,
                                   queryset=inline.queryset(request))
                 # Now we hack it to push in the data from the revision!
-                try:
-                    fk_name = FormSet.fk.name
-                except AttributeError:
-                    # This is a GenericInlineFormset, or similar.
-                    fk_name = FormSet.ct_fk_field.name
-                related_versions = dict([(related_version.object_id, related_version)
-                                         for related_version in revision_versions
-                                         if ContentType.objects.get_for_id(related_version.content_type_id).model_class() == FormSet.model
-                                         and unicode(related_version.field_dict[fk_name]) == unicode(object_id)])
                 initial = []
+                related_versions = self.get_related_versions(obj, version, FormSet)
                 for related_obj in formset.queryset:
                     if unicode(related_obj.pk) in related_versions:
                         initial.append(related_versions.pop(unicode(related_obj.pk)).field_dict)
@@ -208,7 +221,7 @@ class VersionAdmin(admin.ModelAdmin):
                         initial.append(initial_data)
                 for related_version in related_versions.values():
                     initial_row = related_version.field_dict
-                    pk_name = related_version.content_type.model_class()._meta.pk.name
+                    pk_name = ContentType.objects.get_for_id(related_version.content_type_id).model_class()._meta.pk.name
                     del initial_row[pk_name]
                     initial.append(initial_row)
                 # Reconstruct the forms with the new revision data.
