@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: reversion\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-02-03 08:31+0100\n"
+"POT-Creation-Date: 2010-12-14 15:27-0500\n"
 "PO-Revision-Date: 2009-02-03 08:41+0100\n"
 "Last-Translator: Jannis Leidel <jannis@leidel.info>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,18 +15,22 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: admin.py:122 templates/reversion/change_list.html:8
-#: templates/reversion/recover_list.html:9
+#: admin.py:100 management/commands/createinitialrevisions.py:76
+msgid "Initial version."
+msgstr ""
+
+#: admin.py:118 templates/reversion/change_list.html:8
+#: templates/reversion/recover_list.html:10
 #, python-format
 msgid "Recover deleted %(name)s"
 msgstr "Gelöschte %(name)s wiederherstellen"
 
-#: admin.py:155
+#: admin.py:208
 #, python-format
 msgid "Reverted to previous version, saved on %(datetime)s"
 msgstr "Zu vorheriger Version zurückgesetzt, %(datetime)s gespeichert"
 
-#: admin.py:157
+#: admin.py:210
 #, python-format
 msgid ""
 "The %(model)s \"%(name)s\" was reverted successfully. You may edit it again "
@@ -35,12 +39,12 @@ msgstr ""
 "%(model)s \"%(name)s\" wurde erfolgreich zurückgesetzt. Sie können mit der "
 "Bearbeitung forfahren."
 
-#: admin.py:227
+#: admin.py:308
 #, python-format
-msgid "Recover %s"
-msgstr "%s wiederherstellen"
+msgid "Recover %(name)s"
+msgstr "%(name)s wiederherstellen"
 
-#: admin.py:243
+#: admin.py:319
 #, python-format
 msgid "Revert %(name)s"
 msgstr "%(name)s zurücksetzen"
@@ -59,7 +63,7 @@ msgstr ""
 "vorherigen Version dieses Objektes zurückzukehren."
 
 #: templates/reversion/object_history.html:15
-#: templates/reversion/recover_list.html:21
+#: templates/reversion/recover_list.html:23
 msgid "Date/time"
 msgstr "Datum/Zeit"
 
@@ -72,7 +76,7 @@ msgid "Comment"
 msgstr "Kommentar"
 
 #: templates/reversion/object_history.html:23
-#: templates/reversion/recover_list.html:28
+#: templates/reversion/recover_list.html:30
 msgid "DATETIME_FORMAT"
 msgstr "j. N Y, H:i"
 
@@ -84,46 +88,44 @@ msgstr ""
 "Dieses Objekt hat keine Änderungsgeschichte. Es wurde möglicherweise nicht "
 "über diese Verwaltungsseiten angelegt."
 
-#: templates/reversion/recover_form.html:14
-#: templates/reversion/recover_list.html:6
-#: templates/reversion/revision_form.html:14
+#: templates/reversion/recover_form.html:7
+#: templates/reversion/recover_list.html:7
+#: templates/reversion/revision_form.html:10
 msgid "Home"
 msgstr "Start"
 
-#: templates/reversion/recover_form.html:17
+#: templates/reversion/recover_form.html:10
 #, python-format
 msgid "Recover deleted %(verbose_name)s"
 msgstr "Gelöschte %(verbose_name)s wiederherstellen"
 
-#: templates/reversion/recover_form.html:18
-#, python-format
-msgid "Recover %(name)s"
-msgstr "%(name)s wiederherstellen"
-
-#: templates/reversion/recover_form.html:24
+#: templates/reversion/recover_form.html:17
 msgid "Press the save button below to recover this version of the object."
 msgstr "Sichern Sie, um diese Version des Objektes wiederherzustellen."
 
-#: templates/reversion/recover_list.html:15
+#: templates/reversion/recover_list.html:17
 msgid ""
 "Choose a date from the list below to recover a deleted version of an object."
 msgstr ""
 "Wählen Sie einen Zeitpunk aus der untenstehenden Liste, um eine gelöschte "
 "Version des Objektes wiederherzustellen."
 
-#: templates/reversion/recover_list.html:35
+#: templates/reversion/recover_list.html:37
 msgid "There are no deleted objects to recover."
 msgstr "Es sind keine gelöschten Objekte zur Wiederherstellung vorhanden."
 
-#: templates/reversion/revision_form.html:18
+#: templates/reversion/revision_form.html:14
 msgid "History"
 msgstr "Geschichte"
 
-#: templates/reversion/revision_form.html:19
+#: templates/reversion/revision_form.html:15
 #, python-format
 msgid "Revert %(verbose_name)s"
 msgstr "%(verbose_name)s zurücksetzen"
 
-#: templates/reversion/revision_form.html:32
+#: templates/reversion/revision_form.html:28
 msgid "Press the save button below to revert to this version of the object."
 msgstr "Sichern Sie, um das Objekt zu dieser Version zurückzusetzen."
+
+#~ msgid "Recover %s"
+#~ msgstr "%s wiederherstellen"

@@ -97,6 +97,7 @@ class VersionAdmin(admin.ModelAdmin):
         """Sets the version meta information."""
         super(VersionAdmin, self).log_addition(request, object)
         reversion.revision.user = request.user
+        reversion.revision.comment = _(u'Initial version.')
         reversion.revision.ignore_duplicates = self.ignore_duplicate_revisions
         
     def log_change(self, request, object, message):
