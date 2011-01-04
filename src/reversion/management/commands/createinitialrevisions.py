@@ -1,3 +1,5 @@
+from optparse import make_option
+
 from django import VERSION
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management.base import BaseCommand
@@ -5,18 +7,24 @@ from django.core.management.base import CommandError
 from django.db import models
 from django.utils.importlib import import_module
 from django.utils.datastructures import SortedDict
-from django.utils.translation import ugettext as _
 
 from reversion import revision
 from reversion.models import Version
 
 
 class Command(BaseCommand):
-    
-    args = "[appname, appname.ModelName, ...]"
+    option_list = BaseCommand.option_list + (
+        make_option("--comment",
+            action="store",
+            dest="comment",
+            default=u"Initial version.",
+            help='Specify the comment to add to the revisions. Defaults to "Initial version.".'),
+        )    
+    args = '[appname, appname.ModelName, ...] [--comment="The comment"]'
     help = "Creates initial revisions for a given app [and model]."
 
     def handle(self, *app_labels, **options):
+        self.comment = options.get('comment', u"Initial version.")
         app_list = SortedDict()
         # if no apps given, use all installed.
         if len(app_labels) == 0:
@@ -56,7 +64,7 @@ class Command(BaseCommand):
                     except ImproperlyConfigured:
                         raise CommandError("Unknown application: %s" % app_label)
         # Create revisions.
-        for app, model_classes in app_list.items ():
+        for app, model_classes in app_list.items():
             for model_class in model_classes:
                 self.create_initial_revisions (app, model_class)
 
@@ -65,7 +73,7 @@ class Command(BaseCommand):
         """Saves the initial version of an object."""
         obj.save()
         revision.user = None
-        revision.comment = _(u"Initial version.")
+        revision.comment = self.comment
 
     def create_initial_revisions(self, app, model_class, verbosity=2, **kwargs):
         """Creates the set of initial revisions for the given model."""
