@@ -24,7 +24,7 @@ class Command(BaseCommand):
     help = "Creates initial revisions for a given app [and model]."
 
     def handle(self, *app_labels, **options):
-        self.comment = options.get('comment', u"Initial version.")
+        self.comment = options['comment']
         app_list = SortedDict()
         # if no apps given, use all installed.
         if len(app_labels) == 0:
