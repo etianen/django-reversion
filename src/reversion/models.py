@@ -8,6 +8,7 @@ from django.db import models
 from django.db import IntegrityError
 
 import reversion
+from reversion.errors import RevertError
 from reversion.managers import VersionManager
 
 
@@ -28,24 +29,18 @@ class Revision(models.Model):
     
     def revert(self, delete=False):
         """Reverts all objects in this revision."""
-        versions = list(self.version_set.all())
-        total = len(versions)
-        while total > 0:
-            total -= 1
-            version = versions.pop()
-            try:
-                version.revert()
-            except IntegrityError:
-                versions.insert(0, version)
-            else:
-                total = len(versions)
-                
-        # verify that every version are reverted
-        if len(versions) > 0:
-            # reverting failed, so we should rollback the transaction
-            # and give an error message (to be done)
-            pass
-
+        # Attempt to revert all revisions.
+        def do_revert(versions):
+            unreverted_versions = []
+            for version in versions:
+                try:
+                    version.revert()
+                except IntegrityError:
+                    unreverted_versions.append(version)
+            if len(unreverted_versions) == len(versions):
+                raise RevertError("Could not revert revision, due to database integrity errors.")
+        do_revert(self.version_set.all())
+        # Optionally delete objects no longer in the current revision.
         if delete:
             # Get a set of all objects in this revision.
             old_revision_set = [ContentType.objects.get_for_id(version.content_type_id).get_object_for_this_type(pk=version.object_id)
