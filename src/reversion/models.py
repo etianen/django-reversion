@@ -39,6 +39,8 @@ class Revision(models.Model):
                     unreverted_versions.append(version)
             if len(unreverted_versions) == len(versions):
                 raise RevertError("Could not revert revision, due to database integrity errors.")
+            if unreverted_versions:
+                   do_revert(unreverted_versions)
         do_revert(self.version_set.all())
         # Optionally delete objects no longer in the current revision.
         if delete:
