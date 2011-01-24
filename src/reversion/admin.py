@@ -117,7 +117,7 @@ class VersionAdmin(admin.ModelAdmin):
                    "module_name": capfirst(opts.verbose_name),
                    "title": _("Recover deleted %(name)s") % {"name": force_unicode(opts.verbose_name_plural)},
                    "deleted": deleted,
-                   "changelist_url": reverse("admin:%s_%s_changelist" % (opts.app_label, opts.module_name)),}
+                   "changelist_url": reverse("%s:%s_%s_changelist" % (self.admin_site.name, opts.app_label, opts.module_name)),}
         extra_context = extra_context or {}
         context.update(extra_context)
         return render_to_response(self.recover_list_template, context, template.RequestContext(request))
@@ -286,10 +286,10 @@ class VersionAdmin(admin.ModelAdmin):
                         "content_type_id": ContentType.objects.get_for_model(self.model).id,
                         "save_as": False,
                         "save_on_top": self.save_on_top,
-                        "changelist_url": reverse("admin:%s_%s_changelist" % (opts.app_label, opts.module_name)),
-                        "change_url": reverse("admin:%s_%s_change" % (opts.app_label, opts.module_name), args=(obj.pk,)),
-                        "history_url": reverse("admin:%s_%s_history" % (opts.app_label, opts.module_name), args=(obj.pk,)),
-                        "recoverlist_url": reverse("admin:%s_%s_recoverlist" % (opts.app_label, opts.module_name))})
+                        "changelist_url": reverse("%s:%s_%s_changelist" % (self.admin_site.name, opts.app_label, opts.module_name)),
+                        "change_url": reverse("%s:%s_%s_change" % (self.admin_site.name, opts.app_label, opts.module_name), args=(obj.pk,)),
+                        "history_url": reverse("%s:%s_%s_history" % (self.admin_site.name, opts.app_label, opts.module_name), args=(obj.pk,)),
+                        "recoverlist_url": reverse("%s:%s_%s_recoverlist" % (self.admin_site.name, opts.app_label, opts.module_name))})
         # Render the form.
         if revert:
             form_template = self.revision_form_template
@@ -337,8 +337,8 @@ class VersionAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         """Renders the change view."""
         opts = self.model._meta
-        context = {"recoverlist_url": reverse("admin:%s_%s_recoverlist" % (opts.app_label, opts.module_name)),
-                   "add_url": reverse("admin:%s_%s_add" % (opts.app_label, opts.module_name)),}
+        context = {"recoverlist_url": reverse("%s:%s_%s_recoverlist" % (self.admin_site.name, opts.app_label, opts.module_name)),
+                   "add_url": reverse("%s:%s_%s_add" % (self.admin_site.name, opts.app_label, opts.module_name)),}
         context.update(extra_context or {})
         return super(VersionAdmin, self).changelist_view(request, context)
     
@@ -346,7 +346,7 @@ class VersionAdmin(admin.ModelAdmin):
         """Renders the history view."""
         opts = self.model._meta
         action_list = [{"revision": version.revision,
-                        "url": reverse("admin:%s_%s_revision" % (opts.app_label, opts.module_name), args=(version.object_id, version.id))}
+                        "url": reverse("%s:%s_%s_revision" % (self.admin_site.name, opts.app_label, opts.module_name), args=(version.object_id, version.id))}
                        for version in Version.objects.get_for_object_reference(self.model, object_id).select_related("revision__user")]
         # Compile the context.
         context = {"action_list": action_list}
