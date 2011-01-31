@@ -101,7 +101,7 @@ class ReversionCreateTest(TestCase):
         # Create the second revision.
         try:
             with reversion.revision:
-                test.name = None
+                test.name = "test1.1"
                 test.save()
                 raise Exception()
         except:

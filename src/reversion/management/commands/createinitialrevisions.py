@@ -20,11 +20,11 @@ class Command(BaseCommand):
             default=u"Initial version.",
             help='Specify the comment to add to the revisions. Defaults to "Initial version.".'),
         )    
-    args = '[appname, appname.ModelName, ...] [--comment="The comment"]'
+    args = '[appname, appname.ModelName, ...] [--comment="Initial version."]'
     help = "Creates initial revisions for a given app [and model]."
 
     def handle(self, *app_labels, **options):
-        self.comment = options['comment']
+        comment = options["comment"]
         app_list = SortedDict()
         # if no apps given, use all installed.
         if len(app_labels) == 0:
@@ -66,16 +66,16 @@ class Command(BaseCommand):
         # Create revisions.
         for app, model_classes in app_list.items():
             for model_class in model_classes:
-                self.create_initial_revisions (app, model_class)
+                self.create_initial_revisions(app, model_class, comment)
 
     @revision.create_on_success
-    def version_save(self, obj):
+    def version_save(self, obj, comment):
         """Saves the initial version of an object."""
         obj.save()
         revision.user = None
-        revision.comment = self.comment
+        revision.comment = comment
 
-    def create_initial_revisions(self, app, model_class, verbosity=2, **kwargs):
+    def create_initial_revisions(self, app, model_class, comment, verbosity=2, **kwargs):
         """Creates the set of initial revisions for the given model."""
         # Import the relevant admin module.
         try:
@@ -90,7 +90,7 @@ class Command(BaseCommand):
             for obj in model_class._default_manager.iterator():
                 if Version.objects.get_for_object(obj).count() == 0:
                     try:
-                        self.version_save(obj)
+                        self.version_save(obj, comment)
                     except:
                         print "ERROR: Could not save initial version for %s %s." % (model_class.__name__, obj.pk)
                         raise

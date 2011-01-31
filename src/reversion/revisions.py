@@ -16,20 +16,9 @@ from django.db.models import Q, Max
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save
 
+from reversion.errors import RevisionManagementError, RegistrationError
 from reversion.models import Revision, Version
 from reversion.storage import VersionFileStorageWrapper
-
-
-class RevisionManagementError(Exception):
-    
-    """
-    Exception that is thrown when something goes wrong with revision managment.
-    """
-    
-
-class RegistrationError(Exception):
-    
-    """Exception thrown when registration with Reversion goes wrong."""
 
 
 class RegistrationInfo(object):
@@ -44,7 +33,7 @@ class RegistrationInfo(object):
         self.file_fields = file_fields
         self.follow = follow
         self.format = format
-          
+
           
 class RevisionState(local):
     
