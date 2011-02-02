@@ -352,5 +352,3 @@ class VersionAdmin(admin.ModelAdmin):
         context = {"action_list": action_list}
         context.update(extra_context or {})
         return super(VersionAdmin, self).history_view(request, object_id, context)
-    
-    
