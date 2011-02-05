@@ -45,15 +45,15 @@ You can specify only apps/models or only delay or date or use a combination of b
 
 Examples:
 
-        deleterevisons myapp
+        deleterevisions myapp
     
     That will delete every revisions of myapp (except if there's an other app involved in the revision)
     
-        deleterevisons --date=2010-11-01
+        deleterevisions --date=2010-11-01
     
     That will delete every revisions created before November 1, 2010 for all apps.
     
-        deleterevisons myapp.mymodel --year=1 --month=2 --force
+        deleterevisions myapp.mymodel --year=1 --month=2 --force
         
     That will delete every revisions of myapp.model that are older then 1 year and 2 months (14 months) even if there's revisions involving other apps and/or models.
 """
@@ -108,13 +108,13 @@ Examples:
 #             date = datetime.datetime.today().date() - datetime.timedelta(days)
 
 
-            if date.year < 2000:
-                raise CommandError("The year you give (%s) is too old. Django was not exisiting at this time!" % date.year)
+        if date and date.year < 2000:
+            raise CommandError("The year you give (%s) is too old. Django was not exisiting at this time!" % date.year)
                  
         if app_labels:
             self.delete_apps(app_labels, date, options["force"])
         elif date:
-            self.deleted_all_apps(date)
+            self.delete_all_apps(date)
         else:
             # 3 possibilities:
             #   1. delete all revisions
@@ -126,26 +126,25 @@ Examples:
 #             self.delete_all_revisions()
             
             # 2.
-#             while True:
-#                 choice = raw_input("Are you sure you want to delete all the revisons? [y|N]")
-#                 if choice.lower() == "y":
-#                     self.delete_all_revisions()
-#                 else:
-#                     print "Aborting deletion of all revisons."
+            choice = raw_input("Are you sure you want to delete all the revisions? [y|N]")
+            if choice.lower() == "y":
+                self.delete_all_revisions()
+            else:
+                print "Aborting deletion of all revisions."
 
             # 3.
-            raise CommandError("Nothing specified. You need to specify at least a date or a delay or an app or a model.")
+#             raise CommandError("Nothing specified. You need to specify at least a date or a delay or an app or a model.")
             
         
     def delete_all_apps(self, date):
-        print "Deleting all revisons older then %s..." % date.isoformat()
+        print "Deleting all revisions older than %s..." % date.isoformat()
         Version.objects.filter(revision__date_created__lt=date).delete()
         Revision.objects.filter(date_created__lt=date).delete()
         print "Done"
         
         
     def delete_all_revisions(self):
-        print "Deleting all revisons..."
+        print "Deleting all revisions..."
         Version.objects.all().delete()
         Revision.objects.all().delete()
         print "Done"
@@ -168,24 +167,35 @@ Examples:
                 mod_list.remove((app, model))
 
         # Delete revisions for apps and models
-        subqueries = [Q(content_type__app_label=app, content_type__model=model) for app, model in mod_list]
+        subqueries = []
+        if app_list:
+            subqueries.append(Q(content_type__app_label__in=app_list))
+        if mod_list:
+            subqueries.extend([Q(content_type__app_label=app, content_type__model=model) for app, model in mod_list])
         subqueries = reduce(operator.or_, subqueries)
-        subqueries = Q(content_type__app_label__in=app_list) | subqueries
         query = Version.objects.filter(subqueries)
+        date_msg = ""
         if date:
             query = Version.objects.filter(revision__date_created__lt=date) & query
+            date_msg = " older than %s" % date.isoformat()
         revisions = query.values_list('revision_id', flat=True)
         
-        if force:            
-            Version.objects.filter(revision_id__in=revisions).delete()
+        if force:
+            print "Deleting revisions having theses apps and models (%s)%s..." % (", ".join(app_list.union(["%s.%s" % (app, model) for app, model in mod_list])), date_msg)
+            Version.objects.filter(revision__id__in=revisions).delete()
             Revision.objects.filter(pk__in=revisions).delete()
+            print "Done"
 
         else:
+            print "Deleting revisions having only theses apps and models (%s)%s..." % (", ".join(app_list.union(["%s.%s" % (app, model) for app, model in mod_list])), date_msg)
+            revisions_to_delete = []
             for revision_id in revisions:
                 revision = Revision.objects.get(pk=revision_id)
                 if not revision.version_set.exclude(subqueries).count():
                     Version.objects.filter(revision=revision).delete()
-                    revision.delete()
+                    revisions_to_delete.append(revision_id)
                 else:
-                    print 'Not deleting: %s' % revision        
+                    print 'Not deleting: %s' % revision
+            Revision.objects.filter(pk__in=revisions_to_delete).delete()
+            print "Done"
     
