@@ -173,11 +173,13 @@ Examples:
         if mod_list:
             subqueries.extend([Q(content_type__app_label=app, content_type__model=model) for app, model in mod_list])
         subqueries = reduce(operator.or_, subqueries)
-        query = Version.objects.filter(subqueries)
-        date_msg = ""
         if date:
-            query = Version.objects.filter(revision__date_created__lt=date) & query
+            query = Version.objects.filter(revision__date_created__lt=date).filter(subqueries)
             date_msg = " older than %s" % date.isoformat()
+        else:
+            query = Version.objects.filter(subqueries)
+            date_msg = ""
+
         revisions = query.values_list('revision_id', flat=True)
         
         if force:
