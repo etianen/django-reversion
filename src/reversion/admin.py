@@ -248,6 +248,9 @@ class VersionAdmin(admin.ModelAdmin):
                 # Reconstruct the forms with the new revision data.
                 formset.initial = initial
                 formset.forms = [formset._construct_form(n) for n in xrange(len(initial))]
+                def total_form_count_hack(count):
+                    return lambda: count
+                formset.total_form_count = total_form_count_hack(len(initial))
                 # Add this hacked formset to the form.
                 formsets.append(formset)
         # Generate admin form helper.
