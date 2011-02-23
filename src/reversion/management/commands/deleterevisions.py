@@ -5,7 +5,7 @@ import sys
 
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.contrib.contenttypes.models import ContentType
 
 from reversion.models import Revision, Version
@@ -31,6 +31,11 @@ class Command(BaseCommand):
             default=0,
             type="int",
             help='Delete only revisions older then the specify number of days (combined to years and months if specified).'),
+        make_option("--keep-revision", "-k",
+            dest="keep",
+            default=0,
+            type="int",
+            help='Keep the specified number of revisions (most recents) for each object.'),
         make_option("--force", "-f",
             action="store_true",
             dest="force",
@@ -42,12 +47,12 @@ class Command(BaseCommand):
             default=True,
             help='Disable the confirmation before deleting revisions'),
         )
-    args = '[appname, appname.ModelName, ...] [--date=YYYY-MM-DD | --years=0 | --months=0 | days=0] [--force] [--no-confirmation]'
+    args = '[appname, appname.ModelName, ...] [--date=YYYY-MM-DD | --years=0 | --months=0 | days=0] [--keep=0] [--force] [--no-confirmation]'
     help = """Deletes revisions for a given app [and model] and/or before a specified delay or date.
     
 If an app or a model is specified, revisions that have an other app/model involved will not be deleted. Use --force to avoid that.
 
-You can specify only apps/models or only delay or date or use a combination of both.
+You can specify only apps/models or only delay or date or only a nuber of revision to keep or use all possible combinations of theses options.
 
 Examples:
 
@@ -62,12 +67,17 @@ Examples:
         deleterevisions myapp.mymodel --year=1 --month=2 --force
         
     That will delete every revisions of myapp.model that are older then 1 year and 2 months (14 months) even if there's revisions involving other apps and/or models.
+    
+        deleterevisions myapp.mymodel --keep=10
+        
+    That will delete only revisions of myapp.model if there's more then 10 revisions for an object, keeping the 10 most recent revisons.
 """
 
     def handle(self, *app_labels, **options):
         days = options["days"]
         months = options["months"]
         years = options["years"]
+        keep = options["keep"]
         force = options["force"]
         confirmation = options["confirmation"]
         # I don't know why verbosity is not already an int in Django?
@@ -129,7 +139,6 @@ Examples:
 
 
         # Build the queries
-        version_query = Version.objects.all()
         revision_query = Revision.objects.all()
 
         if date:
@@ -166,13 +175,34 @@ Examples:
                 models = ContentType.objects.exclude(subqueries)
                 revision_query = revision_query.exclude(version__content_type__in=models)
 
-        if date or app_labels:
-            version_query = version_query.filter(revision__in=revision_query)
+        if keep:
+            objs = Version.objects.all()
+
+            # If app is specified, to speed up the loop on theses objects,
+            # get only the specified subset.
+            if app_labels:
+                if force:
+                    objs = objs.filter(content_type__in=models)
+                else:
+                    objs = objs.exclude(content_type__in=models)
+
+            # Get all the objects that have more then the maximum revisions
+            objs = objs.values('object_id', 'content_type_id').annotate(total_ver=Count('object_id')).filter(total_ver__gt=keep)
+
+            revisions_not_keeped = set()
+
+            # Get all ids of the oldest revisions minus the max allowed
+            # revisions for all objects.
+            # Was not able to avoid this loop...
+            for obj in objs:
+                revisions_not_keeped.update(list(Version.objects.filter(content_type__id=obj['content_type_id'], object_id=obj['object_id']).order_by('revision__date_created').values_list('revision_id', flat=True)[keep:]))
+
+            revision_query = revision_query.filter(pk__in=revisions_not_keeped)
 
 
         # Prepare message if verbose
         if verbosity > 0:
-            if not date and not app_labels:
+            if not date and not app_labels and not keep:
                 print "All revisions will be deleted and all model's versions."
             else:
                 date_msg = ""
@@ -186,12 +216,18 @@ Examples:
                     models_msg = " having%s theses apps and models:\n- %s\n" % (force_msg, "\n- ".join(sorted(app_list.union(["%s.%s" % (app, model) for app, model in mod_list])),))
                     if date:
                         models_msg = " and" + models_msg
+                keep_msg = ""
+                if keep:
+                    keep_msg = " keeping the %s most recent revisions of each object" % keep
 
                 revision_count = revision_query.count()
                 if revision_count:
-                    print "%s revision(s)%s%swill be deleted.\n%s model's version(s) will be deleted." % (revision_count, date_msg, models_msg, version_query.count())
+                    version_query = Version.objects.all()
+                    if date or app_labels or keep:
+                        version_query = version_query.filter(revision__in=revision_query)
+                    print "%s revision(s)%s%swill be deleted%s.\n%s model's version(s) will be deleted." % (revision_count, date_msg, models_msg, keep_msg, version_query.count())
                 else:
-                    print "No revision%s%sto delete.\nDone" % (date_msg, models_msg)
+                    print "No revision%s%sto delete%s.\nDone" % (date_msg, models_msg, keep_msg)
                     sys.exit()
 
 
@@ -205,6 +241,5 @@ Examples:
 
         # Delete versions and revisions
         print "Deleting revisions..."
-        version_query.delete()
         revision_query.delete()
         print "Done"
