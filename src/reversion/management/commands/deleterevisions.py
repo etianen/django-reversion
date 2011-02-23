@@ -15,39 +15,39 @@ class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
         make_option("--date", "-t",
             dest="date",
-            help='Delete only revisions older then the specify date. The date should be a valid date given in the ISO format (YYYY-MM-DD)'),
+            help="Delete only revisions older then the specify date. The date should be a valid date given in the ISO format (YYYY-MM-DD)"),
         make_option("--years", "-y",
             dest="years",
             default=0,
             type="int",
-            help='Delete only revisions older then the specify number of years (combined to months and days if specified).'),
+            help="Delete only revisions older then the specify number of years (combined to months and days if specified)."),
         make_option("--months", "-m",
             dest="months",
             default=0,
             type="int",
-            help='Delete only revisions older then the specify number of months (combined to years and days if specified).'),
+            help="Delete only revisions older then the specify number of months (combined to years and days if specified)."),
         make_option("--days", "-d",
             dest="days",
             default=0,
             type="int",
-            help='Delete only revisions older then the specify number of days (combined to years and months if specified).'),
+            help="Delete only revisions older then the specify number of days (combined to years and months if specified)."),
         make_option("--keep-revision", "-k",
             dest="keep",
             default=0,
             type="int",
-            help='Keep the specified number of revisions (most recents) for each object.'),
+            help="Keep the specified number of revisions (most recents) for each object."),
         make_option("--force", "-f",
             action="store_true",
             dest="force",
             default=False,
-            help='Force the deletion of revisions even if an other app/model is involved'),
+            help="Force the deletion of revisions even if an other app/model is involved"),
         make_option("--no-confirmation", "-c",
             action="store_false",
             dest="confirmation",
             default=True,
-            help='Disable the confirmation before deleting revisions'),
+            help="Disable the confirmation before deleting revisions"),
         )
-    args = '[appname, appname.ModelName, ...] [--date=YYYY-MM-DD | --years=0 | --months=0 | days=0] [--keep=0] [--force] [--no-confirmation]'
+    args = "[appname, appname.ModelName, ...] [--date=YYYY-MM-DD | --years=0 | --months=0 | days=0] [--keep=0] [--force] [--no-confirmation]"
     help = """Deletes revisions for a given app [and model] and/or before a specified delay or date.
     
 If an app or a model is specified, revisions that have an other app/model involved will not be deleted. Use --force to avoid that.
@@ -187,7 +187,7 @@ Examples:
                     objs = objs.exclude(content_type__in=models)
 
             # Get all the objects that have more then the maximum revisions
-            objs = objs.values('object_id', 'content_type_id').annotate(total_ver=Count('object_id')).filter(total_ver__gt=keep)
+            objs = objs.values("object_id", "content_type_id").annotate(total_ver=Count("object_id")).filter(total_ver__gt=keep)
 
             revisions_not_keeped = set()
 
@@ -195,7 +195,7 @@ Examples:
             # revisions for all objects.
             # Was not able to avoid this loop...
             for obj in objs:
-                revisions_not_keeped.update(list(Version.objects.filter(content_type__id=obj['content_type_id'], object_id=obj['object_id']).order_by('revision__date_created').values_list('revision_id', flat=True)[keep:]))
+                revisions_not_keeped.update(list(Version.objects.filter(content_type__id=obj["content_type_id"], object_id=obj["object_id"]).order_by("-revision__date_created").values_list("revision_id", flat=True)[keep:]))
 
             revision_query = revision_query.filter(pk__in=revisions_not_keeped)
 
