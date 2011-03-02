@@ -5,11 +5,15 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.db import models
+from django.db.models import signals
 from django.db import IntegrityError
+from django.core.mail import EmailMultiAlternatives
+from django.conf import settings
 
 import reversion
 from reversion.errors import RevertError
 from reversion.managers import VersionManager
+
 
 
 class Revision(models.Model):
@@ -58,7 +62,6 @@ class Revision(models.Model):
         """Returns a unicode representation."""
         return u", ".join([unicode(version)
                            for version in self.version_set.all()])
-            
 
 class Version(models.Model):
     
@@ -134,3 +137,21 @@ class Version(models.Model):
         """Returns a unicode representation."""
         return self.object_repr
     
+def send_diff_to_email(sender, instance, **kwargs):
+    from reversion.helpers import generate_patch_html
+    versions = sender.objects.filter(content_type=instance.content_type, object_id=instance.object_id)
+    patch = ''
+    for field in instance.content_type.model_class()._meta.fields:
+        patch += "<p><strong>%s</strong>: %s</p>" % ( field.name, generate_patch_html(versions[0],versions[1],field.name) )
+    email = EmailMultiAlternatives(
+        subject = settings.EMAIL_SUBJECT_PREFIX + instance.revision.comment,
+        body = patch, 
+        from_email = settings.SERVER_EMAIL, 
+        to = [
+            i[1] for i in settings.MANAGERS
+        ],
+    )
+    email.attach_alternative(patch, "text/html")
+    email.send()
+
+signals.post_save.connect(send_diff_to_email, sender = Version)

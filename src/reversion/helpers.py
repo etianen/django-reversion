@@ -33,36 +33,31 @@ def patch_admin(model, admin_site=None):
 #
 # http://code.google.com/p/google-diff-match-patch/
 
+from reversion.diff_match_patch import diff_match_patch
+dmp = diff_match_patch()
 
-try:
-    from diff_match_patch import diff_match_patch
-except ImportError:
-    pass
-else:
-    dmp = diff_match_patch()
+def generate_diffs(old_version, new_version, field_name):
+    """Generates a diff array for the named field between the two versions."""
+    # Extract the text from the versions.
+    old_text = old_version.field_dict[field_name] or u""
+    new_text = new_version.field_dict[field_name] or u""
+    # Generate the patch.
+    diffs = dmp.diff_main(old_text, new_text)
+    return diffs
+    
+def generate_patch(old_version, new_version, field_name):
+    """
+    Generates a text patch of the named field between the two versions.
+    """
+    diffs = generate_diffs(old_version, new_version, field_name)
+    patch = dmp.patch_make(diffs)
+    return dmp.patch_toText(patch)
 
-    def generate_diffs(old_version, new_version, field_name):
-        """Generates a diff array for the named field between the two versions."""
-        # Extract the text from the versions.
-        old_text = old_version.field_dict[field_name] or u""
-        new_text = new_version.field_dict[field_name] or u""
-        # Generate the patch.
-        diffs = dmp.diff_main(old_text, new_text)
-        return diffs
-    
-    def generate_patch(old_version, new_version, field_name):
-        """
-        Generates a text patch of the named field between the two versions.
-        """
-        diffs = generate_diffs(old_version, new_version, field_name)
-        patch = dmp.patch_make(diffs)
-        return dmp.patch_toText(patch)
-    
-    def generate_patch_html(old_version, new_version, field_name):
-        """
-        Generates a pretty html version of the differences between the named 
-        field in two versions.
-        """
-        diffs = generate_diffs(old_version, new_version, field_name)
-        return dmp.diff_prettyHtml(diffs)
-    
+def generate_patch_html(old_version, new_version, field_name):
+    """
+    Generates a pretty html version of the differences between the named 
+    field in two versions.
+    """
+    diffs = generate_diffs(old_version, new_version, field_name)
+    return dmp.diff_prettyHtml(diffs)
+
