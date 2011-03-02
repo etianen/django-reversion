@@ -148,10 +148,11 @@ def send_diff_to_email(sender, instance, **kwargs):
         body = patch, 
         from_email = settings.SERVER_EMAIL, 
         to = [
-            i[1] for i in settings.MANAGERS
+            i[1] for i in settings.MODERATORS
         ],
     )
     email.attach_alternative(patch, "text/html")
     email.send()
 
-signals.post_save.connect(send_diff_to_email, sender = Version)
+if hasattr(settings,'MODERATORS'):
+    signals.post_save.connect(send_diff_to_email, sender = Version)
