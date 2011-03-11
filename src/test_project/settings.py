@@ -87,4 +87,5 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
     'reversion',
     'test_project.test_app',
+    'south',
 )
