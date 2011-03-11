@@ -350,4 +350,3 @@ class RevisionManager(object):
         
 # A thread-safe shared revision manager.
 revision = RevisionManager()
-
