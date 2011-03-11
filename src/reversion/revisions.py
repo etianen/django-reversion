@@ -14,7 +14,7 @@ from django.core import serializers
 from django.db import models
 from django.db.models import Q, Max
 from django.db.models.query import QuerySet
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_delete
 
 from reversion.errors import RevisionManagementError, RegistrationError
 from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE
@@ -104,6 +104,7 @@ class RevisionManager(object):
         self._registry[model_class] = registration_info
         # Connect to the post save signal of the model.
         post_save.connect(self.post_save_receiver, model_class)
+        pre_delete.connect(self.pre_delete_receiver, model_class)
     
     def get_registration_info(self, model_class):
         """Returns the registration information for the given model class."""
@@ -124,6 +125,7 @@ class RevisionManager(object):
             for field in registration_info.file_fields:
                 field.storage = field.storage.wrapped_storage
             post_save.disconnect(self.post_save_receiver, model_class)
+            pre_delete.disconnect(self.pre_delete_receiver, model_class)
     
     # Low-level revision management methods.
     
@@ -317,9 +319,12 @@ class RevisionManager(object):
     def post_save_receiver(self, instance, created, **kwargs):
         """Adds registered models to the current revision, if any."""
         if self.is_active():
-            self.add(instance, created and VERSION_ADD or VERSION_CHANGE)
+            if created:
+                self.add(instance, VERSION_ADD)
+            else:
+                self.add(instance, VERSION_CHANGE)
             
-    def pre_delete(self, instance):
+    def pre_delete_receiver(self, instance, **kwargs):
         """Adds registerted models to the current revision, if any."""
         if self.is_active():
             self.add(instance, VERSION_DELETE)
