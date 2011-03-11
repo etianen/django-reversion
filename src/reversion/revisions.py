@@ -11,6 +11,7 @@ from threading import local
 
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Q, Max
 from django.db.models.query import QuerySet
@@ -236,7 +237,7 @@ class RevisionManager(object):
                 # Get the referenced obj(s).
                 try:
                     related = getattr(obj, relationship, None)
-                except obj._meta.get_field_by_name(relationship)[0].model.DoesNotExist:
+                except ObjectDoesNotExist:
                     continue
                 if isinstance(related, models.Model):
                     _follow_relationships(related) 
