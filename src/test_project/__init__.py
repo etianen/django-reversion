@@ -1,1 +1,1 @@
-"""Demonstration application for Reversion."""
+"""Test project for Reversion."""
