@@ -149,10 +149,10 @@ class RevisionManager(object):
         if not self.is_active():
             raise RevisionManagementError, "There is no active revision for this thread."
     
-    def add(self, obj, type_flag):
+    def add(self, obj, type_flag=VERSION_CHANGE):
         """Adds an object to the current revision."""
         self.assert_active()
-        self._state.objects.setdefault(obj, type_flag)
+        self._state.objects[obj] = self.get_version_data(obj, type_flag)
         
     def set_user(self, user):
         """Sets the user for the current revision"""
@@ -219,9 +219,9 @@ class RevisionManager(object):
         result_dict = {}
         def _follow_relationships(obj):
             # Prevent recursion.
-            if obj in result_dict:
+            if obj in result_dict or obj.pk is None:  # This last condition is because during a delete action the parent field for a subclassing model will be set to None.
                 return
-            result_dict[obj] = VERSION_CHANGE
+            result_dict[obj] = self.get_version_data(obj, VERSION_CHANGE)
             # Follow relations.
             registration_info = self.get_registration_info(obj.__class__)
             for relationship in registration_info.follow:
@@ -256,6 +256,21 @@ class RevisionManager(object):
         # Place in the original reversions models explicitly added to the revision.
         result_dict.update(object_dict)
         return result_dict
+    
+    def get_version_data(self, obj, type_flag):
+        """Creates the version data to be saved to the version model."""
+        registration_info = self.get_registration_info(obj.__class__)
+        object_id = unicode(obj.pk)
+        content_type = ContentType.objects.get_for_model(obj)
+        serialized_data = serializers.serialize(registration_info.format, [obj], fields=registration_info.fields)
+        return {
+            "object_id": object_id,
+            "content_type": content_type,
+            "format": registration_info.format,
+            "serialized_data": serialized_data,
+            "object_repr": unicode(obj),
+            "type": type_flag
+        }
         
     def end(self):
         """Ends a revision."""
@@ -270,22 +285,11 @@ class RevisionManager(object):
                     revision_set = self.follow_relationships(models)
                     # Create all the versions without saving them
                     new_versions = []
-                    for obj, type_flag in revision_set.iteritems():
+                    for obj, version_data in revision_set.iteritems():
                         # Proxy models should not actually be saved to the revision set.
                         if obj._meta.proxy:
                             continue
-                        registration_info = self.get_registration_info(obj.__class__)
-                        object_id = unicode(obj.pk)
-                        content_type = ContentType.objects.get_for_model(obj)
-                        serialized_data = serializers.serialize(registration_info.format, [obj], fields=registration_info.fields)
-                        new_versions.append(Version(
-                            object_id = object_id,
-                            content_type = content_type,
-                            format = registration_info.format,
-                            serialized_data = serialized_data,
-                            object_repr = unicode(obj),
-                            type = type_flag
-                        ))
+                        new_versions.append(Version(**version_data))
                     # Check if there's some change in all the revision's objects.
                     save_revision = True
                     if self._state.ignore_duplicates:
@@ -303,8 +307,10 @@ class RevisionManager(object):
                     # Only save if we're always saving, or have changes.
                     if save_revision:
                         # Save a new revision.
-                        revision = Revision.objects.create(user=self._state.user,
-                                                           comment=self._state.comment)
+                        revision = Revision.objects.create(
+                            user = self._state.user,
+                            comment = self._state.comment,
+                        )
                         # Save version models.
                         for version in new_versions:
                             version.revision = revision

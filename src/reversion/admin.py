@@ -107,6 +107,14 @@ class VersionAdmin(admin.ModelAdmin):
         reversion.revision.comment = message
         reversion.revision.ignore_duplicates = self.ignore_duplicate_revisions
     
+    def log_deletion(self, request, object, object_repr):
+        """Sets the version meta information."""
+        """Sets the version meta information."""
+        super(VersionAdmin, self).log_deletion(request, object, object_repr)
+        reversion.revision.user = request.user
+        reversion.revision.comment = _(u"Deleted %(verbose_name)s." % {"verbose_name": self.model._meta.verbose_name})
+        reversion.revision.ignore_duplicates = self.ignore_duplicate_revisions
+    
     def recoverlist_view(self, request, extra_context=None):
         """Displays a deleted model to allow recovery."""
         model = self.model
@@ -336,6 +344,12 @@ class VersionAdmin(admin.ModelAdmin):
     def change_view(self, *args, **kwargs):
         """Modifies an existing model."""
         return super(VersionAdmin, self).change_view(*args, **kwargs)
+        
+    @transaction.commit_on_success
+    @reversion.revision.create_on_success
+    def delete_view(self, *args, **kwargs):
+        """Deletes and existing model."""
+        return super(VersionAdmin, self).delete_view(*args, **kwargs)
     
     @transaction.commit_on_success
     @reversion.revision.create_on_success
