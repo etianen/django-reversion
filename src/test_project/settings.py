@@ -119,7 +119,9 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     'django.contrib.admindocs',
-    'reversion'
+    'reversion',
+    'test_project.test_app',
+    'south',
 )
 
 # A sample logging configuration. The only tangible logging
