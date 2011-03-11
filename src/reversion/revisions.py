@@ -218,7 +218,7 @@ class RevisionManager(object):
             # Prevent recursion.
             if obj in result_dict:
                 return
-            result_dict.add(obj, VERSION_CHANGE)
+            result_dict[obj] = VERSION_CHANGE
             # Follow relations.
             registration_info = self.get_registration_info(obj.__class__)
             for relationship in registration_info.follow:
@@ -250,6 +250,8 @@ class RevisionManager(object):
                     parent_obj = parent_cls.objects.get(pk=obj.pk)
                     _follow_relationships(parent_obj)
         map(_follow_relationships, object_dict)
+        # Place in the original reversions models explicitly added to the revision.
+        result_dict.update(object_dict)
         return result_dict
         
     def end(self):
@@ -263,14 +265,9 @@ class RevisionManager(object):
                 if models and not self.is_invalid():
                     # Follow relationships.
                     revision_set = self.follow_relationships(models)
-                    # Because we might have uncomitted data in models, we need to 
-                    # replace the models in revision_set which might have come from the
-                    # db, with the actual models sent to reversion.
-                    diff = revision_set.difference(models)
-                    revision_set = models.union(diff)
                     # Create all the versions without saving them
                     new_versions = []
-                    for obj in revision_set:
+                    for obj, type_flag in revision_set.iteritems():
                         # Proxy models should not actually be saved to the revision set.
                         if obj._meta.proxy:
                             continue
@@ -278,11 +275,14 @@ class RevisionManager(object):
                         object_id = unicode(obj.pk)
                         content_type = ContentType.objects.get_for_model(obj)
                         serialized_data = serializers.serialize(registration_info.format, [obj], fields=registration_info.fields)
-                        new_versions.append(Version(object_id=object_id,
-                                                    content_type=content_type,
-                                                    format=registration_info.format,
-                                                    serialized_data=serialized_data,
-                                                    object_repr=unicode(obj)))
+                        new_versions.append(Version(
+                            object_id = object_id,
+                            content_type = content_type,
+                            format = registration_info.format,
+                            serialized_data = serialized_data,
+                            object_repr = unicode(obj),
+                            type = type_flag
+                        ))
                     # Check if there's some change in all the revision's objects.
                     save_revision = True
                     if self._state.ignore_duplicates:
