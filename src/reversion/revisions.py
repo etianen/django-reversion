@@ -4,7 +4,7 @@
 try:
     from functools import wraps
 except ImportError:
-    from django.utils.functional import wraps  # Python 2.3, 2.4 fallback.
+    from django.utils.functional import wraps  # Python 2.4 fallback.
 
 import operator
 from threading import local
@@ -17,7 +17,7 @@ from django.db.models.query import QuerySet
 from django.db.models.signals import post_save
 
 from reversion.errors import RevisionManagementError, RegistrationError
-from reversion.models import Revision, Version
+from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE
 from reversion.storage import VersionFileStorageWrapper
 
 
@@ -45,7 +45,7 @@ class RevisionState(local):
     
     def clear(self):
         """Puts the revision manager back into its default state."""
-        self.objects = set()
+        self.objects = {}
         self.user = None
         self.comment = ""
         self.depth = 0
@@ -146,10 +146,10 @@ class RevisionManager(object):
         if not self.is_active():
             raise RevisionManagementError, "There is no active revision for this thread."
     
-    def add(self, obj):
+    def add(self, obj, type_flag):
         """Adds an object to the current revision."""
         self.assert_active()
-        self._state.objects.add(obj)
+        self._state.objects.setdefault(obj, type_flag)
         
     def set_user(self, user):
         """Sets the user for the current revision"""
@@ -207,18 +207,18 @@ class RevisionManager(object):
         """Checks whether this revision is invalid."""
         return self._state.is_invalid
         
-    def follow_relationships(self, object_set):
+    def follow_relationships(self, object_dict):
         """
         Follows all the registered relationships in the given set of models to
         yield a set containing the original models plus all their related
         models.
         """
-        result_set = set()
+        result_dict = {}
         def _follow_relationships(obj):
             # Prevent recursion.
-            if obj in result_set:
+            if obj in result_dict:
                 return
-            result_set.add(obj)
+            result_dict.add(obj, VERSION_CHANGE)
             # Follow relations.
             registration_info = self.get_registration_info(obj.__class__)
             for relationship in registration_info.follow:
@@ -249,8 +249,8 @@ class RevisionManager(object):
                 if self.is_registered(parent_cls):
                     parent_obj = parent_cls.objects.get(pk=obj.pk)
                     _follow_relationships(parent_obj)
-        map(_follow_relationships, object_set)
-        return result_set
+        map(_follow_relationships, object_dict)
+        return result_dict
         
     def end(self):
         """Ends a revision."""
@@ -314,10 +314,15 @@ class RevisionManager(object):
         
     # Signal receivers.
         
-    def post_save_receiver(self, instance, sender, **kwargs):
+    def post_save_receiver(self, instance, created, **kwargs):
         """Adds registered models to the current revision, if any."""
         if self.is_active():
-            self.add(instance)
+            self.add(instance, created and VERSION_ADD or VERSION_CHANGE)
+            
+    def pre_delete(self, instance):
+        """Adds registerted models to the current revision, if any."""
+        if self.is_active():
+            self.add(instance, VERSION_DELETE)
        
     # High-level revision management methods.
         

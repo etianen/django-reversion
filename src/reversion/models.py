@@ -58,6 +58,19 @@ class Revision(models.Model):
         """Returns a unicode representation."""
         return u", ".join([unicode(version)
                            for version in self.version_set.all()])
+
+
+# Version types.
+
+VERSION_ADD = 0
+VERSION_CHANGE = 1
+VERSION_DELETE = 2
+
+VERSION_TYPE_CHOICES = (
+    (VERSION_ADD, "Addition"),
+    (VERSION_CHANGE, "Change"),
+    (VERSION_DELETE, "Deletion"),
+)
             
 
 class Version(models.Model):
@@ -90,6 +103,8 @@ class Version(models.Model):
     
     object_version = property(get_object_version,
                               doc="The stored version of the model.")
+    
+    type = models.PositiveSmallIntegerField(choices=VERSION_TYPE_CHOICES, db_index=True)
        
     def get_field_dict(self):
         """
@@ -133,4 +148,3 @@ class Version(models.Model):
     def __unicode__(self):
         """Returns a unicode representation."""
         return self.object_repr
-    
