@@ -112,12 +112,14 @@ class VersionAdmin(admin.ModelAdmin):
         model = self.model
         opts = model._meta
         deleted = Version.objects.get_deleted(self.model, select_related=("revision",))
-        context = {"opts": opts,
-                   "app_label": opts.app_label,
-                   "module_name": capfirst(opts.verbose_name),
-                   "title": _("Recover deleted %(name)s") % {"name": force_unicode(opts.verbose_name_plural)},
-                   "deleted": deleted,
-                   "changelist_url": reverse("%s:%s_%s_changelist" % (self.admin_site.name, opts.app_label, opts.module_name)),}
+        context = {
+            "opts": opts,
+            "app_label": opts.app_label,
+            "module_name": capfirst(opts.verbose_name),
+            "title": _("Recover deleted %(name)s") % {"name": force_unicode(opts.verbose_name_plural)},
+            "deleted": deleted,
+            "changelist_url": reverse("%s:%s_%s_changelist" % (self.admin_site.name, opts.app_label, opts.module_name)),
+        }
         extra_context = extra_context or {}
         context.update(extra_context)
         return render_to_response(self.recover_list_template, context, template.RequestContext(request))
