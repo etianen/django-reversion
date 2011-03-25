@@ -2,7 +2,7 @@ from distutils.core import setup
 
 
 setup(name="django-reversion",
-      version="1.3.3",
+      version="1.4-alpha",
       description="An extension to the Django web framework that provides comprehensive version control facilities",
       author="Dave Hall",
       author_email="dave@etianen.com",
