@@ -45,14 +45,17 @@ class Revision(models.Model):
         # Optionally delete objects no longer in the current revision.
         if delete:
             # Get a set of all objects in this revision.
-            old_revision_set = [ContentType.objects.get_for_id(version.content_type_id).get_object_for_this_type(pk=version.object_id)
-                                    for version in versions]
+            this_revision_set = set(
+                ContentType.objects.get_for_id(version.content_type_id).get_object_for_this_type(pk=version.object_id)
+                                    for version in self.version_set.all())
             # Calculate the set of all objects that are in the revision now.
-            current_revision_set = reversion.revision.follow_relationships(old_revision_set)
+            current_revision_set = set(reversion.revision.follow_relationships(
+                dict((obj, reversion.revision.get_version_data(obj, VERSION_NULL))
+                     for obj in this_revision_set)).keys())
             # Delete objects that are no longer in the current revision.
-            for current_object in current_revision_set:
-                if not current_object in old_revision_set:
-                    current_object.delete()
+            for obj in current_revision_set - this_revision_set:
+                # What should we do about delete cascades? Warn the user.
+                obj.delete()
             
     def __unicode__(self):
         """Returns a unicode representation."""
@@ -62,6 +65,7 @@ class Revision(models.Model):
 
 # Version types.
 
+VERSION_NULL = -1
 VERSION_ADD = 0
 VERSION_CHANGE = 1
 VERSION_DELETE = 2
