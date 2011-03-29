@@ -11,7 +11,7 @@ class RevisionMiddleware(object):
     def process_request(self, request):
         """Starts a new revision."""
         reversion.revision.start()
-        if request.user.is_authenticated():
+        if hasattr(request, 'user') and request.user.is_authenticated():
             reversion.revision.user = request.user
         
     def process_response(self, request, response):
