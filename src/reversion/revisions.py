@@ -19,19 +19,17 @@ from django.db.models.signals import post_save, pre_delete
 
 from reversion.errors import RevisionManagementError, RegistrationError
 from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE
-from reversion.storage import VersionFileStorageWrapper
 
 
 class RegistrationInfo(object):
     
     """Stored registration information about a model."""
     
-    __slots__ = "fields", "file_fields", "follow", "format",
+    __slots__ = "fields", "follow", "format",
     
-    def __init__(self, fields, file_fields, follow, format):
+    def __init__(self, fields, follow, format):
         """Initializes the registration info."""
         self.fields = fields
-        self.file_fields = file_fields
         self.follow = follow
         self.format = format
 
@@ -92,16 +90,9 @@ class RevisionManager(object):
         if fields is None:
             fields = [field.name for field in local_fields]
         fields = tuple(fields)
-        # Calculate serializable model file fields.
-        file_fields = []
-        for field in local_fields:
-            if isinstance(field, models.FileField) and field.name in fields:
-                field.storage = VersionFileStorageWrapper(field.storage)
-                file_fields.append(field)
-        file_fields = tuple(file_fields)
         # Register the generated registration information.
         follow = tuple(follow)
-        registration_info = RegistrationInfo(fields, file_fields, follow, format)
+        registration_info = RegistrationInfo(fields, follow, format)
         self._registry[model_class] = registration_info
         # Connect to the post save signal of the model.
         post_save.connect(self.post_save_receiver, model_class)
@@ -123,8 +114,6 @@ class RevisionManager(object):
         except KeyError:
             raise RegistrationError, "%r has not been registered with Reversion." % model_class
         else:
-            for field in registration_info.file_fields:
-                field.storage = field.storage.wrapped_storage
             post_save.disconnect(self.post_save_receiver, model_class)
             pre_delete.disconnect(self.pre_delete_receiver, model_class)
     

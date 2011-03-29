@@ -45,7 +45,6 @@ class ReversionRegistrationTest(TestCase):
         """Tests that the registration info for a model is obtainable."""
         registration_info = reversion.revision.get_registration_info(TestModel)
         self.assertEqual(registration_info.fields, ("id", "name",))
-        self.assertEqual(registration_info.file_fields, ())
         self.assertEqual(registration_info.follow, ())
         self.assertEqual(registration_info.format, DEFAULT_SERIALIZATION_FORMAT)
         
