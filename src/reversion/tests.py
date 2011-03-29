@@ -340,11 +340,12 @@ class ReversionRelatedTest(TestCase):
             test.save()
             related.name = "related-a-1.1"
             related.save()
-        # Attempt revert.
+        # Attempt revert with delete.
         Version.objects.get_for_object(test)[0].revision.revert(delete=True)
         self.assertEqual(TestModel.objects.get().name, "test1.0")
-        self.assertEqual(TestRelatedModel.objects.get(id=related.id).name, "related1.0")
+        self.assertEqual(TestRelatedModel.objects.get(id=related.id).name, "related-a-1.0")
         self.assertEqual(TestRelatedModel.objects.filter(id=related2.id).count(), 0)
+        self.assertEqual(TestRelatedModel.objects.count(), 1)
         
     def testCanRecoverRevision(self):
         """Tests that an entire revision can be recovered."""

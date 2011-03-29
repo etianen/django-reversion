@@ -44,14 +44,14 @@ class Revision(models.Model):
         do_revert(self.version_set.all())
         # Optionally delete objects no longer in the current revision.
         if delete:
-            # Get a set of all objects in this revision.
-            old_revision_set = [ContentType.objects.get_for_id(version.content_type_id).get_object_for_this_type(pk=version.object_id)
-                                    for version in versions]
+            # Get a dict of all objects in this revision.
+            old_revision_dict = dict((ContentType.objects.get_for_id(version.content_type_id).get_object_for_this_type(pk=version.object_id), version.type)
+                for version in self.version_set.all())
             # Calculate the set of all objects that are in the revision now.
-            current_revision_set = reversion.revision.follow_relationships(old_revision_set)
+            current_revision_dict = reversion.revision.follow_relationships(old_revision_dict)
             # Delete objects that are no longer in the current revision.
-            for current_object in current_revision_set:
-                if not current_object in old_revision_set:
+            for current_object in current_revision_dict:
+                if not current_object in old_revision_dict:
                     current_object.delete()
             
     def __unicode__(self):
