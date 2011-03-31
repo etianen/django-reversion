@@ -13,7 +13,7 @@ from django.db import models, transaction
 from django.test import TestCase
 
 import reversion
-from reversion.models import Version, Revision
+from reversion.models import Version, Revision, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE
 from reversion.revisions import RegistrationError, DEFAULT_SERIALIZATION_FORMAT
 
 
@@ -45,7 +45,6 @@ class ReversionRegistrationTest(TestCase):
         """Tests that the registration info for a model is obtainable."""
         registration_info = reversion.revision.get_registration_info(TestModel)
         self.assertEqual(registration_info.fields, ("id", "name",))
-        self.assertEqual(registration_info.file_fields, ())
         self.assertEqual(registration_info.follow, ())
         self.assertEqual(registration_info.format, DEFAULT_SERIALIZATION_FORMAT)
         
@@ -188,6 +187,15 @@ class ReversionQueryTest(TestCase):
         Version.objects.get_deleted(TestModel)[0].revert()
         # Ensure recovered.
         self.assertEqual(TestModel.objects.get().name, "test1.2")
+    
+    def testCanGenerateStatistics(self):
+        """Tests that the stats are accurate for Version models."""
+        self.assertEqual(Version.objects.filter(type=VERSION_ADD).count(), 1)
+        self.assertEqual(Version.objects.filter(type=VERSION_CHANGE).count(), 2)
+        self.assertEqual(Version.objects.filter(type=VERSION_DELETE).count(), 0)
+        with reversion.revision:
+            self.test.delete()
+        self.assertEqual(Version.objects.filter(type=VERSION_DELETE).count(), 1)
         
     def tearDown(self):
         """Tears down the tests."""
@@ -319,6 +327,24 @@ class ReversionRelatedTest(TestCase):
         Version.objects.get_for_object(test)[0].revision.revert()
         self.assertEqual(TestModel.objects.get().name, "test1.0")
         self.assertEqual(TestRelatedModel.objects.get().name, "related1.0")
+    
+    def testCanRevertDeleteRevistion(self):
+        """Tests that an entire revision can be reverted with the delete functionality enabled."""
+        with reversion.revision:
+            test = TestModel.objects.create(name="test1.0")
+            related = TestRelatedModel.objects.create(name="related-a-1.0", relation=test)
+        with reversion.revision:
+            related2 = TestRelatedModel.objects.create(name="related-b-1.0", relation=test)
+            test.name = "test1.1"
+            test.save()
+            related.name = "related-a-1.1"
+            related.save()
+        # Attempt revert with delete.
+        Version.objects.get_for_object(test)[0].revision.revert(delete=True)
+        self.assertEqual(TestModel.objects.get().name, "test1.0")
+        self.assertEqual(TestRelatedModel.objects.get(id=related.id).name, "related-a-1.0")
+        self.assertEqual(TestRelatedModel.objects.filter(id=related2.id).count(), 0)
+        self.assertEqual(TestRelatedModel.objects.count(), 1)
         
     def testCanRecoverRevision(self):
         """Tests that an entire revision can be recovered."""

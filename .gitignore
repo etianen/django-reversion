@@ -1,5 +1,5 @@
 .DS_Store
-Thumbs.db
+*.db
 .project
 .pydevproject
 .settings

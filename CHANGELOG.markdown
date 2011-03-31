@@ -2,6 +2,20 @@ django-reversion changelog
 ==========================
 
 
+1.3.3 - 05/03/2011
+------------------
+
+* Improved resilience of revert() to database integrity errors.
+* Added in Czech translation.
+* Added ability to only save revisions if there is no change.
+* Fixed long-running bug with file fields in inline related admin models.
+* Easier debugging for createinitialrevisions command.
+* Improved compatibility with Oracle database backend.
+* Fixed error in MySQL tests.
+* Greatly improved performance of get_deleted() Version manager method.
+* Fixed an edge-case UnicodeError.
+
+
 1.3.2 - 22/10/2010
 ------------------
 

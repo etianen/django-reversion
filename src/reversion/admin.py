@@ -69,7 +69,7 @@ class VersionAdmin(admin.ModelAdmin):
                     fk_name = inline.fk_name
                     if not fk_name:
                         for field in inline_model._meta.fields:
-                            if isinstance(field, models.ForeignKey) and issubclass(self.model, field.rel.to):
+                            if isinstance(field, (models.ForeignKey, models.OneToOneField)) and issubclass(self.model, field.rel.to):
                                 fk_name = field.name
                     accessor = inline_model._meta.get_field(fk_name).rel.related_name or inline_model.__name__.lower() + "_set"
                     inline_fields.append(accessor)
@@ -107,17 +107,27 @@ class VersionAdmin(admin.ModelAdmin):
         reversion.revision.comment = message
         reversion.revision.ignore_duplicates = self.ignore_duplicate_revisions
     
+    def log_deletion(self, request, object, object_repr):
+        """Sets the version meta information."""
+        """Sets the version meta information."""
+        super(VersionAdmin, self).log_deletion(request, object, object_repr)
+        reversion.revision.user = request.user
+        reversion.revision.comment = _(u"Deleted %(verbose_name)s." % {"verbose_name": self.model._meta.verbose_name})
+        reversion.revision.ignore_duplicates = self.ignore_duplicate_revisions
+    
     def recoverlist_view(self, request, extra_context=None):
         """Displays a deleted model to allow recovery."""
         model = self.model
         opts = model._meta
         deleted = Version.objects.get_deleted(self.model, select_related=("revision",))
-        context = {"opts": opts,
-                   "app_label": opts.app_label,
-                   "module_name": capfirst(opts.verbose_name),
-                   "title": _("Recover deleted %(name)s") % {"name": force_unicode(opts.verbose_name_plural)},
-                   "deleted": deleted,
-                   "changelist_url": reverse("%s:%s_%s_changelist" % (self.admin_site.name, opts.app_label, opts.module_name)),}
+        context = {
+            "opts": opts,
+            "app_label": opts.app_label,
+            "module_name": capfirst(opts.verbose_name),
+            "title": _("Recover deleted %(name)s") % {"name": force_unicode(opts.verbose_name_plural)},
+            "deleted": deleted,
+            "changelist_url": reverse("%s:%s_%s_changelist" % (self.admin_site.name, opts.app_label, opts.module_name)),
+        }
         extra_context = extra_context or {}
         context.update(extra_context)
         return render_to_response(self.recover_list_template, context, template.RequestContext(request))
@@ -334,6 +344,12 @@ class VersionAdmin(admin.ModelAdmin):
     def change_view(self, *args, **kwargs):
         """Modifies an existing model."""
         return super(VersionAdmin, self).change_view(*args, **kwargs)
+        
+    @transaction.commit_on_success
+    @reversion.revision.create_on_success
+    def delete_view(self, *args, **kwargs):
+        """Deletes and existing model."""
+        return super(VersionAdmin, self).delete_view(*args, **kwargs)
     
     @transaction.commit_on_success
     @reversion.revision.create_on_success
