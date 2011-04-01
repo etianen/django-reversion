@@ -29,15 +29,15 @@ class VersionAdmin(admin.ModelAdmin):
     
     """Abstract admin class for handling version controlled models."""
 
-    revision_form_template = "reversion/revision_form.html"
-    
     object_history_template = "reversion/object_history.html"
     
     change_list_template = "reversion/change_list.html"
     
-    recover_list_template = "reversion/recover_list.html"
-    
-    recover_form_template = "reversion/recover_form.html"
+    revision_form_template = None
+
+    recover_list_template = None
+
+    recover_form_template = None
     
     # The serialization format to use when registering models with reversion.
     reversion_format = DEFAULT_SERIALIZATION_FORMAT
@@ -80,6 +80,15 @@ class VersionAdmin(admin.ModelAdmin):
                         if isinstance(field, GenericRelation) and field.object_id_field_name == ct_fk_field and field.content_type_field_name == ct_field:
                             inline_fields.append(field.name)
             self._autoregister(self.model, inline_fields)
+
+    def __get_template_list(self, template_name):
+        opts = self.model._meta
+        return [
+            'reversion/%s/%s/%s' % (
+                opts.app_label, opts.object_name.lower(), template_name),
+            'reversion/%s/%s' % (opts.app_label, template_name),
+            'reversion/%s' % template_name,
+            ]
     
     def get_urls(self):
         """Returns the additional urls used by the Reversion admin."""
@@ -130,7 +139,8 @@ class VersionAdmin(admin.ModelAdmin):
         }
         extra_context = extra_context or {}
         context.update(extra_context)
-        return render_to_response(self.recover_list_template, context, template.RequestContext(request))
+        return render_to_response(self.recover_list_template or self.__get_template_list("recover_list.html"),
+            context, template.RequestContext(request))
         
     def get_revision_form_data(self, request, obj, version):
         """
@@ -306,11 +316,15 @@ class VersionAdmin(admin.ModelAdmin):
         # Render the form.
         if revert:
             form_template = self.revision_form_template
+            backup_form_template = "revision_form.html"
         elif recover:
             form_template = self.recover_form_template
+            backup_form_template = "recover_form.html"
         else:
             assert False
-        return render_to_response(form_template, context, template.RequestContext(request))
+        return render_to_response(
+            form_template or self.__get_template_list(backup_form_template),
+            context, template.RequestContext(request))
     
     @transaction.commit_on_success
     @reversion.revision.create_on_success
