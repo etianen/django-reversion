@@ -298,6 +298,8 @@ class VersionAdmin(admin.ModelAdmin):
                         "app_label": opts.app_label,
                         "add": False,
                         "change": True,
+                        "revert": revert,
+                        "recover": recover,
                         "has_add_permission": self.has_add_permission(request),
                         "has_change_permission": self.has_change_permission(request, obj),
                         "has_delete_permission": self.has_delete_permission(request, obj),
