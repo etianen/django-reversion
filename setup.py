@@ -1,6 +1,17 @@
 from distutils.core import setup
 
 
+# Load in babel support, if available.
+try:
+    from babel.messages import frontend as babel
+    cmdclass = {"compile_catalog": babel.compile_catalog,
+                "extract_messages": babel.extract_messages,
+                "init_catalog": babel.init_catalog,
+                "update_catalog": babel.update_catalog,}
+except ImportError:
+    cmdclass = {}
+
+
 setup(name="django-reversion",
       version="1.4-alpha",
       description="An extension to the Django web framework that provides comprehensive version control facilities",
@@ -12,6 +23,7 @@ setup(name="django-reversion",
       packages=["reversion", "reversion.management", "reversion.templatetags", "reversion.management.commands", "reversion.migrations"],
       package_dir={"": "src"},
       package_data = {"reversion": ["locale/*/LC_MESSAGES/django.*", "templates/reversion/*.html"]},
+      cmdclass = cmdclass,
       classifiers=["Development Status :: 5 - Production/Stable",
                    "Environment :: Web Environment",
                    "Intended Audience :: Developers",
