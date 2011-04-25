@@ -1,7 +1,5 @@
+import datetime, operator, sys
 from optparse import make_option
-import datetime
-import operator
-import sys
 
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
@@ -16,26 +14,16 @@ class Command(BaseCommand):
         make_option("--date", "-t",
             dest="date",
             help="Delete only revisions older then the specify date. The date should be a valid date given in the ISO format (YYYY-MM-DD)"),
-        make_option("--years", "-y",
-            dest="years",
-            default=0,
-            type="int",
-            help="Delete only revisions older then the specify number of years (combined to months and days if specified)."),
-        make_option("--months", "-m",
-            dest="months",
-            default=0,
-            type="int",
-            help="Delete only revisions older then the specify number of months (combined to years and days if specified)."),
         make_option("--days", "-d",
             dest="days",
             default=0,
             type="int",
-            help="Delete only revisions older then the specify number of days (combined to years and months if specified)."),
+            help="Delete only revisions older then the specify number of days."),
         make_option("--keep-revision", "-k",
             dest="keep",
             default=0,
             type="int",
-            help="Keep the specified number of revisions (most recents) for each object."),
+            help="Keep the specified number of revisions (most recent) for each object."),
         make_option("--force", "-f",
             action="store_true",
             dest="force",
@@ -47,12 +35,12 @@ class Command(BaseCommand):
             default=True,
             help="Disable the confirmation before deleting revisions"),
         )
-    args = "[appname, appname.ModelName, ...] [--date=YYYY-MM-DD | --years=0 | --months=0 | days=0] [--keep=0] [--force] [--no-confirmation]"
+    args = "[appname, appname.ModelName, ...] [--date=YYYY-MM-DD | days=0] [--keep=0] [--force] [--no-confirmation]"
     help = """Deletes revisions for a given app [and model] and/or before a specified delay or date.
     
 If an app or a model is specified, revisions that have an other app/model involved will not be deleted. Use --force to avoid that.
 
-You can specify only apps/models or only delay or date or only a nuber of revision to keep or use all possible combinations of theses options.
+You can specify only apps/models or only delay or date or only a nuber of revision to keep or use all possible combinations of these options.
 
 Examples:
 
@@ -62,11 +50,11 @@ Examples:
     
         deleterevisions --date=2010-11-01
     
-    That will delete every revisions created before November 1, 2010 for all apps.
+    That will delete every revision created before November 1, 2010 for all apps.
     
-        deleterevisions myapp.mymodel --year=1 --month=2 --force
+        deleterevisions myapp.mymodel --days=365 --force
         
-    That will delete every revisions of myapp.model that are older then 1 year and 2 months (14 months) even if there's revisions involving other apps and/or models.
+    That will delete every revision of myapp.model that are older then 365 days, even if there's revisions involving other apps and/or models.
     
         deleterevisions myapp.mymodel --keep=10
         
@@ -75,8 +63,6 @@ Examples:
 
     def handle(self, *app_labels, **options):
         days = options["days"]
-        months = options["months"]
-        years = options["years"]
         keep = options["keep"]
         force = options["force"]
         confirmation = options["confirmation"]
@@ -90,53 +76,17 @@ Examples:
 
         # Validating arguments
         if options["date"]:
-            if days or months or years:
-                raise CommandError("You cannot use --date and --years|months|days at the same time. They are exclusive.")
+            if days:
+                raise CommandError("You cannot use --date and --days at the same time. They are exclusive.")
 
             try:
                 date = datetime.datetime.strptime(options["date"], "%Y-%m-%d").date()
             except ValueError:
                 raise CommandError("The date you give (%s) is not a valid date. The date should be in the ISO format (YYYY-MM-DD)." % options["date"])
 
-        # Find the date from the years, months and days arguments.        
-        elif days or months or years:
-            today = datetime.datetime.today().date()
-            # Remove years from current year
-            # If months are more then 12 substract them also to current year
-            year = today.year - years - (months / 12)
-            # Get only remaining months (12 or less) and substract them to current month
-            month = today.month - (months % 12)
-            # If month is negative, add 12 months and remove a year
-            if month < 1:
-                month += 12
-                year -= 1
-            # Find the first existing date with the calculated year and month
-            # (for case like when month is February and day is > 28 or 29.
-            for days_removed in (0, 1, 2, 3):
-                try:
-                    date = datetime.date(year, month, today.day - days_removed)
-                except ValueError:
-                    continue
-                else:
-                    break
-
-            if not date:
-                raise CommandError("Error. It's not possible to calcualte a proper date for the years, months and days you give.")
-
-            date = date - datetime.timedelta(days)
-
-
-            # An other solution is to convert years and months to days using
-            # the average number of days in a month and in a year.
-#             days += int(round(((months / 12.0) + years) * 365.25))
-#             date = datetime.datetime.today().date() - datetime.timedelta(days)
-
-
-        # Check if date is too old to prevent some limit bug (and help people
-        # putting useful dates)
-        if date and date.year < 2005:
-            raise CommandError("The year you give (%s) is too old. Django was not exisiting at this time!" % date.year)
-
+        # Find the date from the days arguments.        
+        elif days:
+            date = datetime.datetime.now() - datetime.timedelta(days)
 
         # Build the queries
         revision_query = Revision.objects.all()
@@ -203,7 +153,7 @@ Examples:
         # Prepare message if verbose
         if verbosity > 0:
             if not date and not app_labels and not keep:
-                print "All revisions will be deleted and all model's versions."
+                print "All revisions will be deleted for all models."
             else:
                 date_msg = ""
                 if date:
@@ -225,7 +175,7 @@ Examples:
                     version_query = Version.objects.all()
                     if date or app_labels or keep:
                         version_query = version_query.filter(revision__in=revision_query)
-                    print "%s revision(s)%s%swill be deleted%s.\n%s model's version(s) will be deleted." % (revision_count, date_msg, models_msg, keep_msg, version_query.count())
+                    print "%s revision(s)%s%swill be deleted%s.\n%s model version(s) will be deleted." % (revision_count, date_msg, models_msg, keep_msg, version_query.count())
                 else:
                     print "No revision%s%sto delete%s.\nDone" % (date_msg, models_msg, keep_msg)
                     sys.exit()
@@ -235,7 +185,7 @@ Examples:
         if confirmation:
             choice = raw_input("Are you sure you want to delete theses revisions? [y|N] ")
             if choice.lower() != "y":
-                print "Aborting revisions deletion."
+                print "Aborting revision deletion."
                 sys.exit()
 
 
