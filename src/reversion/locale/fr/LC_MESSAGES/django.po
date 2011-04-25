@@ -22,7 +22,7 @@ msgstr ""
 #: templates/reversion/recover_list.html:10
 #, python-format
 msgid "Recover deleted %(name)s"
-msgstr "Récupérer %(name)s supprimé"
+msgstr "Récupérer %(name)s supprimé(e)"
 
 #: admin.py:165
 #, python-format
@@ -85,8 +85,8 @@ msgstr "j F Y H:i:s"
 msgid ""
 "This object doesn't have a change history. It probably wasn't added via this "
 "admin site."
-msgstr "Cet version ne possède pas d'historique de modifications. Il n'a probablement"
-"pas été ajouté à partir de ce site d'admnistration."
+msgstr "Cet objet ne possède pas d'historique de modifications. Il n'a probablement"
+"pas été ajouté à partir de ce site d'administration."
 
 #: templates/reversion/recover_form.html:7
 #: templates/reversion/recover_list.html:7
