@@ -1,6 +1,14 @@
 django-reversion changelog
 ==========================
 
+1.4 - 27/04/2011
+----------------
+
+* Added in a version flag for add / change / delete annotations.
+* Added experimental deleterevisions management command.
+* Added a --comment option to createinitialrevisions management command.
+* Django 1.3 compatibility.
+
 
 1.3.3 - 05/03/2011
 ------------------
