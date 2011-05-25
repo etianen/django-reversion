@@ -24,7 +24,7 @@ class TestModel(models.Model):
     name = models.CharField(max_length=100)
     
     class Meta:
-        app_label = "reversion"
+        app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
         
         
 class ReversionRegistrationTest(TestCase):
@@ -274,7 +274,7 @@ class TestRelatedModel(models.Model):
     relation = models.ForeignKey(TestModel)
     
     class Meta:
-        app_label = "reversion"
+        app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
         
         
 class ReversionRelatedTest(TestCase):
@@ -412,7 +412,7 @@ class TestManyToManyModel(models.Model):
     relations = models.ManyToManyField(TestModel)
     
     class Meta:
-        app_label = "reversion"
+        app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
         
         
 class ReversionManyToManyTest(TestCase):
