@@ -251,7 +251,14 @@ class RevisionManager(object):
         registration_info = self.get_registration_info(obj.__class__)
         object_id = unicode(obj.pk)
         content_type = ContentType.objects.get_for_model(obj)
-        serialized_data = serializers.serialize(registration_info.format, [obj], fields=registration_info.fields)
+        field_names = []
+        for field_name in registration_info.fields:
+            field = obj._meta.get_field(field_name)
+            if field.rel:
+                field_names.append(field.name)
+            else:
+                field_names.append(field.attname)
+        serialized_data = serializers.serialize(registration_info.format, [obj], fields=field_names)
         return {
             "object_id": object_id,
             "content_type": content_type,
