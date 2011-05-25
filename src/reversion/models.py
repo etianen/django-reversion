@@ -51,6 +51,9 @@ class Revision(models.Model):
             current_revision_dict = reversion.revision.follow_relationships(old_revision_dict)
             # Delete objects that are no longer in the current revision.
             for current_object in current_revision_dict:
+                if current_revision_dict[current_object] == VERSION_DELETE:
+                    current_object.delete()
+                    continue
                 if not current_object in old_revision_dict:
                     current_object.delete()
             
