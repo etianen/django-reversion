@@ -7,6 +7,7 @@ from django.core.management.base import CommandError
 from django.db import models
 from django.utils.importlib import import_module
 from django.utils.datastructures import SortedDict
+from django.utils.encoding import smart_unicode
 
 from reversion import revision
 from reversion.models import Version
@@ -19,7 +20,7 @@ class Command(BaseCommand):
             dest="comment",
             default=u"Initial version.",
             help='Specify the comment to add to the revisions. Defaults to "Initial version.".'),
-        )    
+        )
     args = '[appname, appname.ModelName, ...] [--comment="Initial version."]'
     help = "Creates initial revisions for a given app [and model]."
 
@@ -97,7 +98,7 @@ class Command(BaseCommand):
                     created_count += 1
             # Print out a message, if feeling verbose.
             if created_count > 0 and verbosity >= 2:
-                print u"Created %s initial revisions for model %s." % (created_count, model_class._meta.verbose_name)
+                print u"Created %s initial revisions for model %s." % (created_count, smart_unicode(model_class._meta.verbose_name))
         else:
             if verbosity >= 2:
-                print u"Model %s is not registered."  % (model_class._meta.verbose_name)
+                print u"Model %s is not registered."  % (smart_unicode(model_class._meta.verbose_name))
