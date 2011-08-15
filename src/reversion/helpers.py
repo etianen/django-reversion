@@ -41,28 +41,36 @@ except ImportError:
 else:
     dmp = diff_match_patch()
 
-    def generate_diffs(old_version, new_version, field_name):
+    def generate_diffs(old_version, new_version, field_name, style):
         """Generates a diff array for the named field between the two versions."""
         # Extract the text from the versions.
         old_text = old_version.field_dict[field_name] or u""
         new_text = new_version.field_dict[field_name] or u""
         # Generate the patch.
         diffs = dmp.diff_main(old_text, new_text)
+        if style == "semantic":
+            dmp.diff_cleanupSemantic(diffs)
+        elif style == "efficiency":
+            dmp.diff_cleanupEfficiency(diffs)
         return diffs
     
-    def generate_patch(old_version, new_version, field_name):
+    def generate_patch(old_version, new_version, field_name, style=None):
         """
         Generates a text patch of the named field between the two versions.
+        
+        @param style: can be None, "semantic" or "efficiency" to cleanup the diff
         """
-        diffs = generate_diffs(old_version, new_version, field_name)
+        diffs = generate_diffs(old_version, new_version, field_name, style)
         patch = dmp.patch_make(diffs)
         return dmp.patch_toText(patch)
     
-    def generate_patch_html(old_version, new_version, field_name):
+    def generate_patch_html(old_version, new_version, field_name, style=None):
         """
         Generates a pretty html version of the differences between the named 
         field in two versions.
+        
+        @param style: can be None, "semantic" or "efficiency" to cleanup the diff
         """
-        diffs = generate_diffs(old_version, new_version, field_name)
+        diffs = generate_diffs(old_version, new_version, field_name, style)
         return dmp.diff_prettyHtml(diffs)
     
