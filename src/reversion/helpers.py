@@ -50,7 +50,7 @@ else:
         diffs = dmp.diff_main(old_text, new_text)
         if style == "semantic":
             dmp.diff_cleanupSemantic(diffs)
-        elif style == "efficiency":
+        if style == "efficiency":
             dmp.diff_cleanupEfficiency(diffs)
         return diffs
     
