@@ -47,7 +47,7 @@ else:
         old_text = old_version.field_dict[field_name] or u""
         new_text = new_version.field_dict[field_name] or u""
         # Generate the patch.
-        diffs = dmp.diff_main(old_text, new_text)
+        diffs = dmp.diff_main(str(old_text), str(new_text))
         if style == "semantic":
             dmp.diff_cleanupSemantic(diffs)
         if style == "efficiency":
