@@ -58,7 +58,8 @@ else:
         """
         Generates a text patch of the named field between the two versions.
         
-        @param style: can be None, "semantic" or "efficiency" to cleanup the diff
+        The style parameter can be None, "semantic" or "efficiency" to clean up the diff
+        for greater human readibility.
         """
         diffs = generate_diffs(old_version, new_version, field_name, style)
         patch = dmp.patch_make(diffs)
@@ -69,7 +70,8 @@ else:
         Generates a pretty html version of the differences between the named 
         field in two versions.
         
-        @param style: can be None, "semantic" or "efficiency" to cleanup the diff
+        The style parameter can be None, "semantic" or "efficiency" to clean up the diff
+        for greater human readibility.
         """
         diffs = generate_diffs(old_version, new_version, field_name, style)
         return dmp.diff_prettyHtml(diffs)
