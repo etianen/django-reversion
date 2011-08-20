@@ -12,6 +12,7 @@ from threading import local
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.signals import request_finished
 from django.db import models
 from django.db.models import Q, Max
 from django.db.models.query import QuerySet
@@ -66,6 +67,8 @@ class RevisionManager(object):
         """Initializes the revision manager."""
         self._registry = {}
         self._state = RevisionState()
+        # Connect to the request finished signal.
+        request_finished.connect(self.request_finished_receiver)
 
     # Registration methods.
 
@@ -331,6 +334,21 @@ class RevisionManager(object):
         """Adds registerted models to the current revision, if any."""
         if self.is_active():
             self.add(instance, VERSION_DELETE)
+            
+    def request_finished_receiver(self, **kwargs):
+        """
+        Called at the end of a request, ensuring that any open revisions
+        are closed. Not closing all active revisions can cause memory leaks
+        and weird behaviour.
+        
+        If you use the low level API correctly, this shouldn't ever be the case.
+        If it does happen, a RevisionManagementError will be raised.
+        """
+        if self.is_active():
+            raise RevisionManagementError(
+                "Request finished with an open revision. All calls to revision.start() "
+                "should be balanced by a call to revision.end()."
+            )
        
     # High-level revision management methods.
         
