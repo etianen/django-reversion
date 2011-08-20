@@ -25,6 +25,30 @@ class TestModel(models.Model):
     
     class Meta:
         app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
+
+
+str_pk_gen = 0;
+
+def get_str_pk():
+    global str_pk_gen
+    str_pk_gen += 1;
+    return str(str_pk_gen)
+        
+        
+class TestModelStrPrimary(models.Model):
+    
+    """A test model for reversion."""
+    
+    id = models.CharField(
+        primary_key = True,
+        max_length = 100,
+        default = get_str_pk
+    )
+    
+    name = models.CharField(max_length=100)
+    
+    class Meta:
+        app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
         
         
 class ReversionRegistrationTest(TestCase):
@@ -66,37 +90,39 @@ class ReversionCreateTest(TestCase):
     
     """Tests the django-reversion revision creation functionality."""
     
+    model = TestModel
+    
     def setUp(self):
         """Sets up the TestModel."""
         # Clear the database.
         Version.objects.all().delete()
-        TestModel.objects.all().delete()
+        self.model.objects.all().delete()
         # Register the model.
-        reversion.register(TestModel)
+        reversion.register(self.model)
         
     def testCanSaveWithNoRevision(self):
         """Tests that without an active revision, no model is saved."""
-        test = TestModel.objects.create(name="test1.0")
+        test = self.model.objects.create(name="test1.0")
         self.assertEqual(Version.objects.get_for_object(test).count(), 0)
         
     def testRevisionContextManager(self):
         """Tests that the revision context manager works."""
         with reversion.revision:
-            test = TestModel.objects.create(name="test1.0")
+            test = self.model.objects.create(name="test1.0")
         self.assertEqual(Version.objects.get_for_object(test).count(), 1)
         
     def testRevisionDecorator(self):
         """Tests that the revision function decorator works."""
         @reversion.revision.create_on_success
         def create_revision():
-            return TestModel.objects.create(name="test1.0")
+            return self.model.objects.create(name="test1.0")
         self.assertEqual(Version.objects.get_for_object(create_revision()).count(), 1)
         
     def testRevisionAbandonedOnError(self):
         """Tests that the revision is abandoned on error."""
         # Create the first revision.
         with reversion.revision:
-            test = TestModel.objects.create(name="test1.0")
+            test = self.model.objects.create(name="test1.0")
         # Create the second revision.
         try:
             with reversion.revision:
@@ -111,26 +137,33 @@ class ReversionCreateTest(TestCase):
     def tearDown(self):
         """Tears down the tests."""
         # Unregister the model.
-        reversion.unregister(TestModel)
+        reversion.unregister(self.model)
         # Clear the database.
         Version.objects.all().delete()
-        TestModel.objects.all().delete()
+        self.model.objects.all().delete()
+        
+        
+class ReversionCreateTestStrPrimary(ReversionCreateTest):
+
+    model = TestModelStrPrimary
         
         
 class ReversionQueryTest(TestCase):
     
     """Tests that django-reversion can retrieve revisions using the api."""
     
+    model = TestModel
+    
     def setUp(self):
         """Sets up the TestModel."""
         # Clear the database.
         Version.objects.all().delete()
-        TestModel.objects.all().delete()
+        self.model.objects.all().delete()
         # Register the model.
-        reversion.register(TestModel)
+        reversion.register(self.model)
         # Create some initial revisions.
         with reversion.revision:
-            self.test = TestModel.objects.create(name="test1.0")
+            self.test = self.model.objects.create(name="test1.0")
         with reversion.revision:
             self.test.name = "test1.1"
             self.test.save()
@@ -166,15 +199,15 @@ class ReversionQueryTest(TestCase):
         oldest = Version.objects.get_for_object(self.test)[0]
         self.assertEqual(oldest.field_dict["name"], "test1.0")
         oldest.revert()
-        self.assertEqual(TestModel.objects.get().name, "test1.0")
+        self.assertEqual(self.model.objects.get().name, "test1.0")
         
     def testCanGetDeleted(self):
         """Tests that deleted objects can be retrieved."""
-        self.assertEqual(len(Version.objects.get_deleted(TestModel)), 0)
+        self.assertEqual(len(Version.objects.get_deleted(self.model)), 0)
         # Delete the test model.
         self.test.delete()
         # Ensure that there is now a deleted model.
-        deleted = Version.objects.get_deleted(TestModel)
+        deleted = Version.objects.get_deleted(self.model)
         self.assertEqual(deleted[0].field_dict["name"], "test1.2")
         self.assertEqual(len(deleted), 1)
         
@@ -182,11 +215,11 @@ class ReversionQueryTest(TestCase):
         """Tests that a deleted object can be recovered."""
         self.test.delete()
         # Ensure deleted.
-        self.assertEqual(TestModel.objects.count(), 0)
+        self.assertEqual(self.model.objects.count(), 0)
         # Recover.
-        Version.objects.get_deleted(TestModel)[0].revert()
+        Version.objects.get_deleted(self.model)[0].revert()
         # Ensure recovered.
-        self.assertEqual(TestModel.objects.get().name, "test1.2")
+        self.assertEqual(self.model.objects.get().name, "test1.2")
     
     def testCanGenerateStatistics(self):
         """Tests that the stats are accurate for Version models."""
@@ -200,12 +233,17 @@ class ReversionQueryTest(TestCase):
     def tearDown(self):
         """Tears down the tests."""
         # Unregister the model.
-        reversion.unregister(TestModel)
+        reversion.unregister(self.model)
         # Clear the database.
         Version.objects.all().delete()
-        TestModel.objects.all().delete()
+        self.model.objects.all().delete()
         # Clear references.
         del self.test
+
+
+class ReversionQueryTestStrPrimary(ReversionQueryTest):
+
+    model = TestModelStrPrimary
         
         
 class ReversionCustomRegistrationTest(TestCase):
