@@ -7,6 +7,7 @@ from django.conf.urls.defaults import patterns, url
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.admin import helpers
+from django.contrib.admin.util import unquote
 from django.contrib.contenttypes.generic import GenericInlineModelAdmin, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.urlresolvers import reverse
@@ -337,6 +338,7 @@ class VersionAdmin(admin.ModelAdmin):
     @reversion.revision.create_on_success
     def revision_view(self, request, object_id, version_id, extra_context=None):
         """Displays the contents of the given revision."""
+        object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
         obj = get_object_or_404(self.model, pk=object_id)
         version = get_object_or_404(Version, pk=version_id, object_id=unicode(obj.pk))
         # Generate the context.
@@ -374,6 +376,7 @@ class VersionAdmin(admin.ModelAdmin):
     
     def history_view(self, request, object_id, extra_context=None):
         """Renders the history view."""
+        object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
         opts = self.model._meta
         action_list = [{"revision": version.revision,
                         "url": reverse("%s:%s_%s_revision" % (self.admin_site.name, opts.app_label, opts.module_name), args=(version.object_id, version.id))}
