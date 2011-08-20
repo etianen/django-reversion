@@ -27,6 +27,7 @@ class Command(BaseCommand):
 
     def handle(self, *app_labels, **options):
         comment = options["comment"]
+        verbosity = int(options.get("verbosity", 1))
         app_list = SortedDict()
         # if no apps given, use all installed.
         if len(app_labels) == 0:
@@ -68,7 +69,7 @@ class Command(BaseCommand):
         # Create revisions.
         for app, model_classes in app_list.items():
             for model_class in model_classes:
-                self.create_initial_revisions(app, model_class, comment)
+                self.create_initial_revisions(app, model_class, comment, verbosity)
 
     @revision.create_on_success
     def version_save(self, obj, comment):

@@ -11,6 +11,7 @@ import datetime
 
 from django.db import models, transaction
 from django.test import TestCase
+from django.core.management import call_command
 
 import reversion
 from reversion.models import Version, Revision, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE
@@ -567,6 +568,43 @@ class ReversionManyToManyTest(TestCase):
         TestManyToManyModel.objects.all().delete()
 
 
+class ReversionCreateInitialRevisionsTest(TestCase):
+
+    """Tests that the createinitialrevisions command works."""
+    
+    model = TestModel
+    
+    def setUp(self):
+        """Sets up the TestModel."""
+        # Clear the database.
+        Version.objects.all().delete()
+        self.model.objects.all().delete()
+        # Register the model.
+        reversion.register(self.model)
+        # Create some initial revisions.
+        self.test = self.model.objects.create(name="test1.0")
+    
+    def testCreateInitialRevisions(self):
+        self.assertEqual(Version.objects.get_for_object(self.test).count(), 0)
+        call_command("createinitialrevisions", verbosity=0)
+        self.assertEqual(Version.objects.get_for_object(self.test).count(), 1)
+        
+    def tearDown(self):
+        """Tears down the tests."""
+        # Unregister the model.
+        reversion.unregister(self.model)
+        # Clear the database.
+        Version.objects.all().delete()
+        self.model.objects.all().delete()
+        # Clear references.
+        del self.test
+        
+        
+class ReversionCreateInitialRevisionsStrPrimaryTest(ReversionCreateInitialRevisionsTest):
+
+    model = TestModelStrPrimary
+
+
 # Test the patch helpers, if available.
 
 try:
@@ -616,5 +654,3 @@ else:
             # Clear references.
             del self.test_0
             del self.test_1
-            
-            
