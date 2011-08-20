@@ -1,12 +1,10 @@
 """Database models used by Reversion."""
 
-
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.db import models, IntegrityError
 from django.db.models import Count
-
 
 import reversion
 from reversion.errors import RevertError
@@ -74,6 +72,13 @@ VERSION_TYPE_CHOICES = (
     (VERSION_CHANGE, "Change"),
     (VERSION_DELETE, "Deletion"),
 )
+
+def has_int_pk(model):
+    """Tests whether the given model has an integer primary key."""
+    return (
+        isinstance(Version._meta.pk, (models.IntegerField, models.AutoField)) and
+        not isinstance(Version._meta.pk, models.BigIntegerField)
+    )
 
 
 class VersionManager(models.Manager):
@@ -170,6 +175,13 @@ class Version(models.Model):
                                  help_text="The revision that contains this version.")
     
     object_id = models.TextField(help_text="Primary key of the model under version control.")
+    
+    object_id_int = models.IntegerField(
+        blank = True,
+        null = True,
+        db_index = True,
+        help_text = "An indexed, integer version of the stored model's primary key, used for faster lookups.",
+    )
     
     content_type = models.ForeignKey(ContentType,
                                      help_text="Content type of the model under version control.")

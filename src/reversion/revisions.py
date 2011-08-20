@@ -19,7 +19,7 @@ from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
 
 from reversion.errors import RevisionManagementError, RegistrationError
-from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE
+from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE, has_int_pk
 
 
 class RegistrationInfo(object):
@@ -262,8 +262,13 @@ class RevisionManager(object):
             else:
                 field_names.append(field.attname)
         serialized_data = serializers.serialize(registration_info.format, [obj], fields=field_names)
+        if has_int_pk(obj.__class__):
+            object_id_int = int(obj.pk)
+        else:
+            object_id_int = None
         return {
             "object_id": object_id,
+            "object_id_int": object_id_int,
             "content_type": content_type,
             "format": registration_info.format,
             "serialized_data": serialized_data,
