@@ -2,6 +2,7 @@
 
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes import generic
 from django.core import serializers
 from django.db import models, IntegrityError
 from django.db.models import Count
@@ -198,6 +199,9 @@ class Version(models.Model):
     
     content_type = models.ForeignKey(ContentType,
                                      help_text="Content type of the model under version control.")
+    
+    # A link to the current instance, not the version stored in this Version!
+    object = generic.GenericForeignKey()
     
     format = models.CharField(max_length=255,
                               help_text="The serialization format used by this model.")
