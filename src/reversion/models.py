@@ -90,9 +90,11 @@ class VersionManager(models.Manager):
         content_type = ContentType.objects.get_for_model(model)
         versions = self.filter(content_type=content_type)
         if has_int_pk(model):
+            # We can do this as a fast, indexed lookup.
             object_id_int = int(object_id)
             versions = versions.filter(object_id_int=object_id_int)
         else:
+            # We can't do this using an index. Never mind.
             object_id = unicode(object_id)
             versions = versions.filter(object_id=object_id)
         versions = versions.order_by("pk")
@@ -159,11 +161,19 @@ class VersionManager(models.Manager):
         `select_related` argument.
         """
         content_type = ContentType.objects.get_for_model(model_class)
-        # HACK: This join can't be done in the database, due to incompatibilities
-        # between unicode object_ids and integer pks on strict backends like postgres.
-        live_pks = frozenset(unicode(pk) for pk in model_class._default_manager.all().values_list("pk", flat=True).iterator())
-        versioned_pks = frozenset(self.filter(content_type=content_type).values_list("object_id", flat=True).iterator())
-        deleted = list(self.get_deleted_object(model_class, object_id, select_related) for object_id in (versioned_pks - live_pks))
+        live_pk_queryset = model_class._default_manager.all().values_list("pk", flat=True)
+        versioned_objs = self.filter(content_type=content_type)
+        if has_int_pk(model_class):
+            # We can do this as a fast, in-database join.
+            deleted_pks = versioned_objs.exclude(object_id_int__in=live_pk_queryset).values_list("object_id_int", flat=True).distinct()
+        else:
+            # HACK: This join can't be done in the database, due to incompatibilities
+            # between unicode object_ids and integer pks on strict backends like postgres.
+            live_pks = frozenset(unicode(pk) for pk in live_pk_queryset.iterator())
+            versioned_pks = frozenset(versioned_objs.values_list("object_id", flat=True).iterator())
+            deleted_pks = (versioned_pks - live_pks)
+        # Fetch all the deleted versions.
+        deleted = list(self.get_deleted_object(model_class, object_id, select_related) for object_id in deleted_pks)
         deleted.sort(lambda a, b: cmp(a.revision.date_created, b.revision.date_created))
         return deleted
             
