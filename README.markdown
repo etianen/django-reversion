@@ -40,6 +40,23 @@ You can keep up to date with the latest announcements by joining the
 [django-reversion discussion group]: http://groups.google.com/group/django-reversion
     "django-reversion Google Group"
 
+
+Upgrading
+---------
+
+If you're upgrading your existing installation of django-reversion, please check
+the [Schema Migrations][] wiki page for information on any database changes, and
+how to upgrade. If you're using South to manage database migrations in your project,
+then upgrading is as easy as running a few django management commands.
+
+It's always worth checking the [CHANGELOG][] before upgrading too, just in case you
+get caught off-guard my a minor upgrade to the library.
+
+[Schema Migrations]: https://github.com/etianen/django-reversion/wiki/Schema-migrations
+    "Schema Migrations for django-reversion"
+[CHANGELOG]: https://github.com/etianen/django-reversion/blob/master/CHANGELOG.markdown
+    "CHANGELOG for django-reversion"
+
     
 More information
 ----------------
