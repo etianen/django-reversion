@@ -140,9 +140,7 @@ class VersionManager(models.Manager):
         if not "revision" in select_related:
             select_related = tuple(select_related) + ("revision",)
         # Fetch the version.
-        content_type = ContentType.objects.get_for_model(model_class)
-        object_id = unicode(object_id)
-        versions = self.filter(content_type=content_type, object_id=object_id)
+        versions = self.get_for_object_reference(model_class, object_id)
         versions = versions.order_by("-pk")
         if select_related:
             versions = versions.select_related(*select_related)
