@@ -88,8 +88,13 @@ class VersionManager(models.Manager):
     def get_for_object_reference(self, model, object_id):
         """Returns all versions for the given object reference."""
         content_type = ContentType.objects.get_for_model(model)
-        object_id = unicode(object_id)
-        versions = self.filter(content_type=content_type, object_id=object_id)
+        versions = self.filter(content_type=content_type)
+        if has_int_pk(model):
+            object_id_int = int(object_id)
+            versions = versions.filter(object_id_int=object_id_int)
+        else:
+            object_id = unicode(object_id)
+            versions = versions.filter(object_id=object_id)
         versions = versions.order_by("pk")
         return versions
     
