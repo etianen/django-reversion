@@ -1,6 +1,15 @@
 django-reversion changelog
 ==========================
 
+
+MASTER
+------
+
+* Added in significant speedups for models with integer primary keys.
+* Added in cleanup improvements to patch generation helpers.
+* Minor bug fixes.
+
+
 1.4 - 27/04/2011
 ----------------
 
