@@ -45,7 +45,7 @@ Upgrading
 ---------
 
 If you're upgrading your existing installation of django-reversion, please check
-the [Schema Migrations][] wiki page for information on any database changes, and
+the [Schema Migrations][] wiki page for information on any database changes and
 how to upgrade. If you're using South to manage database migrations in your project,
 then upgrading is as easy as running a few django management commands.
 
