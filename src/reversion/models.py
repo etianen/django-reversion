@@ -5,7 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.core import serializers
 from django.db import models, IntegrityError
-from django.db.models import Count
+from django.db.models import Count, Max
 
 import reversion
 from reversion.errors import RevertError
@@ -166,16 +166,21 @@ class VersionManager(models.Manager):
         versioned_objs = self.filter(content_type=content_type)
         if has_int_pk(model_class):
             # We can do this as a fast, in-database join.
-            deleted_pks = versioned_objs.exclude(object_id_int__in=live_pk_queryset).values_list("object_id_int", flat=True).distinct()
+            deleted_version_pks = versioned_objs.exclude(
+                object_id_int__in = live_pk_queryset
+            ).values_list("object_id_int").annotate(
+                latest_pk = Max("pk")
+            ).values_list("latest_pk", flat=True)
+            deleted = list(self.filter(pk__in=deleted_version_pks).order_by("pk"))
         else:
             # HACK: This join can't be done in the database, due to incompatibilities
             # between unicode object_ids and integer pks on strict backends like postgres.
             live_pks = frozenset(unicode(pk) for pk in live_pk_queryset.iterator())
             versioned_pks = frozenset(versioned_objs.values_list("object_id", flat=True).iterator())
             deleted_pks = (versioned_pks - live_pks)
-        # Fetch all the deleted versions.
-        deleted = [self.get_deleted_object(model_class, object_id, select_related) for object_id in deleted_pks]
-        deleted.sort(lambda a, b: cmp(a.pk, b.pk))
+            # Fetch all the deleted versions.
+            deleted = [self.get_deleted_object(model_class, object_id, select_related) for object_id in deleted_pks]
+            deleted.sort(lambda a, b: cmp(a.pk, b.pk))
         return deleted
             
 
