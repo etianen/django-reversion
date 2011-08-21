@@ -175,7 +175,7 @@ class VersionManager(models.Manager):
             deleted_pks = (versioned_pks - live_pks)
         # Fetch all the deleted versions.
         deleted = [self.get_deleted_object(model_class, object_id, select_related) for object_id in deleted_pks]
-        deleted.sort(lambda a, b: cmp(a.revision.date_created, b.revision.date_created))
+        deleted.sort(lambda a, b: cmp(a.pk, b.pk))
         return deleted
             
 
