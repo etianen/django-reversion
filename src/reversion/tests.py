@@ -211,6 +211,15 @@ class ReversionQueryTest(TestCase):
         deleted = Version.objects.get_deleted(self.model)
         self.assertEqual(deleted[0].field_dict["name"], "test1.2")
         self.assertEqual(len(deleted), 1)
+        # Create and delete another model.
+        with reversion.revision:
+            test2 = self.model.objects.create(name="test2.0")
+        test2.delete()
+        # Ensure that there are now two deleted models.
+        deleted = Version.objects.get_deleted(self.model)
+        self.assertEqual(deleted[0].field_dict["name"], "test1.2")
+        self.assertEqual(deleted[1].field_dict["name"], "test2.0")
+        self.assertEqual(len(deleted), 2)
         
     def testCanRecoverDeleted(self):
         """Tests that a deleted object can be recovered."""
