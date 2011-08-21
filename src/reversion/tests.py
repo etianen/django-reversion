@@ -96,7 +96,7 @@ class ReversionCreateTest(TestCase):
     def setUp(self):
         """Sets up the TestModel."""
         # Clear the database.
-        Version.objects.all().delete()
+        Revision.objects.all().delete()
         self.model.objects.all().delete()
         # Register the model.
         reversion.register(self.model)
@@ -140,7 +140,7 @@ class ReversionCreateTest(TestCase):
         # Unregister the model.
         reversion.unregister(self.model)
         # Clear the database.
-        Version.objects.all().delete()
+        Revision.objects.all().delete()
         self.model.objects.all().delete()
         
         
@@ -158,7 +158,7 @@ class ReversionQueryTest(TestCase):
     def setUp(self):
         """Sets up the TestModel."""
         # Clear the database.
-        Version.objects.all().delete()
+        Revision.objects.all().delete()
         self.model.objects.all().delete()
         # Register the model.
         reversion.register(self.model)
@@ -205,16 +205,12 @@ class ReversionQueryTest(TestCase):
     def testCanGetDeleted(self):
         """Tests that deleted objects can be retrieved."""
         self.assertEqual(len(Version.objects.get_deleted(self.model)), 0)
-        # Delete the test model.
-        self.test.delete()
-        # Ensure that there is now a deleted model.
-        deleted = Version.objects.get_deleted(self.model)
-        self.assertEqual(deleted[0].field_dict["name"], "test1.2")
-        self.assertEqual(len(deleted), 1)
         # Create and delete another model.
         with reversion.revision:
             test2 = self.model.objects.create(name="test2.0")
         test2.delete()
+        # Delete the test model.
+        self.test.delete()
         # Ensure that there are now two deleted models.
         deleted = Version.objects.get_deleted(self.model)
         self.assertEqual(deleted[0].field_dict["name"], "test1.2")
@@ -245,7 +241,7 @@ class ReversionQueryTest(TestCase):
         # Unregister the model.
         reversion.unregister(self.model)
         # Clear the database.
-        Version.objects.all().delete()
+        Revision.objects.all().delete()
         self.model.objects.all().delete()
         # Clear references.
         del self.test
@@ -263,7 +259,7 @@ class ReversionCustomRegistrationTest(TestCase):
     def setUp(self):
         """Sets up the TestModel."""
         # Clear the database.
-        Version.objects.all().delete()
+        Revision.objects.all().delete()
         TestModel.objects.all().delete()
         # Register the model.
         reversion.register(TestModel, fields=("id",), format="xml")
@@ -307,7 +303,7 @@ class ReversionCustomRegistrationTest(TestCase):
         # Unregister the model.
         reversion.unregister(TestModel)
         # Clear the database.
-        Version.objects.all().delete()
+        Revision.objects.all().delete()
         TestModel.objects.all().delete()
         # Clear references.
         del self.test
@@ -332,7 +328,7 @@ class ReversionRelatedTest(TestCase):
     def setUp(self):
         """Sets up the TestModel."""
         # Clear the database.
-        Version.objects.all().delete()
+        Revision.objects.all().delete()
         TestModel.objects.all().delete()
         TestRelatedModel.objects.all().delete()
         # Register the models.
@@ -446,7 +442,7 @@ class ReversionRelatedTest(TestCase):
         reversion.unregister(TestModel)
         reversion.unregister(TestRelatedModel)
         # Clear the database.
-        Version.objects.all().delete()
+        Revision.objects.all().delete()
         TestModel.objects.all().delete()
         TestRelatedModel.objects.all().delete()
 
@@ -470,7 +466,7 @@ class ReversionManyToManyTest(TestCase):
     def setUp(self):
         """Sets up the TestModel."""
         # Clear the database.
-        Version.objects.all().delete()
+        Revision.objects.all().delete()
         TestModel.objects.all().delete()
         TestManyToManyModel.objects.all().delete()
         # Register the models.
@@ -572,7 +568,7 @@ class ReversionManyToManyTest(TestCase):
         reversion.unregister(TestModel)
         reversion.unregister(TestManyToManyModel)
         # Clear the database.
-        Version.objects.all().delete()
+        Revision.objects.all().delete()
         TestModel.objects.all().delete()
         TestManyToManyModel.objects.all().delete()
 
@@ -586,7 +582,7 @@ class ReversionCreateInitialRevisionsTest(TestCase):
     def setUp(self):
         """Sets up the TestModel."""
         # Clear the database.
-        Version.objects.all().delete()
+        Revision.objects.all().delete()
         self.model.objects.all().delete()
         # Register the model.
         reversion.register(self.model)
@@ -603,7 +599,7 @@ class ReversionCreateInitialRevisionsTest(TestCase):
         # Unregister the model.
         reversion.unregister(self.model)
         # Clear the database.
-        Version.objects.all().delete()
+        Revision.objects.all().delete()
         self.model.objects.all().delete()
         # Clear references.
         del self.test
@@ -629,7 +625,7 @@ else:
         def setUp(self):
             """Sets up a versioned site model to test."""
             # Clear the database.
-            Version.objects.all().delete()
+            Revision.objects.all().delete()
             TestModel.objects.all().delete()
             # Register the TestModel.
             reversion.register(TestModel)
@@ -658,7 +654,7 @@ else:
             # Unregister the model.
             reversion.unregister(TestModel)
             # Clear the database.
-            Version.objects.all().delete()
+            Revision.objects.all().delete()
             TestModel.objects.all().delete()
             # Clear references.
             del self.test_0
