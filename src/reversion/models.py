@@ -77,8 +77,8 @@ VERSION_TYPE_CHOICES = (
 def has_int_pk(model):
     """Tests whether the given model has an integer primary key."""
     return (
-        isinstance(Version._meta.pk, (models.IntegerField, models.AutoField)) and
-        not isinstance(Version._meta.pk, models.BigIntegerField)
+        isinstance(model._meta.pk, (models.IntegerField, models.AutoField)) and
+        not isinstance(model._meta.pk, models.BigIntegerField)
     )
 
 
