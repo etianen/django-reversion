@@ -99,10 +99,11 @@ class Command(BaseCommand):
             else:
                 # HACK: This join can't be done in the database, due to incompatibilities
                 # between unicode object_ids and integer pks on strict backends like postgres.
+                versioned_pk_set = frozenset(versioned_pk_queryset.values_list("object_id", flat=True).iterator())
                 live_objs = (
                     obj
                     for obj in live_objs.iterator()
-                    if not Version.objects.get_for_object(obj).exists()
+                    if not unicode(obj.id) in versioned_pk_set
                 )
             # Save all the versions.
             for obj in live_objs:
