@@ -8,6 +8,7 @@ except ImportError:
 
 import operator
 from threading import local
+from weakref import WeakValueDictionary
 
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
@@ -264,8 +265,22 @@ class RevisionManager(object):
     
     """Manages the configuration and creation of revisions."""
     
-    def __init__(self, revision_context_manager=revision_context_manager):
+    _created_managers = WeakValueDictionary()
+    
+    @classmethod
+    def get_created_managers(cls):
+        """Returns all created revision managers."""
+        return list(cls._created_managers.items())
+    
+    def __init__(self, manager_slug, revision_context_manager=revision_context_manager):
         """Initializes the revision manager."""
+         # Check the slug is unique for this revision manager.
+        if manager_slug in RevisionManager._created_managers:
+            raise RevisionManagementError("A revision manager has already been created with the slug %r" % manager_slug)
+        # Store a reference to this manager.
+        self.__class__._created_managers[manager_slug] = self
+        # Store config params.
+        self._manager_slug = manager_slug
         self._registered_models = {}
         self._revision_context_manager = revision_context_manager
         # Proxies to common context methods.
@@ -373,7 +388,7 @@ class RevisionManager(object):
         # Adapt the objects to a dict.
         if isinstance(objects, (list, tuple)):
             objects = dict(
-                (obj, self.get_adapter(obj.__class__).get_version_data(VERSION_CHANGE))
+                (obj, self.get_adapter(obj.__class__).get_version_data(obj, VERSION_CHANGE))
                 for obj in objects
             )
         # Create the revision.
@@ -405,6 +420,7 @@ class RevisionManager(object):
             if save_revision:
                 # Save a new revision.
                 revision = Revision.objects.create(
+                    manager_slug = self._manager_slug,
                     user = user,
                     comment = comment,
                 )
@@ -464,4 +480,4 @@ class RevisionManager(object):
 
         
 # A shared revision manager.
-revision = RevisionManager()
+revision = RevisionManager("default")

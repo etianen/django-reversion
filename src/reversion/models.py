@@ -14,9 +14,15 @@ class Revision(models.Model):
     
     """A group of related object versions."""
     
+    manager_slug = models.CharField(
+        max_length = 200,
+        db_index = True,
+        default = "default",
+    )
+    
     date_created = models.DateTimeField(auto_now_add=True,
                                         help_text="The date and time this revision was created.")
-
+    
     user = models.ForeignKey(User,
                              blank=True,
                              null=True,

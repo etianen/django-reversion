@@ -71,13 +71,6 @@ class Command(BaseCommand):
             for model_class in model_classes:
                 self.create_initial_revisions(app, model_class, comment, verbosity)
 
-    @revision.create_on_success
-    def version_save(self, obj, comment):
-        """Saves the initial version of an object."""
-        obj.save()
-        revision.user = None
-        revision.comment = comment
-
     def create_initial_revisions(self, app, model_class, comment, verbosity=2, **kwargs):
         """Creates the set of initial revisions for the given model."""
         # Import the relevant admin module.
@@ -108,7 +101,7 @@ class Command(BaseCommand):
             # Save all the versions.
             for obj in live_objs:
                 try:
-                    self.version_save(obj, comment)
+                    revision.save_revision((obj,), comment=comment)
                 except:
                     print "ERROR: Could not save initial version for %s %s." % (model_class.__name__, obj.pk)
                     raise
