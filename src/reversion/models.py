@@ -7,7 +7,6 @@ from django.core import serializers
 from django.db import models, IntegrityError
 from django.db.models import Count, Max
 
-import reversion
 from reversion.errors import RevertError
 
 
@@ -47,7 +46,8 @@ class Revision(models.Model):
             old_revision_dict = dict((ContentType.objects.get_for_id(version.content_type_id).get_object_for_this_type(pk=version.object_id), version.type)
                 for version in self.version_set.all())
             # Calculate the set of all objects that are in the revision now.
-            current_revision_dict = reversion.revision.follow_relationships(old_revision_dict)
+            from reversion import revision  # Hack: Prevents circular imports for now.
+            current_revision_dict = revision.follow_relationships(old_revision_dict)
             # Delete objects that are no longer in the current revision.
             for current_object in current_revision_dict:
                 if current_revision_dict[current_object] == VERSION_DELETE:

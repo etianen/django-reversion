@@ -1,6 +1,5 @@
 """Admin extensions for Reversion."""
 
-
 from django import template
 from django.db import models, transaction
 from django.conf.urls.defaults import patterns, url
@@ -21,9 +20,8 @@ from django.utils.text import capfirst
 from django.utils.translation import ugettext as _
 from django.utils.encoding import force_unicode
 
-import reversion
 from reversion.models import Version
-from reversion.revisions import DEFAULT_SERIALIZATION_FORMAT
+from reversion.revisions import DEFAULT_SERIALIZATION_FORMAT, revision
 
 
 class VersionAdmin(admin.ModelAdmin):
@@ -48,20 +46,20 @@ class VersionAdmin(admin.ModelAdmin):
     
     def _autoregister(self, model, follow=None):
         """Registers a model with reversion, if required."""
-        if not reversion.is_registered(model):
+        if not revision.is_registered(model):
             follow = follow or []
             for parent_cls, field in model._meta.parents.items():
                 if field:
                     # Proxy models do not have a parent field.
                     follow.append(field.name)
                 self._autoregister(parent_cls)
-            reversion.register(model, follow=follow, format=self.reversion_format)
+            revision.register(model, follow=follow, format=self.reversion_format)
     
     def __init__(self, *args, **kwargs):
         """Initializes the VersionAdmin"""
         super(VersionAdmin, self).__init__(*args, **kwargs)
         # Automatically register models if required.
-        if not reversion.is_registered(self.model):
+        if not revision.is_registered(self.model):
             inline_fields = []
             for inline in self.inlines:
                 inline_model = inline.model
@@ -105,24 +103,24 @@ class VersionAdmin(admin.ModelAdmin):
     def log_addition(self, request, object):
         """Sets the version meta information."""
         super(VersionAdmin, self).log_addition(request, object)
-        reversion.revision.user = request.user
-        reversion.revision.comment = _(u"Initial version.")
-        reversion.revision.ignore_duplicates = self.ignore_duplicate_revisions
+        revision.user = request.user
+        revision.comment = _(u"Initial version.")
+        revision.ignore_duplicates = self.ignore_duplicate_revisions
         
     def log_change(self, request, object, message):
         """Sets the version meta information."""
         super(VersionAdmin, self).log_change(request, object, message)
-        reversion.revision.user = request.user
-        reversion.revision.comment = message
-        reversion.revision.ignore_duplicates = self.ignore_duplicate_revisions
+        revision.user = request.user
+        revision.comment = message
+        revision.ignore_duplicates = self.ignore_duplicate_revisions
     
     def log_deletion(self, request, object, object_repr):
         """Sets the version meta information."""
         """Sets the version meta information."""
         super(VersionAdmin, self).log_deletion(request, object, object_repr)
-        reversion.revision.user = request.user
-        reversion.revision.comment = _(u"Deleted %(verbose_name)s." % {"verbose_name": self.model._meta.verbose_name})
-        reversion.revision.ignore_duplicates = self.ignore_duplicate_revisions
+        revision.user = request.user
+        revision.comment = _(u"Deleted %(verbose_name)s." % {"verbose_name": self.model._meta.verbose_name})
+        revision.ignore_duplicates = self.ignore_duplicate_revisions
     
     def recoverlist_view(self, request, extra_context=None):
         """Displays a deleted model to allow recovery."""
@@ -325,7 +323,7 @@ class VersionAdmin(admin.ModelAdmin):
         return render_to_response(form_template, context, template.RequestContext(request))
     
     @transaction.commit_on_success
-    @reversion.revision.create_on_success
+    @revision.create_on_success
     def recover_view(self, request, version_id, extra_context=None):
         """Displays a form that can recover a deleted model."""
         version = get_object_or_404(Version, pk=version_id)
@@ -335,7 +333,7 @@ class VersionAdmin(admin.ModelAdmin):
         return self.render_revision_form(request, obj, version, context, recover=True)
         
     @transaction.commit_on_success
-    @reversion.revision.create_on_success
+    @revision.create_on_success
     def revision_view(self, request, object_id, version_id, extra_context=None):
         """Displays the contents of the given revision."""
         object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
@@ -347,25 +345,25 @@ class VersionAdmin(admin.ModelAdmin):
         return self.render_revision_form(request, obj, version, context, revert=True)
     
     @transaction.commit_on_success
-    @reversion.revision.create_on_success
+    @revision.create_on_success
     def add_view(self, *args, **kwargs):
         """Adds a new model to the application."""
         return super(VersionAdmin, self).add_view(*args, **kwargs)
     
     @transaction.commit_on_success
-    @reversion.revision.create_on_success
+    @revision.create_on_success
     def change_view(self, *args, **kwargs):
         """Modifies an existing model."""
         return super(VersionAdmin, self).change_view(*args, **kwargs)
         
     @transaction.commit_on_success
-    @reversion.revision.create_on_success
+    @revision.create_on_success
     def delete_view(self, *args, **kwargs):
         """Deletes and existing model."""
         return super(VersionAdmin, self).delete_view(*args, **kwargs)
     
     @transaction.commit_on_success
-    @reversion.revision.create_on_success
+    @revision.create_on_success
     def changelist_view(self, request, extra_context=None):
         """Renders the change view."""
         opts = self.model._meta

@@ -1,9 +1,8 @@
 """
-Doctests for Reversion.
+Doctests for django-reversion.
 
 These tests require Python version 2.5 or higher to run.
 """
-
 
 from __future__ import with_statement
 
