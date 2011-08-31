@@ -67,7 +67,7 @@ class ReversionRegistrationTest(TestCase):
         
     def testCanReadRegistrationInfo(self):
         """Tests that the registration info for a model is obtainable."""
-        registration_info = reversion.revision.get_adapter(TestModel)
+        registration_info = reversion.get_adapter(TestModel)
         self.assertEqual(tuple(registration_info.get_fields_to_serialize()), ("id", "name",))
         self.assertEqual(registration_info.follow, ())
         self.assertEqual(registration_info.get_serialization_format(), "json")

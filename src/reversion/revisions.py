@@ -54,6 +54,37 @@ class VersionAdapter(object):
             else:
                 yield field.attname
     
+    def get_followed_relations(self, obj):
+        """Returns an iterable of related models that should be included in the revision data."""
+        for relationship in self.follow:
+            # Clear foreign key cache.
+            try:
+                related_field = obj._meta.get_field(relationship)
+            except models.FieldDoesNotExist:
+                pass
+            else:
+                if isinstance(related_field, models.ForeignKey):
+                    if hasattr(obj, related_field.get_cache_name()):
+                        delattr(obj, related_field.get_cache_name())
+            # Get the referenced obj(s).
+            try:
+                related = getattr(obj, relationship, None)
+            except ObjectDoesNotExist:
+                continue
+            if isinstance(related, models.Model):
+                yield related
+            elif isinstance(related, (models.Manager, QuerySet)):
+                for related_obj in related.all():
+                    yield related_obj
+            elif related is not None:
+                raise TypeError, "Cannot follow the relationship %r. Expected a model or QuerySet, found %r" % (relationship, related)
+        # If a proxy model's parent is registered, add it.
+        if obj._meta.proxy:
+            parent_cls = obj._meta.parents.keys()[0]
+            if self.is_registered(parent_cls):
+                parent_obj = parent_cls.objects.get(pk=obj.pk)
+                yield parent_obj
+    
     def get_serialization_format(self):
         """Returns the serialization format to use."""
         return self.format
@@ -350,34 +381,8 @@ class RevisionManager(object):
             adapter = self.get_adapter(obj.__class__)
             result_dict[obj] = adapter.get_version_data(obj, VERSION_CHANGE)
             # Follow relations.
-            for relationship in adapter.follow:
-                # Clear foreign key cache.
-                try:
-                    related_field = obj._meta.get_field(relationship)
-                except models.FieldDoesNotExist:
-                    pass
-                else:
-                    if isinstance(related_field, models.ForeignKey):
-                        if hasattr(obj, related_field.get_cache_name()):
-                            delattr(obj, related_field.get_cache_name())
-                # Get the referenced obj(s).
-                try:
-                    related = getattr(obj, relationship, None)
-                except ObjectDoesNotExist:
-                    continue
-                if isinstance(related, models.Model):
-                    _follow_relationships(related) 
-                elif isinstance(related, (models.Manager, QuerySet)):
-                    for related_obj in related.all():
-                        _follow_relationships(related_obj)
-                elif related is not None:
-                    raise TypeError, "Cannot follow the relationship %r. Expected a model or QuerySet, found %r" % (relationship, related)
-            # If a proxy model's parent is registered, add it.
-            if obj._meta.proxy:
-                parent_cls = obj._meta.parents.keys()[0]
-                if self.is_registered(parent_cls):
-                    parent_obj = parent_cls.objects.get(pk=obj.pk)
-                    _follow_relationships(parent_obj)
+            for related in adapter.get_followed_relations(obj):
+                _follow_relationships(related)
         map(_follow_relationships, object_dict)
         # Place in the original reversions models explicitly added to the revision.
         result_dict.update(object_dict)
