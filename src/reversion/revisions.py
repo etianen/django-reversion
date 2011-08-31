@@ -143,7 +143,7 @@ class RevisionContextManager(local):
     def _assert_active(self):
         """Checks for an active revision, throwning an exception if none."""
         if not self.is_active():
-            raise RevisionManagementError, "There is no active revision for this thread."
+            raise RevisionManagementError("There is no active revision for this thread")
         
     def start(self):
         """
@@ -159,16 +159,16 @@ class RevisionContextManager(local):
         """Ends a revision for this thread."""
         self._assert_active()
         self._depth -= 1
-        try:
-            if self._depth == 0 and not self.is_invalid():
+        if self._depth == 0 and not self.is_invalid():
+            try:
                 # Save the revision data.
                 for manager, manager_context in self._objects.iteritems():
                     manager.save_revision(
                         manager_context,
                         ignore_duplicates = self._ignore_duplicates,
                     )
-        finally:
-            self.clear()
+            finally:
+                self.clear()
 
     def invalidate(self):
         """Marks this revision as broken, so should not be commited."""
