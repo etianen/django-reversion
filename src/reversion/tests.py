@@ -14,7 +14,7 @@ from django.core.management import call_command
 
 import reversion
 from reversion.models import Version, Revision, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE
-from reversion.revisions import RegistrationError, DEFAULT_SERIALIZATION_FORMAT
+from reversion.revisions import RegistrationError
 
 
 class TestModel(models.Model):
@@ -67,10 +67,10 @@ class ReversionRegistrationTest(TestCase):
         
     def testCanReadRegistrationInfo(self):
         """Tests that the registration info for a model is obtainable."""
-        registration_info = reversion.revision.get_registration_info(TestModel)
-        self.assertEqual(registration_info.fields, ("id", "name",))
+        registration_info = reversion.revision.get_adapter(TestModel)
+        self.assertEqual(tuple(registration_info.get_fields_to_serialize()), ("id", "name",))
         self.assertEqual(registration_info.follow, ())
-        self.assertEqual(registration_info.format, DEFAULT_SERIALIZATION_FORMAT)
+        self.assertEqual(registration_info.get_serialization_format(), "json")
         
     def testCanUnregisterModel(self):
         """Tests that a model can be unregistered."""
@@ -274,8 +274,8 @@ class ReversionCustomRegistrationTest(TestCase):
             
     def testCustomRegistrationHonored(self):
         """Ensures that the custom settings were honored."""
-        self.assertEqual(reversion.revision.get_registration_info(TestModel).fields, ("id",))
-        self.assertEqual(reversion.revision.get_registration_info(TestModel).format, "xml")
+        self.assertEqual(tuple(reversion.revision.get_adapter(TestModel).get_fields_to_serialize()), ("id",))
+        self.assertEqual(reversion.revision.get_adapter(TestModel).get_serialization_format(), "xml")
         
     def testCanRevertOnlySpecifiedFields(self):
         """"Ensures that only the restricted set of fields are loaded."""

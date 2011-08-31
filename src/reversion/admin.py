@@ -21,7 +21,7 @@ from django.utils.translation import ugettext as _
 from django.utils.encoding import force_unicode
 
 from reversion.models import Version
-from reversion.revisions import DEFAULT_SERIALIZATION_FORMAT, revision
+from reversion.revisions import revision
 
 
 class VersionAdmin(admin.ModelAdmin):
@@ -39,7 +39,7 @@ class VersionAdmin(admin.ModelAdmin):
     recover_form_template = None
     
     # The serialization format to use when registering models with reversion.
-    reversion_format = DEFAULT_SERIALIZATION_FORMAT
+    reversion_format = "json"
     
     # Whether to ignore duplicate revision data.
     ignore_duplicate_revisions = False

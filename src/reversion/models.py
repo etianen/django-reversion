@@ -47,7 +47,7 @@ class Revision(models.Model):
                 for version in self.version_set.all())
             # Calculate the set of all objects that are in the revision now.
             from reversion import revision  # Hack: Prevents circular imports for now.
-            current_revision_dict = revision.follow_relationships(old_revision_dict)
+            current_revision_dict = revision._follow_relationships(old_revision_dict)
             # Delete objects that are no longer in the current revision.
             for current_object in current_revision_dict:
                 if current_revision_dict[current_object] == VERSION_DELETE:
