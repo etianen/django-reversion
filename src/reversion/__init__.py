@@ -18,7 +18,7 @@ get_adapter = revision.get_adapter
 
 
 # Context management.
-create_on_success = revision.create_on_success
+create_revision = revision.create_on_success
 
 def context():
     """Defines a new revision management context."""
