@@ -65,21 +65,16 @@ class ReversionRegistrationTest(TestCase):
         # Check that duplicate registration is disallowed.
         self.assertRaises(RegistrationError, lambda: reversion.register(TestModel))
         
-    def testCanReadRegistrationInfo(self):
-        """Tests that the registration info for a model is obtainable."""
-        registration_info = reversion.get_adapter(TestModel)
-        self.assertEqual(tuple(registration_info.get_fields_to_serialize()), ("id", "name",))
-        self.assertEqual(registration_info.follow, ())
-        self.assertEqual(registration_info.get_serialization_format(), "json")
-        
     def testCanUnregisterModel(self):
         """Tests that a model can be unregistered."""
         reversion.unregister(TestModel)
-        self.assertFalse(reversion.is_registered(TestModel))
-        # Check that duplicate unregistration is disallowed.
-        self.assertRaises(RegistrationError, lambda: reversion.unregister(TestModel))
-        # Re-register the model.
-        reversion.register(TestModel)
+        try:
+            self.assertFalse(reversion.is_registered(TestModel))
+            # Check that duplicate unregistration is disallowed.
+            self.assertRaises(RegistrationError, lambda: reversion.unregister(TestModel))
+        finally:
+            # Re-register the model.
+            reversion.register(TestModel)
         
     def tearDown(self):
         """Tears down the tests."""
