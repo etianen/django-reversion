@@ -128,6 +128,8 @@ class ReversionCreateTest(TestCase):
             transaction.rollback()
         # Check that there is still only one revision.
         self.assertEqual(Version.objects.get_for_object(test).count(), 1)
+        # Assert the revision is not invalid.
+        self.assertFalse(reversion.revision._revision_context_manager.is_invalid())
         
     def tearDown(self):
         """Tears down the tests."""

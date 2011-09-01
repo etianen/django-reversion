@@ -159,14 +159,15 @@ class RevisionContextManager(local):
         """Ends a revision for this thread."""
         self._assert_active()
         self._depth -= 1
-        if self._depth == 0 and not self.is_invalid():
+        if self._depth == 0:
             try:
-                # Save the revision data.
-                for manager, manager_context in self._objects.iteritems():
-                    manager.save_revision(
-                        manager_context,
-                        ignore_duplicates = self._ignore_duplicates,
-                    )
+                if not self.is_invalid():
+                    # Save the revision data.
+                    for manager, manager_context in self._objects.iteritems():
+                        manager.save_revision(
+                            manager_context,
+                            ignore_duplicates = self._ignore_duplicates,
+                        )
             finally:
                 self.clear()
 
@@ -198,12 +199,6 @@ class RevisionContextManager(local):
         """Gets the current user for the revision."""
         self._assert_active()
         return self._user
-    
-    user = property(
-        get_user,
-        set_user,
-        doc = "The user for the current revision.",
-    )
         
     def set_comment(self, comment):
         """Sets the comments for the revision."""
@@ -214,12 +209,6 @@ class RevisionContextManager(local):
         """Gets the current comment for the revision."""
         self._assert_active()
         return self_comment
-    
-    comment = property(
-        get_comment,
-        set_comment,
-        doc = "The comment for the current revision.",
-    )
         
     def add_meta(self, cls, **kwargs):
         """Adds a class of meta information to the current revision."""
@@ -235,12 +224,6 @@ class RevisionContextManager(local):
         """Gets whether to ignore duplicate revisions."""
         self._assert_active()
         return self._ignore_duplicates
-        
-    ignore_duplicates = property(
-        get_ignore_duplicates,
-        set_ignore_duplicates,
-        doc = "Whether duplicate revisions should be ignored.",
-    )
     
     # Signal receivers.
     
@@ -267,12 +250,18 @@ class RevisionContextManager(local):
         
     def __exit__(self, exc_type, exc_value, traceback):
         """Leaves a block of revision management."""
-        if exc_type is not None:
-            self.invalidate()
-        self.end()
+        try:
+            if exc_type is not None:
+                self.invalidate()
+        finally:
+            self.end()
         return False
         
-    def create_on_success(self, func):
+    def context(self):
+        """Defines a revision management context."""
+        return self  # TODO: Replace with contextlib context manager when Django drops 2.4 compatibility.
+        
+    def create_revision(self, func):
         """Creates a revision when the given function exits successfully."""
         def _create_on_success(*args, **kwargs):
             self.start()
@@ -315,15 +304,8 @@ class RevisionManager(object):
         self._registered_models = {}
         self._revision_context_manager = revision_context_manager
         # Proxies to common context methods.
-        self.create_on_success = revision_context_manager.create_on_success
-        self.is_active = revision_context_manager.is_active
-        self.get_user = revision_context_manager.get_user
-        self.set_user = revision_context_manager.set_user
-        self.get_comment = revision_context_manager.get_comment
-        self.set_comment = revision_context_manager.set_comment
+        self.create_on_success = revision_context_manager.create_revision
         self.add_meta = revision_context_manager.add_meta
-        self.get_ignore_duplicates = revision_context_manager.get_ignore_duplicates
-        self.set_ignore_duplicates = revision_context_manager.set_ignore_duplicates
 
     # Registration methods.
 
@@ -450,25 +432,25 @@ class RevisionManager(object):
     # Revision meta data.
     
     user = property(
-        lambda self: self.get_user(),
-        lambda self, user: self.set_user(user),
+        lambda self: self._revision_context_manager.get_user(),
+        lambda self, user: self._revision_context_manager.set_user(user),
     )
     
     comment = property(
-        lambda self: self.get_comment(),
-        lambda self, comment: self.set_comment(comment),
+        lambda self: self._revision_context_manager.get_comment(),
+        lambda self, comment: self._revision_context_manager.set_comment(comment),
     )
     
     ignore_duplicates = property(
-        lambda self: self.get_ignore_duplicates(),
-        lambda self, ignore_duplicates: self.set_ignore_duplicates(ignore_duplicates)
+        lambda self: self._revision_context_manager.get_ignore_duplicates(),
+        lambda self, ignore_duplicates: self._revision_context_manager.set_ignore_duplicates(ignore_duplicates)
     )
         
     # Signal receivers.
         
     def _post_save_receiver(self, instance, created, **kwargs):
         """Adds registered models to the current revision, if any."""
-        if self.is_active():
+        if self._revision_context_manager.is_active():
             adapter = self.get_adapter(instance.__class__)
             if created:
                 version_data = adapter.get_version_data(instance, VERSION_ADD)
@@ -478,7 +460,7 @@ class RevisionManager(object):
             
     def _pre_delete_receiver(self, instance, **kwargs):
         """Adds registerted models to the current revision, if any."""
-        if self.is_active():
+        if self._revision_context_manager.is_active():
             adapter = self.get_adapter(instance.__class__)
             version_data = adapter.get_version_data(instance, VERSION_DELETE)
             self._revision_context_manager.add_to_context(self, instance, version_data)
