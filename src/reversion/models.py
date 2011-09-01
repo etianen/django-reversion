@@ -10,8 +10,6 @@ from django.conf import settings
 from django.db import models, IntegrityError
 from django.db.models import Count, Max
 
-from reversion.errors import RevertError
-
 
 def depricated(original, replacement):
     """Decorator that defines a depricated method."""
@@ -26,6 +24,11 @@ def depricated(original, replacement):
             return func(*args, **kwargs)
         return do_pending_deprication
     return decorator
+
+
+class RevertError(Exception):
+    
+    """Exception thrown when something goes wrong with reverting a model."""
 
 
 class Revision(models.Model):
