@@ -255,6 +255,10 @@ class ApiTest(RevisionTestBase):
         self.assertEqual(len(versions), 1)
         self.assertEqual(versions[0].field_dict["name"], "model2 instance1 version2")
         self.assertEqual(versions[0].type, VERSION_DELETE)
+        
+    def testCanRevertVersion(self):
+        reversion.get_for_object(self.test11)[1].revert()
+        self.assertEqual(TestModel1.objects.get(id=self.test11.pk).name, "model1 instance1 version1")
 
 
 class TestFollowModel(TestModelBase):
