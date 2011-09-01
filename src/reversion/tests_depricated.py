@@ -287,6 +287,7 @@ class ReversionCustomRegistrationTest(TestCase):
         self.assertEqual(len(Version.objects.get_for_object(self.test)), 4)
         with reversion.revision:
             reversion.revision.ignore_duplicates = True
+            self.assertTrue(reversion.revision.ignore_duplicates)
             self.test.save()
         self.assertEqual(len(Version.objects.get_for_object(self.test)), 4)
             

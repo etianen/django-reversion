@@ -1,13 +1,31 @@
 """Database models used by Reversion."""
 
+import warnings
+
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.core import serializers
+from django.conf import settings
 from django.db import models, IntegrityError
 from django.db.models import Count, Max
 
 from reversion.errors import RevertError
+
+
+def depricated(original, replacement):
+    """Decorator that defines a depricated method."""
+    def decorator(func):
+        if not settings.DEBUG:
+            return func
+        def do_pending_deprication(*args, **kwargs):
+            warnings.warn(
+                "%s is depricated, use %s instead" % (original, replacement),
+                PendingDeprecationWarning,
+            )
+            return func(*args, **kwargs)
+        return do_pending_deprication
+    return decorator
 
 
 class Revision(models.Model):
