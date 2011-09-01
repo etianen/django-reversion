@@ -109,50 +109,33 @@ class VersionManager(models.Manager):
     
     """Manager for Version models."""
     
+    @depricated("Version.objects.get_for_object_reference()", "reversion.get_for_object_reference()")
     def get_for_object_reference(self, model, object_id):
         """Returns all versions for the given object reference."""
-        content_type = ContentType.objects.get_for_model(model)
-        versions = self.filter(content_type=content_type)
-        if has_int_pk(model):
-            # We can do this as a fast, indexed lookup.
-            object_id_int = int(object_id)
-            versions = versions.filter(object_id_int=object_id_int)
-        else:
-            # We can't do this using an index. Never mind.
-            object_id = unicode(object_id)
-            versions = versions.filter(object_id=object_id)
-        versions = versions.order_by("pk")
-        return versions
+        from reversion.revisions import revision
+        return revision.get_for_object_reference(model, object_id)
     
+    @depricated("Version.objects.get_for_object()", "reversion.get_for_object()")
     def get_for_object(self, object):
         """
         Returns all the versions of the given object, ordered by date created.
         """
-        return self.get_for_object_reference(object.__class__, object.pk)
+        from reversion.revisions import revision
+        return revision.get_for_object(object)
     
-    def get_unique_for_object(self,obj):
+    @depricated("Version.objects.get_unique_for_object()", "reversion.get_unique_for_object()")
+    def get_unique_for_object(self, obj):
         """Returns unique versions associated with the object."""
-        versions = self.get_for_object(obj)
-        changed_versions = []
-        last_serialized_data = None
-        for version in versions:
-            if last_serialized_data != version.serialized_data:
-                changed_versions.append(version)
-            last_serialized_data = version.serialized_data
-        return changed_versions
+        from reversion.revisions import revision
+        return revision.get_unique_for_object(obj)
     
+    @depricated("Version.objects.get_for_date()", "reversion.get_for_date()")
     def get_for_date(self, object, date):
         """Returns the latest version of an object for the given date."""
-        versions = self.get_for_object(object)
-        versions = versions.filter(revision__date_created__lte=date)
-        versions = versions.order_by("-pk")
-        try:
-            version = versions[0]
-        except IndexError:
-            raise self.model.DoesNotExist
-        else:
-            return version
+        from reversion.revisions import revision
+        return revision.get_for_date(object, date)
     
+    @depricated("Version.objects.get_deleted_object()", "reversion.get_deleted_object()")
     def get_deleted_object(self, model_class, object_id, select_related=None):
         """
         Returns the version corresponding to the deletion of the object with
@@ -161,22 +144,10 @@ class VersionManager(models.Manager):
         You can specify a tuple of related fields to fetch using the
         `select_related` argument.
         """
-        # Ensure that the revision is in the select_related tuple.
-        select_related = select_related or ()
-        if not "revision" in select_related:
-            select_related = tuple(select_related) + ("revision",)
-        # Fetch the version.
-        versions = self.get_for_object_reference(model_class, object_id)
-        versions = versions.order_by("-pk")
-        if select_related:
-            versions = versions.select_related(*select_related)
-        try:
-            version = versions[0]
-        except IndexError:
-            raise self.model.DoesNotExist
-        else:
-            return version
+        from reversion.revisions import revision
+        return revision.get_deleted_object(model_class, object_id, select_related)
     
+    @depricated("Version.objects.get_deleted()", "reversion.get_deleted()")
     def get_deleted(self, model_class, select_related=None):
         """
         Returns all the deleted versions for the given model class.
@@ -184,27 +155,8 @@ class VersionManager(models.Manager):
         You can specify a tuple of related fields to fetch using the
         `select_related` argument.
         """
-        content_type = ContentType.objects.get_for_model(model_class)
-        live_pk_queryset = model_class._default_manager.all().values_list("pk", flat=True)
-        versioned_objs = self.filter(content_type=content_type)
-        if has_int_pk(model_class):
-            # We can do this as a fast, in-database join.
-            deleted_version_pks = versioned_objs.exclude(
-                object_id_int__in = live_pk_queryset
-            ).values_list("object_id_int").annotate(
-                latest_pk = Max("pk")
-            ).values_list("latest_pk", flat=True)
-            deleted = list(self.filter(pk__in=deleted_version_pks).order_by("pk"))
-        else:
-            # HACK: This join can't be done in the database, due to incompatibilities
-            # between unicode object_ids and integer pks on strict backends like postgres.
-            live_pks = frozenset(unicode(pk) for pk in live_pk_queryset.iterator())
-            versioned_pks = frozenset(versioned_objs.values_list("object_id", flat=True).iterator())
-            deleted_pks = (versioned_pks - live_pks)
-            # Fetch all the deleted versions.
-            deleted = [self.get_deleted_object(model_class, object_id, select_related) for object_id in deleted_pks]
-            deleted.sort(lambda a, b: cmp(a.pk, b.pk))
-        return deleted
+        from reversion.revisions import revision
+        return list(revision.get_deleted(model_class, select_related))
             
 
 class Version(models.Model):

@@ -382,6 +382,12 @@ class RevisionManager(object):
         # Place in the original reversions models explicitly added to the revision.
         result_dict.update(object_dict)
         return result_dict
+    
+    def _get_versions(self):
+        """Returns all versions that apply to this manager."""
+        return Version.objects.filter(
+            revision__manager_slug = self._manager_slug,
+        ).select_related("revision")
         
     def save_revision(self, objects, ignore_duplicates=False, user=None, comment="", meta=()):
         """Saves a new revision."""
@@ -408,10 +414,10 @@ class RevisionManager(object):
                 # Find the latest revision amongst the latest previous version of each object.
                 subqueries = [Q(object_id=version.object_id, content_type=version.content_type) for version in new_versions]
                 subqueries = reduce(operator.or_, subqueries)
-                latest_revision = Version.objects.filter(subqueries).aggregate(Max("revision"))["revision__max"]
+                latest_revision = self._get_versions().filter(subqueries).aggregate(Max("revision"))["revision__max"]
                 # If we have a latest revision, compare it to the current revision.
                 if latest_revision is not None:
-                    previous_versions = Version.objects.filter(revision=latest_revision).values_list("serialized_data", flat=True)
+                    previous_versions = self._get_versions().filter(revision=latest_revision).values_list("serialized_data", flat=True)
                     if len(previous_versions) == len(new_versions):
                         all_serialized_data = [version.serialized_data for version in new_versions]
                         if sorted(previous_versions) == sorted(all_serialized_data):
@@ -458,6 +464,103 @@ class RevisionManager(object):
         depricated("revision.ignore_duplicates", "reversion.get_ignore_duplicates()")(lambda self: self._revision_context_manager.get_ignore_duplicates()),
         depricated("revision.ignore_duplicates", "reversion.set_ignore_duplicates()")(lambda self, ignore_duplicates: self._revision_context_manager.set_ignore_duplicates(ignore_duplicates))
     )
+    
+    # Revision management API.
+    
+    def get_for_object_reference(self, model, object_id):
+        """Returns all versions for the given object reference."""
+        content_type = ContentType.objects.get_for_model(model)
+        versions = self._get_versions().filter(
+            content_type = content_type,
+        ).select_related("revision")
+        if has_int_pk(model):
+            # We can do this as a fast, indexed lookup.
+            object_id_int = int(object_id)
+            versions = versions.filter(object_id_int=object_id_int)
+        else:
+            # We can't do this using an index. Never mind.
+            object_id = unicode(object_id)
+            versions = versions.filter(object_id=object_id)
+        versions = versions.order_by("pk")
+        return versions
+    
+    def get_for_object(self, obj):
+        """Returns all the versions of the given object, ordered by date created."""
+        return self.get_for_object_reference(obj.__class__, obj.pk)
+    
+    def get_unique_for_object(self, obj):
+        """Returns unique versions associated with the object."""
+        versions = self.get_for_object(obj)
+        changed_versions = []
+        last_serialized_data = None
+        for version in versions:
+            if last_serialized_data != version.serialized_data:
+                changed_versions.append(version)
+            last_serialized_data = version.serialized_data
+        return changed_versions
+    
+    def get_for_date(self, object, date):
+        """Returns the latest version of an object for the given date."""
+        versions = self.get_for_object(object)
+        versions = versions.filter(revision__date_created__lte=date)
+        versions = versions.order_by("-pk")
+        try:
+            version = versions[0]
+        except IndexError:
+            raise Version.DoesNotExist
+        else:
+            return version
+    
+    def get_deleted_object(self, model_class, object_id, select_related=None):
+        """
+        Returns the version corresponding to the deletion of the object with
+        the given id.
+        
+        You can specify a tuple of related fields to fetch using the
+        `select_related` argument.
+        """
+        # Ensure that the revision is in the select_related tuple.
+        select_related = select_related or ()
+        if not "revision" in select_related:
+            select_related = tuple(select_related) + ("revision",)
+        # Fetch the version.
+        versions = self.get_for_object_reference(model_class, object_id)
+        versions = versions.order_by("-pk")
+        if select_related:
+            versions = versions.select_related(*select_related)
+        try:
+            version = versions[0]
+        except IndexError:
+            raise Version.DoesNotExist
+        else:
+            return version
+    
+    def get_deleted(self, model_class, select_related=None):
+        """
+        Returns all the deleted versions for the given model class.
+        
+        You can specify a tuple of related fields to fetch using the
+        `select_related` argument.
+        """
+        content_type = ContentType.objects.get_for_model(model_class)
+        live_pk_queryset = model_class._default_manager.all().values_list("pk", flat=True)
+        versioned_objs = self._get_versions().filter(
+            content_type = content_type,
+        )
+        if has_int_pk(model_class):
+            # We can do this as a fast, in-database join.
+            deleted_version_pks = versioned_objs.exclude(
+                object_id_int__in = live_pk_queryset
+            ).values_list("object_id_int")
+        else:
+            # This join has to be done as two separate queries.
+            deleted_version_pks = versioned_objs.exclude(
+                object_id__in = list(live_pk_queryset.iterator())
+            ).values_list("object_id")
+        deleted_version_pks = deleted_version_pks.annotate(
+            latest_pk = Max("pk")
+        ).values_list("latest_pk", flat=True)
+        return self._get_versions().filter(pk__in=deleted_version_pks).order_by("pk")
         
     # Signal receivers.
         

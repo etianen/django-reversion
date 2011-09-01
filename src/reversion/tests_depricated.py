@@ -205,6 +205,7 @@ class ReversionQueryTest(TestCase):
         self.test.delete()
         # Ensure that there are now two deleted models.
         deleted = Version.objects.get_deleted(self.model)
+        self.assertEqual(len(deleted), 2)
         self.assertEqual(deleted[0].field_dict["name"], "test1.2")
         self.assertEqual(deleted[1].field_dict["name"], "test2.0")
         self.assertEqual(len(deleted), 2)

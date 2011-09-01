@@ -88,15 +88,11 @@ class Command(BaseCommand):
                 # We can do this as a fast database join!
                 live_objs = live_objs.exclude(
                     pk__in = versioned_pk_queryset.values_list("object_id_int", flat=True)
-                ).iterator()
+                )
             else:
-                # HACK: This join can't be done in the database, due to incompatibilities
-                # between unicode object_ids and integer pks on strict backends like postgres.
-                versioned_pk_set = frozenset(versioned_pk_queryset.values_list("object_id", flat=True).iterator())
-                live_objs = (
-                    obj
-                    for obj in live_objs.iterator()
-                    if not unicode(obj.id) in versioned_pk_set
+                # This join has to be done as two separate queries.
+                live_objs = live_objs.exclude(
+                    pk__in = list(versioned_pk_queryset.values_list("object_id", flat=True).iterator())
                 )
             # Save all the versions.
             for obj in live_objs:

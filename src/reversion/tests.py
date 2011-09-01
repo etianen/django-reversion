@@ -144,6 +144,9 @@ class CreateInitialRevisionsTest(ReversionTestBase):
         call_command("createinitialrevisions")
         self.assertEqual(Revision.objects.count(), 4)
         self.assertEqual(Version.objects.count(), 4)
+        call_command("createinitialrevisions")
+        self.assertEqual(Revision.objects.count(), 4)
+        self.assertEqual(Version.objects.count(), 4)
         
     def testCreateInitialRevisionsSpecificApps(self):
         call_command("createinitialrevisions", "auth")
