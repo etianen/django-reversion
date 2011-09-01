@@ -137,6 +137,30 @@ class InternalsTest(RevisionTestBase):
         self.assertEqual(Revision.objects.count(), 1)
         self.assertEqual(Version.objects.count(), 4)
         
+    def testRevisionContextAbandonedOnError(self):
+        try:
+            with reversion.context():
+                self.test11.name = "model1 instance1 version2"
+                self.test11.save()
+                raise Exception("Foo")
+        except:
+            pass
+        self.assertEqual(Revision.objects.count(), 1)
+        self.assertEqual(Version.objects.count(), 4)
+        
+    def testRevisionDecoratorAbandonedOnError(self):
+        @reversion.create_revision
+        def make_revision():
+            self.test11.name = "model1 instance1 version2"
+            self.test11.save()
+            raise Exception("Foo")
+        try:
+            make_revision()
+        except:
+            pass
+        self.assertEqual(Revision.objects.count(), 1)
+        self.assertEqual(Version.objects.count(), 4)
+        
     def testCorrectVersionFlags(self):
         self.assertEqual(Version.objects.filter(type=VERSION_ADD).count(), 4)
         self.assertEqual(Version.objects.filter(type=VERSION_CHANGE).count(), 0)
