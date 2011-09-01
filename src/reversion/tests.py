@@ -66,9 +66,8 @@ class RegistrationTest(TestCase):
         self.assertRaises(RegistrationError, lambda: isinstance(reversion.get_adapter(TestModel1)))
 
 
-class RevisionTestBase(TestCase):
+class ReversionTestBase(TestCase):
 
-    @reversion.create_revision
     def setUp(self):
         # Remove all the current registered models.
         self.registered_models = reversion.get_registered_models()
@@ -109,6 +108,13 @@ class RevisionTestBase(TestCase):
         Revision.objects.all().delete()
 
 
+class RevisionTestBase(ReversionTestBase):
+
+    @reversion.create_revision
+    def setUp(self):
+        super(RevisionTestBase, self).setUp()
+
+
 class InternalsTest(RevisionTestBase):
 
     def testRevisionsCreated(self):
@@ -130,30 +136,7 @@ class InternalsTest(RevisionTestBase):
         self.assertEqual(Version.objects.count(), 4)
         
         
-class CreateInitialRevisionsTest(TestCase):
-
-    # Note: This is not done in a revision.
-    def setUp(self):
-        # Remove all the current registered models.
-        self.registered_models = reversion.get_registered_models()
-        for model in self.registered_models:
-            reversion.unregister(model)
-        # Register the test models.
-        reversion.register(TestModel1)
-        reversion.register(TestModel2)
-        # Create some test data.
-        self.test11 = TestModel1.objects.create(
-            name = "model1 instance1 version1",
-        )
-        self.test12 = TestModel1.objects.create(
-            name = "model1 instance2 version1",
-        )
-        self.test21 = TestModel2.objects.create(
-            name = "model2 instance1 version1",
-        )
-        self.test22 = TestModel2.objects.create(
-            name = "model2 instance2 version1",
-        )
+class CreateInitialRevisionsTest(ReversionTestBase):
 
     def testCreateInitialRevisions(self):
         self.assertEqual(Revision.objects.count(), 0)
@@ -178,23 +161,6 @@ class CreateInitialRevisionsTest(TestCase):
     def testCreateInitialRevisionsSpecificComment(self):
         call_command("createinitialrevisions", comment="Foo bar")
         self.assertEqual(Revision.objects.all()[0].comment, "Foo bar")
-        
-    def tearDown(self):
-         # Re-register the old registered models.
-        for model in self.registered_models:
-            reversion.register(model)
-        # Unregister the test models.
-        reversion.unregister(TestModel1)
-        reversion.unregister(TestModel2)
-        # Delete the test models.
-        TestModel1.objects.all().delete()
-        TestModel2.objects.all().delete()
-        del self.test11
-        del self.test12
-        del self.test21
-        del self.test22
-        # Delete the revisions index.
-        Revision.objects.all().delete()
 
 
 # Import the depricated tests.
