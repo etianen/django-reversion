@@ -19,7 +19,7 @@ from django.db.models import Q, Max
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
 
-from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE, has_int_pk, depricated
+from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE, has_int_pk, deprecated
 
 
 class VersionAdapter(object):
@@ -454,18 +454,18 @@ class RevisionManager(object):
     # Revision meta data.
     
     user = property(
-        depricated("revision.user", "reversion.get_user()")(lambda self: self._revision_context_manager.get_user()),
-        depricated("revision.user", "reversion.set_user()")(lambda self, user: self._revision_context_manager.set_user(user)),
+        deprecated("revision.user", "reversion.get_user()")(lambda self: self._revision_context_manager.get_user()),
+        deprecated("revision.user", "reversion.set_user()")(lambda self, user: self._revision_context_manager.set_user(user)),
     )
     
     comment = property(
-        depricated("revision.comment", "reversion.get_comment()")(lambda self: self._revision_context_manager.get_comment()),
-        depricated("revision.comment", "reversion.set_comment()")(lambda self, comment: self._revision_context_manager.set_comment(comment)),
+        deprecated("revision.comment", "reversion.get_comment()")(lambda self: self._revision_context_manager.get_comment()),
+        deprecated("revision.comment", "reversion.set_comment()")(lambda self, comment: self._revision_context_manager.set_comment(comment)),
     )
     
     ignore_duplicates = property(
-        depricated("revision.ignore_duplicates", "reversion.get_ignore_duplicates()")(lambda self: self._revision_context_manager.get_ignore_duplicates()),
-        depricated("revision.ignore_duplicates", "reversion.set_ignore_duplicates()")(lambda self, ignore_duplicates: self._revision_context_manager.set_ignore_duplicates(ignore_duplicates))
+        deprecated("revision.ignore_duplicates", "reversion.get_ignore_duplicates()")(lambda self: self._revision_context_manager.get_ignore_duplicates()),
+        deprecated("revision.ignore_duplicates", "reversion.set_ignore_duplicates()")(lambda self, ignore_duplicates: self._revision_context_manager.set_ignore_duplicates(ignore_duplicates))
     )
     
     # Revision management API.

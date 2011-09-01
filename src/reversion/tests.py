@@ -421,10 +421,10 @@ class CreateInitialRevisionsTest(ReversionTestBase):
         self.assertEqual(Revision.objects.all()[0].comment, "Foo bar")
 
 
-# Import the depricated tests.
-from reversion import tests_depricated
+# Import the deprecated tests.
+from reversion import tests_deprecated
 
-for name, value in vars(tests_depricated).iteritems():
+for name, value in vars(tests_deprecated).iteritems():
     if isinstance(value, type) and issubclass(value, TestCase):
         globals()[name] = value
 del name

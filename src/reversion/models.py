@@ -11,14 +11,14 @@ from django.db import models, IntegrityError
 from django.db.models import Count, Max
 
 
-def depricated(original, replacement):
-    """Decorator that defines a depricated method."""
+def deprecated(original, replacement):
+    """Decorator that defines a deprecated method."""
     def decorator(func):
         if not settings.DEBUG:
             return func
         def do_pending_deprication(*args, **kwargs):
             warnings.warn(
-                "%s is depricated, use %s instead" % (original, replacement),
+                "%s is deprecated, use %s instead" % (original, replacement),
                 PendingDeprecationWarning,
             )
             return func(*args, **kwargs)
@@ -118,13 +118,13 @@ class VersionManager(models.Manager):
     
     """Manager for Version models."""
     
-    @depricated("Version.objects.get_for_object_reference()", "reversion.get_for_object_reference()")
+    @deprecated("Version.objects.get_for_object_reference()", "reversion.get_for_object_reference()")
     def get_for_object_reference(self, model, object_id):
         """Returns all versions for the given object reference."""
         from reversion.revisions import default_revision_manager
         return default_revision_manager.get_for_object_reference(model, object_id)
     
-    @depricated("Version.objects.get_for_object()", "reversion.get_for_object()")
+    @deprecated("Version.objects.get_for_object()", "reversion.get_for_object()")
     def get_for_object(self, object):
         """
         Returns all the versions of the given object, ordered by date created.
@@ -132,7 +132,7 @@ class VersionManager(models.Manager):
         from reversion.revisions import default_revision_manager
         return default_revision_manager.get_for_object(object).order_by("pk")
     
-    @depricated("Version.objects.get_unique_for_object()", "reversion.get_unique_for_object()")
+    @deprecated("Version.objects.get_unique_for_object()", "reversion.get_unique_for_object()")
     def get_unique_for_object(self, obj):
         """Returns unique versions associated with the object."""
         from reversion.revisions import default_revision_manager
@@ -140,13 +140,13 @@ class VersionManager(models.Manager):
         versions.reverse()
         return versions
     
-    @depricated("Version.objects.get_for_date()", "reversion.get_for_date()")
+    @deprecated("Version.objects.get_for_date()", "reversion.get_for_date()")
     def get_for_date(self, object, date):
         """Returns the latest version of an object for the given date."""
         from reversion.revisions import default_revision_manager
         return default_revision_manager.get_for_date(object, date)
     
-    @depricated("Version.objects.get_deleted_object()", "reversion.get_for_object_reference()[0]")
+    @deprecated("Version.objects.get_deleted_object()", "reversion.get_for_object_reference()[0]")
     def get_deleted_object(self, model_class, object_id, select_related=None):
         """
         Returns the version corresponding to the deletion of the object with
@@ -158,7 +158,7 @@ class VersionManager(models.Manager):
         from reversion.revisions import default_revision_manager
         return default_revision_manager.get_for_object_reference(model_class, object_id)[0]
     
-    @depricated("Version.objects.get_deleted()", "reversion.get_deleted()")
+    @deprecated("Version.objects.get_deleted()", "reversion.get_deleted()")
     def get_deleted(self, model_class, select_related=None):
         """
         Returns all the deleted versions for the given model class.

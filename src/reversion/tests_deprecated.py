@@ -1,4 +1,4 @@
-"""Tests for the depricated version of the django-reversion API."""
+"""Tests for the deprecated version of the django-reversion API."""
 
 from __future__ import with_statement
 
