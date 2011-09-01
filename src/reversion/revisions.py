@@ -19,7 +19,6 @@ from django.db.models import Q, Max
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
 
-from reversion.errors import RevisionManagementError, RegistrationError
 from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE, has_int_pk
 
 
@@ -114,6 +113,11 @@ class VersionAdapter(object):
             "object_repr": unicode(obj),
             "type": type_flag
         }
+
+
+class RevisionManagementError(Exception):
+    
+    """Exception that is thrown when something goes wrong with revision managment."""
 
           
 class RevisionContextManager(local):
@@ -279,6 +283,11 @@ class RevisionContextManager(local):
 
 # A shared, thread-safe context manager.
 revision_context_manager = RevisionContextManager()
+
+
+class RegistrationError(Exception):
+    
+    """Exception thrown when registration with django-reversion goes wrong."""
    
    
 class RevisionManager(object):
@@ -296,7 +305,7 @@ class RevisionManager(object):
         """Initializes the revision manager."""
          # Check the slug is unique for this revision manager.
         if manager_slug in RevisionManager._created_managers:
-            raise RevisionManagementError("A revision manager has already been created with the slug %r" % manager_slug)
+            raise RegistrationError("A revision manager has already been created with the slug %r" % manager_slug)
         # Store a reference to this manager.
         self.__class__._created_managers[manager_slug] = self
         # Store config params.
@@ -315,6 +324,10 @@ class RevisionManager(object):
         manager.
         """
         return model in self._registered_models
+    
+    def get_registered_models(self):
+        """Returns an iterable of all registered models."""
+        return self._registered_models.keys()
         
     def register(self, model, adapter_cls=VersionAdapter, **field_overrides):
         """Registers a model with this revision manager."""

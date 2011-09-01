@@ -6,7 +6,7 @@ Developed by Dave Hall.
 <http://www.etianen.com/>
 """
 
-from reversion.revisions import revision, revision_context_manager
+from reversion.revisions import revision, revision_context_manager, VersionAdapter
 from reversion.admin import VersionAdmin
 
 
@@ -15,6 +15,7 @@ register = revision.register
 is_registered = revision.is_registered
 unregister = revision.unregister
 get_adapter = revision.get_adapter
+get_registered_models = revision.get_registered_models
 
 
 # Context management.
