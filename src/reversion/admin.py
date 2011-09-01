@@ -21,7 +21,7 @@ from django.utils.translation import ugettext as _
 from django.utils.encoding import force_unicode
 
 from reversion.models import Version
-from reversion.revisions import revision
+from reversion.revisions import default_revision_manager as revision
 
 
 class VersionAdmin(admin.ModelAdmin):

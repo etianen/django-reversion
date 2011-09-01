@@ -10,7 +10,7 @@ from django.utils.importlib import import_module
 from django.utils.datastructures import SortedDict
 from django.utils.encoding import smart_unicode
 
-from reversion import revision
+from reversion import default_revision_manager
 from reversion.models import Version, has_int_pk
 
 
@@ -79,7 +79,7 @@ class Command(BaseCommand):
         except ImportError:
             pass
         # Check all models for empty revisions.
-        if revision.is_registered(model_class):
+        if default_revision_manager.is_registered(model_class):
             created_count = 0
             content_type = ContentType.objects.get_for_model(model_class)
             versioned_pk_queryset = Version.objects.filter(content_type=content_type).all()
@@ -97,7 +97,7 @@ class Command(BaseCommand):
             # Save all the versions.
             for obj in live_objs:
                 try:
-                    revision.save_revision((obj,), comment=comment)
+                    default_revision_manager.save_revision((obj,), comment=comment)
                 except:
                     print "ERROR: Could not save initial version for %s %s." % (model_class.__name__, obj.pk)
                     raise

@@ -558,4 +558,4 @@ class RevisionManager(object):
 
         
 # A shared revision manager.
-revision = RevisionManager("default")
+default_revision_manager = RevisionManager("default")

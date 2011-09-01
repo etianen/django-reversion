@@ -112,30 +112,30 @@ class VersionManager(models.Manager):
     @depricated("Version.objects.get_for_object_reference()", "reversion.get_for_object_reference()")
     def get_for_object_reference(self, model, object_id):
         """Returns all versions for the given object reference."""
-        from reversion.revisions import revision
-        return revision.get_for_object_reference(model, object_id)
+        from reversion.revisions import default_revision_manager
+        return default_revision_manager.get_for_object_reference(model, object_id)
     
     @depricated("Version.objects.get_for_object()", "reversion.get_for_object()")
     def get_for_object(self, object):
         """
         Returns all the versions of the given object, ordered by date created.
         """
-        from reversion.revisions import revision
-        return revision.get_for_object(object).order_by("pk")
+        from reversion.revisions import default_revision_manager
+        return default_revision_manager.get_for_object(object).order_by("pk")
     
     @depricated("Version.objects.get_unique_for_object()", "reversion.get_unique_for_object()")
     def get_unique_for_object(self, obj):
         """Returns unique versions associated with the object."""
-        from reversion.revisions import revision
-        versions = revision.get_unique_for_object(obj)
+        from reversion.revisions import default_revision_manager
+        versions = default_revision_manager.get_unique_for_object(obj)
         versions.reverse()
         return versions
     
     @depricated("Version.objects.get_for_date()", "reversion.get_for_date()")
     def get_for_date(self, object, date):
         """Returns the latest version of an object for the given date."""
-        from reversion.revisions import revision
-        return revision.get_for_date(object, date)
+        from reversion.revisions import default_revision_manager
+        return default_revision_manager.get_for_date(object, date)
     
     @depricated("Version.objects.get_deleted_object()", "reversion.get_for_object_reference()[0]")
     def get_deleted_object(self, model_class, object_id, select_related=None):
@@ -146,8 +146,8 @@ class VersionManager(models.Manager):
         You can specify a tuple of related fields to fetch using the
         `select_related` argument.
         """
-        from reversion.revisions import revision
-        return revision.get_for_deleted_object(model_class, object_id, select_related)
+        from reversion.revisions import default_revision_manager
+        return default_revision_manager.get_for_object_reference(model_class, object_id)[0]
     
     @depricated("Version.objects.get_deleted()", "reversion.get_deleted()")
     def get_deleted(self, model_class, select_related=None):
@@ -157,8 +157,8 @@ class VersionManager(models.Manager):
         You can specify a tuple of related fields to fetch using the
         `select_related` argument.
         """
-        from reversion.revisions import revision
-        return list(revision.get_deleted(model_class, select_related))
+        from reversion.revisions import default_revision_manager
+        return list(default_revision_manager.get_deleted(model_class, select_related))
             
 
 class Version(models.Model):

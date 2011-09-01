@@ -6,16 +6,20 @@ Developed by Dave Hall.
 <http://www.etianen.com/>
 """
 
-from reversion.revisions import revision, revision_context_manager, VersionAdapter
+from reversion.revisions import default_revision_manager, revision_context_manager, VersionAdapter
 from reversion.admin import VersionAdmin
 
 
+# Legacy revision reference.
+revision = default_revision_manager  # TODO: Depricate eventually.
+
+
 # Easy registration methods.
-register = revision.register
-is_registered = revision.is_registered
-unregister = revision.unregister
-get_adapter = revision.get_adapter
-get_registered_models = revision.get_registered_models
+register = default_revision_manager.register
+is_registered = default_revision_manager.is_registered
+unregister = default_revision_manager.unregister
+get_adapter = default_revision_manager.get_adapter
+get_registered_models = default_revision_manager.get_registered_models
 
 
 # Context management.
@@ -34,8 +38,8 @@ set_ignore_duplicates = revision_context_manager.set_ignore_duplicates
 
 
 # Low level API.
-get_for_object_reference = revision.get_for_object_reference
-get_for_object = revision.get_for_object
-get_unique_for_object = revision.get_unique_for_object
-get_for_date = revision.get_for_date
-get_deleted = revision.get_deleted
+get_for_object_reference = default_revision_manager.get_for_object_reference
+get_for_object = default_revision_manager.get_for_object
+get_unique_for_object = default_revision_manager.get_unique_for_object
+get_for_date = default_revision_manager.get_for_date
+get_deleted = default_revision_manager.get_deleted
