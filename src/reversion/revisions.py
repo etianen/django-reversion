@@ -67,7 +67,7 @@ class VersionAdapter(object):
                         delattr(obj, related_field.get_cache_name())
             # Get the referenced obj(s).
             try:
-                related = getattr(obj, relationship, None)
+                related = getattr(obj, relationship)
             except ObjectDoesNotExist:
                 continue
             if isinstance(related, models.Model):

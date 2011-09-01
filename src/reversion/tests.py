@@ -257,6 +257,44 @@ class ApiTest(RevisionTestBase):
         self.assertEqual(versions[0].type, VERSION_DELETE)
 
 
+class TestFollowModel(TestModelBase):
+
+    test_model_1 = models.ForeignKey(
+        TestModel1,
+    )
+    
+    test_model_2s = models.ManyToManyField(
+        TestModel2,
+    )
+    
+    
+class FollowModelsTest(ReversionTestBase):
+
+    @reversion.create_revision
+    def setUp(self):
+        super(FollowModelsTest, self).setUp()
+        reversion.register(TestFollowModel, follow=("test_model_1", "test_model_2s",))
+        self.follow1 = TestFollowModel.objects.create(
+            name = "related instance1 version 1",
+            test_model_1 = self.test11,
+        )
+        self.follow1.test_model_2s.add(self.test21, self.test22)
+    
+    def testRelationsFollowed(self):
+        self.assertEqual(Revision.objects.count(), 1)
+        self.assertEqual(Version.objects.count(), 5)
+        with reversion.context():
+            self.follow1.save()
+        self.assertEqual(Revision.objects.count(), 2)
+        self.assertEqual(Version.objects.count(), 9)
+        
+    def tearDown(self):
+        reversion.unregister(TestFollowModel)
+        TestFollowModel.objects.all().delete()
+        del self.follow1
+        super(FollowModelsTest, self).tearDown()
+        
+
 revision_middleware_decorator = decorator_from_middleware(RevisionMiddleware)
 
 # A dumb view that saves a revision.
