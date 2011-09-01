@@ -195,21 +195,20 @@ class Version(models.Model):
     
     object_repr = models.TextField(help_text="A string representation of the object.")
     
-    def get_object_version(self):
-        """Returns the stored version of the model."""
+    @property
+    def object_version(self):
+        """The stored version of the model."""
         data = self.serialized_data
         if isinstance(data, unicode):
             data = data.encode("utf8")
         return list(serializers.deserialize(self.format, data))[0]
     
-    object_version = property(get_object_version,
-                              doc="The stored version of the model.")
-    
     type = models.PositiveSmallIntegerField(choices=VERSION_TYPE_CHOICES, db_index=True)
-       
-    def get_field_dict(self):
+    
+    @property   
+    def field_dict(self):
         """
-        Returns a dictionary mapping field names to field values in this version
+        A dictionary mapping field names to field values in this version
         of the model.
         
         This method will follow parent links, if present.
@@ -238,9 +237,6 @@ class Version(models.Model):
                     result.update(parent_version.get_field_dict())
             setattr(self, "_field_dict_cache", result)
         return getattr(self, "_field_dict_cache")
-       
-    field_dict = property(get_field_dict,
-                          doc="A dictionary mapping field names to field values in this version of the model.")
        
     def revert(self):
         """Recovers the model in this version."""
