@@ -54,6 +54,28 @@ class Revision(models.Model):
     
     def revert(self, delete=False):
         """Reverts all objects in this revision."""
+        version_set = self.version_set.all()
+        # Optionally delete objects no longer in the current revision.
+        if delete:
+            # Get a dict of all objects in this revision.
+            old_revision = {}
+            for version in version_set:
+                try:
+                    obj = version.object
+                except ContentType.objects.get_for_id(version.content_type_id).model_class().DoesNotExist:
+                    pass
+                else:
+                    old_revision[obj] = version
+            # Calculate the set of all objects that are in the revision now.
+            from reversion.revisions import RevisionManager
+            current_revision = RevisionManager.get_manager(self.manager_slug)._follow_relationships(old_revision.keys())
+            # Delete objects that are no longer in the current revision.
+            for item in current_revision:
+                if item in old_revision:
+                    if old_revision[item].type == VERSION_DELETE:
+                        item.delete()
+                else:
+                    item.delete()
         # Attempt to revert all revisions.
         def do_revert(versions):
             unreverted_versions = []
@@ -66,23 +88,7 @@ class Revision(models.Model):
                 raise RevertError("Could not revert revision, due to database integrity errors.")
             if unreverted_versions:
                 do_revert(unreverted_versions)
-        do_revert(self.version_set.all())
-        # Optionally delete objects no longer in the current revision.
-        if delete:
-            # Get a dict of all objects in this revision.
-            old_revision_dict = dict((ContentType.objects.get_for_id(version.content_type_id).get_object_for_this_type(pk=version.object_id), version.type)
-                for version in self.version_set.all())
-            # Calculate the set of all objects that are in the revision now.
-            from reversion import revision  # Hack: Prevents circular imports for now.
-            current_revision_dict = revision._follow_relationships(old_revision_dict)
-            # Delete objects that are no longer in the current revision.
-            for current_object in current_revision_dict:
-                if current_revision_dict[current_object] == VERSION_DELETE:
-                    current_object.delete()
-                    continue
-                if not current_object in old_revision_dict:
-                    current_object.delete()
-            
+        do_revert(version_set)
     def __unicode__(self):
         """Returns a unicode representation."""
         return u", ".join(unicode(version) for version in self.version_set.all())

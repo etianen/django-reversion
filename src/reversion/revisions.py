@@ -301,6 +301,13 @@ class RevisionManager(object):
         """Returns all created revision managers."""
         return list(cls._created_managers.items())
     
+    @classmethod
+    def get_manager(cls, manager_slug):
+        """Returns the manager with the given slug."""
+        if manager_slug in cls._created_managers:
+            return cls._created_managers[manager_slug]
+        raise RegistrationError("No revision manager exists with the slug %r" % manager_slug)
+    
     def __init__(self, manager_slug, revision_context_manager=revision_context_manager):
         """Initializes the revision manager."""
          # Check the slug is unique for this revision manager.
@@ -361,27 +368,20 @@ class RevisionManager(object):
         del self._registered_models[model]
         post_save.disconnect(self._post_save_receiver, model)
         pre_delete.disconnect(self._pre_delete_receiver, model)
-        
-    def _follow_relationships(self, object_dict):
-        """
-        Follows all the registered relationships in the given set of models to
-        yield a set containing the original models plus all their related
-        models.
-        """
-        result_dict = {}
-        def _follow_relationships(obj):
-            # Prevent recursion.
-            if obj in result_dict or obj.pk is None:  # This last condition is because during a delete action the parent field for a subclassing model will be set to None.
+    
+    def _follow_relationships(self, objects):
+        """Follows all relationships in the given set of objects."""
+        followed = set()
+        def _follow(obj):
+            if obj in followed or obj.pk is None:
                 return
+            followed.add(obj)
             adapter = self.get_adapter(obj.__class__)
-            result_dict[obj] = adapter.get_version_data(obj, VERSION_CHANGE)
-            # Follow relations.
             for related in adapter.get_followed_relations(obj):
-                _follow_relationships(related)
-        map(_follow_relationships, object_dict)
-        # Place in the original reversions models explicitly added to the revision.
-        result_dict.update(object_dict)
-        return result_dict
+                _follow(related)
+        for obj in objects:
+            _follow(obj)
+        return followed
     
     def _get_versions(self):
         """Returns all versions that apply to this manager."""
@@ -400,10 +400,13 @@ class RevisionManager(object):
         # Create the revision.
         if objects:
             # Follow relationships.
-            revision_set = self._follow_relationships(objects)
+            for obj in self._follow_relationships(objects.iterkeys()):
+                if not obj in objects:
+                    adapter = self.get_adapter(obj.__class__)
+                    objects[obj] = adapter.get_version_data(obj, VERSION_CHANGE)
             # Create all the versions without saving them
             new_versions = []
-            for obj, version_data in revision_set.iteritems():
+            for obj, version_data in objects.iteritems():
                 # Proxy models should not actually be saved to the revision set.
                 if obj._meta.proxy:
                     continue
