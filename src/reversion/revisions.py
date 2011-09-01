@@ -481,7 +481,7 @@ class RevisionManager(object):
             # We can't do this using an index. Never mind.
             object_id = unicode(object_id)
             versions = versions.filter(object_id=object_id)
-        versions = versions.order_by("pk")
+        versions = versions.order_by("-pk")
         return versions
     
     def get_for_object(self, obj):
@@ -503,31 +503,6 @@ class RevisionManager(object):
         """Returns the latest version of an object for the given date."""
         versions = self.get_for_object(object)
         versions = versions.filter(revision__date_created__lte=date)
-        versions = versions.order_by("-pk")
-        try:
-            version = versions[0]
-        except IndexError:
-            raise Version.DoesNotExist
-        else:
-            return version
-    
-    def get_deleted_object(self, model_class, object_id, select_related=None):
-        """
-        Returns the version corresponding to the deletion of the object with
-        the given id.
-        
-        You can specify a tuple of related fields to fetch using the
-        `select_related` argument.
-        """
-        # Ensure that the revision is in the select_related tuple.
-        select_related = select_related or ()
-        if not "revision" in select_related:
-            select_related = tuple(select_related) + ("revision",)
-        # Fetch the version.
-        versions = self.get_for_object_reference(model_class, object_id)
-        versions = versions.order_by("-pk")
-        if select_related:
-            versions = versions.select_related(*select_related)
         try:
             version = versions[0]
         except IndexError:

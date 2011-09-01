@@ -4,13 +4,15 @@ Tests for the django-reversion API.
 These tests require Python 2.5 to run.
 """
 
+import datetime
+
 from django.db import models
 from django.test import TestCase
 from django.core.management import call_command
 
 import reversion
 from reversion.revisions import RegistrationError
-from reversion.models import Revision, Version
+from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE
 
 
 class TestModelBase(models.Model):
@@ -135,6 +137,97 @@ class InternalsTest(RevisionTestBase):
         self.assertEqual(Revision.objects.count(), 1)
         self.assertEqual(Version.objects.count(), 4)
         
+    def testCorrectVersionFlags(self):
+        self.assertEqual(Version.objects.filter(type=VERSION_ADD).count(), 4)
+        self.assertEqual(Version.objects.filter(type=VERSION_CHANGE).count(), 0)
+        self.assertEqual(Version.objects.filter(type=VERSION_DELETE).count(), 0)
+        with reversion.context():
+            self.test11.save()
+        self.assertEqual(Version.objects.filter(type=VERSION_ADD).count(), 4)
+        self.assertEqual(Version.objects.filter(type=VERSION_CHANGE).count(), 1)
+        self.assertEqual(Version.objects.filter(type=VERSION_DELETE).count(), 0)
+        with reversion.context():
+            self.test11.delete()
+        self.assertEqual(Version.objects.filter(type=VERSION_ADD).count(), 4)
+        self.assertEqual(Version.objects.filter(type=VERSION_CHANGE).count(), 1)
+        self.assertEqual(Version.objects.filter(type=VERSION_DELETE).count(), 1)
+
+
+class ApiTest(RevisionTestBase):
+    
+    def setUp(self):
+        super(ApiTest, self).setUp()
+        with reversion.context():
+            self.test11.name = "model1 instance1 version2"
+            self.test11.save()
+            self.test12.name = "model1 instance2 version2"
+            self.test12.save()
+            self.test21.name = "model2 instance1 version2"
+            self.test21.save()
+            self.test22.name = "model2 instance2 version2"
+            self.test22.save()
+    
+    def testCanGetForObjectReference(self):
+        # Test a model with an int pk.
+        versions = reversion.get_for_object_reference(TestModel1, self.test11.pk)
+        self.assertEqual(len(versions), 2)
+        self.assertEqual(versions[0].field_dict["name"], "model1 instance1 version2")
+        self.assertEqual(versions[1].field_dict["name"], "model1 instance1 version1")
+        # Test a model with a str pk.
+        versions = reversion.get_for_object_reference(TestModel2, self.test21.pk)
+        self.assertEqual(len(versions), 2)
+        self.assertEqual(versions[0].field_dict["name"], "model2 instance1 version2")
+        self.assertEqual(versions[1].field_dict["name"], "model2 instance1 version1")
+    
+    def testCanGetForObject(self):
+        # Test a model with an int pk.
+        versions = reversion.get_for_object(self.test11)
+        self.assertEqual(len(versions), 2)
+        self.assertEqual(versions[0].field_dict["name"], "model1 instance1 version2")
+        self.assertEqual(versions[1].field_dict["name"], "model1 instance1 version1")
+        # Test a model with a str pk.
+        versions = reversion.get_for_object(self.test21)
+        self.assertEqual(len(versions), 2)
+        self.assertEqual(versions[0].field_dict["name"], "model2 instance1 version2")
+        self.assertEqual(versions[1].field_dict["name"], "model2 instance1 version1")
+        
+    def testCanGetUniqueForObject(self):
+        with reversion.context():
+            self.test11.save()
+            self.test21.save()
+        # Test a model with an int pk.
+        self.assertEqual(reversion.get_for_object(self.test11).count(), 3)
+        self.assertEqual(len(reversion.get_unique_for_object(self.test11)), 2)
+        # Test a model with a str pk.
+        self.assertEqual(reversion.get_for_object(self.test21).count(), 3)
+        self.assertEqual(len(reversion.get_unique_for_object(self.test21)), 2)
+        
+    def testCanGetForDate(self):
+        now = datetime.datetime.now()
+        # Test a model with an int pk.
+        version = reversion.get_for_date(self.test11, now)
+        self.assertEqual(version.field_dict["name"], "model1 instance1 version2")
+        self.assertRaises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test11, datetime.datetime(1970, 1, 1)))
+        # Test a model with a str pk.
+        version = reversion.get_for_date(self.test21, now)
+        self.assertEqual(version.field_dict["name"], "model2 instance1 version2")
+        self.assertRaises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test21, datetime.datetime(1970, 1, 1)))
+        
+    def testCanGetDeleted(self):
+        with reversion.context():
+            self.test11.delete()
+            self.test21.delete()
+        # Test a model with an int pk.
+        versions = reversion.get_deleted(TestModel1)
+        self.assertEqual(len(versions), 1)
+        self.assertEqual(versions[0].field_dict["name"], "model1 instance1 version2")
+        self.assertEqual(versions[0].type, VERSION_DELETE)
+        # Test a model with a str pk.
+        versions = reversion.get_deleted(TestModel2)
+        self.assertEqual(len(versions), 1)
+        self.assertEqual(versions[0].field_dict["name"], "model2 instance1 version2")
+        self.assertEqual(versions[0].type, VERSION_DELETE)
+                
         
 class CreateInitialRevisionsTest(ReversionTestBase):
 

@@ -121,13 +121,15 @@ class VersionManager(models.Manager):
         Returns all the versions of the given object, ordered by date created.
         """
         from reversion.revisions import revision
-        return revision.get_for_object(object)
+        return revision.get_for_object(object).order_by("pk")
     
     @depricated("Version.objects.get_unique_for_object()", "reversion.get_unique_for_object()")
     def get_unique_for_object(self, obj):
         """Returns unique versions associated with the object."""
         from reversion.revisions import revision
-        return revision.get_unique_for_object(obj)
+        versions = revision.get_unique_for_object(obj)
+        versions.reverse()
+        return versions
     
     @depricated("Version.objects.get_for_date()", "reversion.get_for_date()")
     def get_for_date(self, object, date):
@@ -135,7 +137,7 @@ class VersionManager(models.Manager):
         from reversion.revisions import revision
         return revision.get_for_date(object, date)
     
-    @depricated("Version.objects.get_deleted_object()", "reversion.get_deleted_object()")
+    @depricated("Version.objects.get_deleted_object()", "reversion.get_for_object_reference()[0]")
     def get_deleted_object(self, model_class, object_id, select_related=None):
         """
         Returns the version corresponding to the deletion of the object with
@@ -145,7 +147,7 @@ class VersionManager(models.Manager):
         `select_related` argument.
         """
         from reversion.revisions import revision
-        return revision.get_deleted_object(model_class, object_id, select_related)
+        return revision.get_for_deleted_object(model_class, object_id, select_related)
     
     @depricated("Version.objects.get_deleted()", "reversion.get_deleted()")
     def get_deleted(self, model_class, select_related=None):

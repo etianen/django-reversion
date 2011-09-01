@@ -31,3 +31,11 @@ set_comment = revision_context_manager.set_comment
 add_meta = revision_context_manager.add_meta
 get_ignore_duplicates = revision_context_manager.get_ignore_duplicates
 set_ignore_duplicates = revision_context_manager.set_ignore_duplicates
+
+
+# Low level API.
+get_for_object_reference = revision.get_for_object_reference
+get_for_object = revision.get_for_object
+get_unique_for_object = revision.get_unique_for_object
+get_for_date = revision.get_for_date
+get_deleted = revision.get_deleted
