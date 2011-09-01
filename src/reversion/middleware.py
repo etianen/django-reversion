@@ -16,14 +16,19 @@ class RevisionMiddleware(object):
         revision_context_manager.start()
         if hasattr(request, "user") and request.user.is_authenticated():
             revision_context_manager.set_user(request.user)
-        
-    def process_response(self, request, response):
+    
+    def _close_revision(self, request):
         """Closes the revision."""
         if request.META.get(REVISION_MIDDLEWARE_FLAG, False):
             del request.META[REVISION_MIDDLEWARE_FLAG]
             revision_context_manager.end()
+    
+    def process_response(self, request, response):
+        """Closes the revision."""
+        self._close_revision(request)
         return response
         
     def process_exception(self, request, exception):
         """Closes the revision."""
         revision_context_manager.invalidate()    
+        self._close_revision(request)

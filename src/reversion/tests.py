@@ -9,10 +9,14 @@ import datetime
 from django.db import models
 from django.test import TestCase
 from django.core.management import call_command
+from django.conf.urls.defaults import *
+from django.utils.decorators import decorator_from_middleware
+from django.http import HttpResponse
 
 import reversion
 from reversion.revisions import RegistrationError
 from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE
+from reversion.middleware import RevisionMiddleware
 
 
 class TestModelBase(models.Model):
@@ -251,6 +255,72 @@ class ApiTest(RevisionTestBase):
         self.assertEqual(len(versions), 1)
         self.assertEqual(versions[0].field_dict["name"], "model2 instance1 version2")
         self.assertEqual(versions[0].type, VERSION_DELETE)
+
+
+revision_middleware_decorator = decorator_from_middleware(RevisionMiddleware)
+
+# A dumb view that saves a revision.
+@revision_middleware_decorator
+def save_revision_view(request):
+    TestModel1.objects.create(
+        name = "model1 instance3 version1",
+    )
+    TestModel1.objects.create(
+        name = "model1 instance4 version1",
+    )
+    TestModel2.objects.create(
+        name = "model2 instance3 version1",
+    )
+    TestModel2.objects.create(
+        name = "model2 instance4 version1",
+    )
+    return HttpResponse("OK")
+    
+    
+# A dumb view that borks a revision.
+@revision_middleware_decorator
+def error_revision_view(request):
+    TestModel1.objects.create(
+        name = "model1 instance3 version1",
+    )
+    TestModel1.objects.create(
+        name = "model1 instance4 version1",
+    )
+    TestModel2.objects.create(
+        name = "model2 instance3 version1",
+    )
+    TestModel2.objects.create(
+        name = "model2 instance4 version1",
+    )
+    raise Exception("Foo")
+
+
+urlpatterns = patterns("",
+
+    url("^success/$", save_revision_view),
+    
+    url("^error/$", error_revision_view),
+
+)
+
+
+class RevisionMiddlewareTest(ReversionTestBase):
+
+    urls = "reversion.tests"
+
+    def testRevisionMiddleware(self):
+        self.assertEqual(Revision.objects.count(), 0)
+        self.assertEqual(Version.objects.count(), 0)
+        self.client.get("/success/")
+        self.assertEqual(Revision.objects.count(), 1)
+        self.assertEqual(Version.objects.count(), 4)
+        
+    def testRevisionMiddlewareInvalidatesRevisionOnError(self):
+        self.assertEqual(Revision.objects.count(), 0)
+        self.assertEqual(Version.objects.count(), 0)
+        self.assertRaises(Exception, lambda: self.client.get("/error/"))
+        self.assertEqual(Revision.objects.count(), 0)
+        self.assertEqual(Version.objects.count(), 0)
                 
         
 class CreateInitialRevisionsTest(ReversionTestBase):
