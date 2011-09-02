@@ -284,6 +284,8 @@ class FollowModelsTest(ReversionTestBase):
     @reversion.create_revision
     def setUp(self):
         super(FollowModelsTest, self).setUp()
+        reversion.unregister(TestModel1)
+        reversion.register(TestModel1, follow=("testfollowmodel_set",))
         reversion.register(TestFollowModel, follow=("test_model_1", "test_model_2s",))
         self.follow1 = TestFollowModel.objects.create(
             name = "related instance1 version 1",
@@ -317,6 +319,14 @@ class FollowModelsTest(ReversionTestBase):
         self.assertEqual(TestModel2.objects.get(id=self.test22.pk).name, "model2 instance2 version1")
         self.assertEqual(TestModel2.objects.count(), 2)
         self.assertRaises(TestModel2.DoesNotExist, lambda: TestModel2.objects.get(id=test23_pk))
+    
+    def testReverseRelationsFollowed(self):
+        self.assertEqual(Revision.objects.count(), 1)
+        self.assertEqual(Version.objects.count(), 5)
+        with reversion.context():
+            self.test11.save()
+        self.assertEqual(Revision.objects.count(), 2)
+        self.assertEqual(Version.objects.count(), 9)
     
     def tearDown(self):
         reversion.unregister(TestFollowModel)
