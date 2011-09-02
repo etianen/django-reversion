@@ -49,9 +49,7 @@ class VersionAdmin(admin.ModelAdmin):
         if not revision.is_registered(model):
             follow = follow or []
             for parent_cls, field in model._meta.parents.items():
-                if field:
-                    # Proxy models do not have a parent field.
-                    follow.append(field.name)
+                follow.append(field.name)
                 self._autoregister(parent_cls)
             revision.register(model, follow=follow, format=self.reversion_format)
     

@@ -287,11 +287,20 @@ class MultiTableInheritanceApiTest(RevisionTestBase):
 
     def setUp(self):
         super(MultiTableInheritanceApiTest, self).setUp()
-        self.register(TestModel1Child)
-        
+        reversion.register(TestModel1Child, follow=("testmodel1_ptr",))
+        with reversion.context():
+            self.testchild1 = TestModel1Child.objects.create(
+                name = "modelchild1 instance1 version 1",
+            )
+    
+    def testCanRetreiveFullFieldDict(self):
+        self.assertEqual(reversion.get_for_object(self.testchild1)[0].field_dict["name"], "modelchild1 instance1 version 1")
+    
     def tearDown(self):
         super(MultiTableInheritanceApiTest, self).tearDown()
-        self.unregister(TestModel1Child)
+        reversion.unregister(TestModel1Child)
+        TestModel1Child.objects.all().delete()
+        del self.testchild1
 
 
 class TestFollowModel(TestModelBase):
