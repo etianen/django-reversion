@@ -1,4 +1,4 @@
-"""Admin extensions for Reversion."""
+"""Admin extensions for django-reversion."""
 
 from django import template
 from django.db import models, transaction

@@ -1,4 +1,4 @@
-"""Database models used by Reversion."""
+"""Database models used by django-reversion."""
 
 import warnings
 
