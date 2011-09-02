@@ -5,6 +5,7 @@ These tests require Python 2.5 to run.
 """
 
 import datetime
+from unittest import skipUnless
 
 from django.db import models
 from django.test import TestCase
@@ -524,6 +525,43 @@ class CreateInitialRevisionsTest(ReversionTestBase):
     def testCreateInitialRevisionsSpecificComment(self):
         call_command("createinitialrevisions", comment="Foo bar")
         self.assertEqual(Revision.objects.all()[0].comment, "Foo bar")
+
+
+try:
+    from reversion.helpers import generate_patch, generate_patch_html
+except ImportError:
+    can_test_patch = False
+else:
+    can_test_patch = True
+    
+    
+class PatchTest(RevisionTestBase):
+    
+    def setUp(self):
+        super(PatchTest, self).setUp()
+        with reversion.context():
+            self.test11.name = "model1 instance1 version2"
+            self.test11.save()
+        self.version2, self.version1 = reversion.get_for_object(self.test11) 
+    
+    @skipUnless(can_test_patch, "Diff match patch library not installed")
+    def testCanGeneratePatch(self):
+        self.assertEqual(
+            generate_patch(self.version1, self.version2, "name"),
+            "@@ -17,9 +17,9 @@\n  version\n-1\n+2\n",
+        )
+
+    @skipUnless(can_test_patch, "Diff match patch library not installed")    
+    def testCanGeneratePathHtml(self):
+        self.assertEqual(
+            generate_patch_html(self.version1, self.version2, "name"),
+            u'<span>model1 instance1 version</span><del style="background:#ffe6e6;">1</del><ins style="background:#e6ffe6;">2</ins>',
+        )
+                         
+    def tearDown(self):
+        super(PatchTest, self).tearDown()
+        del self.version1
+        del self.version2
 
 
 # Import the deprecated tests.
