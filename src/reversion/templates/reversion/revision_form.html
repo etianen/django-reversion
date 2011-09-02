@@ -2,9 +2,6 @@
 {% load i18n reversion_admin %}
 
 
-{% block extrahead %}{{block.super|fix_jsi18n}}{% endblock %}
-
-
 {% block breadcrumbs %}
 	<div class="breadcrumbs">
 		<a href="{% url admin:index %}">{% trans "Home" %}</a> &rsaquo;

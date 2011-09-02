@@ -240,7 +240,7 @@ class Version(models.Model):
                 except parent_class.DoesNotExist:
                     pass
                 else:
-                    result.update(parent_version.get_field_dict())
+                    result.update(parent_version.field_dict)
             setattr(self, "_field_dict_cache", result)
         return getattr(self, "_field_dict_cache")
        
