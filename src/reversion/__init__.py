@@ -45,5 +45,5 @@ get_for_date = default_revision_manager.get_for_date
 get_deleted = default_revision_manager.get_deleted
 
 
-# TODO: Test meta
 # TODO: Test fields and exclude params.
+# TODO: Test ignore duplicates

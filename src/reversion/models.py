@@ -167,7 +167,7 @@ class VersionManager(models.Manager):
         `select_related` argument.
         """
         from reversion.revisions import default_revision_manager
-        return list(default_revision_manager.get_deleted(model_class, select_related))
+        return list(default_revision_manager.get_deleted(model_class))
             
 
 class Version(models.Model):

@@ -164,6 +164,9 @@ class RevisionContextManager(local):
                     for manager, manager_context in self._objects.iteritems():
                         manager.save_revision(
                             manager_context,
+                            user = self._user,
+                            comment = self._comment,
+                            meta = self._meta,
                             ignore_duplicates = self._ignore_duplicates,
                         )
             finally:
@@ -203,10 +206,10 @@ class RevisionContextManager(local):
         self._assert_active()
         self._comment = comment
     
-    def get_comment(self, comment):
+    def get_comment(self):
         """Gets the current comment for the revision."""
         self._assert_active()
-        return self_comment
+        return self._comment
         
     def add_meta(self, cls, **kwargs):
         """Adds a class of meta information to the current revision."""
@@ -503,7 +506,7 @@ class RevisionManager(object):
         else:
             return version
     
-    def get_deleted(self, model_class, select_related=None):
+    def get_deleted(self, model_class):
         """
         Returns all the deleted versions for the given model class.
         

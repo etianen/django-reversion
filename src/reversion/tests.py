@@ -10,6 +10,7 @@ from django.db import models
 from django.test import TestCase
 from django.core.management import call_command
 from django.conf.urls.defaults import *
+from django.contrib.auth.models import User
 from django.utils.decorators import decorator_from_middleware
 from django.http import HttpResponse
 
@@ -59,6 +60,16 @@ class TestModel1Proxy(TestModel1):
 
     class Meta:
         proxy = True
+        
+        
+class RevisionMeta(models.Model):
+
+    revision = models.OneToOneField(Revision)
+
+    age = models.IntegerField()
+    
+    class Meta:
+        app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
     
     
 class RegistrationTest(TestCase):
@@ -105,6 +116,9 @@ class ReversionTestBase(TestCase):
         self.test22 = TestModel2.objects.create(
             name = "model2 instance2 version1",
         )
+        self.user = User.objects.create(
+            username = "user1",
+        )
         
     def tearDown(self):
          # Re-register the old registered models.
@@ -116,10 +130,12 @@ class ReversionTestBase(TestCase):
         # Delete the test models.
         TestModel1.objects.all().delete()
         TestModel2.objects.all().delete()
+        User.objects.all().delete()
         del self.test11
         del self.test12
         del self.test21
         del self.test22
+        del self.user
         # Delete the revisions index.
         Revision.objects.all().delete()
 
@@ -276,6 +292,21 @@ class ApiTest(RevisionTestBase):
         self.assertEqual(TestModel1.objects.get(id=self.test12.pk).name, "model1 instance2 version1")
         self.assertEqual(TestModel2.objects.get(id=self.test22.pk).name, "model2 instance2 version1")
         self.assertEqual(TestModel2.objects.get(id=self.test22.pk).name, "model2 instance2 version1")
+        
+    def testCanAddMetaToRevision(self):
+        # Create a revision with lots of meta data.
+        with reversion.context():
+            self.test11.save()
+            reversion.set_comment("Foo bar")
+            self.assertEqual(reversion.get_comment(), "Foo bar")
+            reversion.set_user(self.user)
+            self.assertEqual(reversion.get_user(), self.user)
+            reversion.add_meta(RevisionMeta, age=5)
+        # Test the revision data.
+        revision = reversion.get_for_object(self.test11)[0].revision
+        self.assertEqual(revision.user, self.user)
+        self.assertEqual(revision.comment, "Foo bar")
+        self.assertEqual(revision.revisionmeta.age, 5)
 
 
 class TestModel1Child(TestModel1):
