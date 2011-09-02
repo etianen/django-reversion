@@ -292,6 +292,23 @@ class ApiTest(RevisionTestBase):
         self.assertEqual(TestModel1.objects.get(id=self.test12.pk).name, "model1 instance2 version1")
         self.assertEqual(TestModel2.objects.get(id=self.test22.pk).name, "model2 instance2 version1")
         self.assertEqual(TestModel2.objects.get(id=self.test22.pk).name, "model2 instance2 version1")
+    
+    def testCanSaveIgnoringDuplicates(self):
+        with reversion.context():
+            self.test11.save()
+            self.test12.save()
+            self.test21.save()
+            self.test22.save()
+            self.assertFalse(reversion.get_ignore_duplicates())
+            reversion.set_ignore_duplicates(True)
+            self.assertTrue(reversion.get_ignore_duplicates())
+        self.assertEqual(reversion.get_for_object(self.test11).count(), 2)
+        # Save a non-duplicate revision.
+        with reversion.context():
+            self.test11.save()
+            self.assertFalse(reversion.get_ignore_duplicates())
+            reversion.set_ignore_duplicates(True)
+        self.assertEqual(reversion.get_for_object(self.test11).count(), 3)
         
     def testCanAddMetaToRevision(self):
         # Create a revision with lots of meta data.
