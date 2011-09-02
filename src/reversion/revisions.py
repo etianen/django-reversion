@@ -77,12 +77,6 @@ class VersionAdapter(object):
                     yield related_obj
             elif related is not None:
                 raise TypeError, "Cannot follow the relationship %r. Expected a model or QuerySet, found %r" % (relationship, related)
-        # If a proxy model's parent is registered, add it.
-        if obj._meta.proxy:
-            parent_cls = obj._meta.parents.keys()[0]
-            if self.is_registered(parent_cls):
-                parent_obj = parent_cls.objects.get(pk=obj.pk)
-                yield parent_obj
     
     def get_serialization_format(self):
         """Returns the serialization format to use."""
@@ -341,9 +335,9 @@ class RevisionManager(object):
         # Prevent multiple registration.
         if self.is_registered(model):
             raise RegistrationError, "%r has already been registered with django-reversion" % model
-        # Ensure the parent model of proxy models is registered.
-        if model._meta.proxy and not self.is_registered(model._meta.parents.keys()[0]):
-            raise RegistrationError, "%r is a proxy model, and its parent has not been registered with django-reversion." % model
+        # Prevent proxy models being registered.
+        if model._meta.proxy:
+            raise RegistrationError("Proxy models cannot be used with django-reversion, register the parent class instead" % model)
         # Perform any customization.
         if field_overrides:
             adapter_cls = type("Custom" + adapter_cls.__name__, (adapter_cls,), field_overrides)
@@ -404,12 +398,7 @@ class RevisionManager(object):
                     adapter = self.get_adapter(obj.__class__)
                     objects[obj] = adapter.get_version_data(obj, VERSION_CHANGE)
             # Create all the versions without saving them
-            new_versions = []
-            for obj, version_data in objects.iteritems():
-                # Proxy models should not actually be saved to the revision set.
-                if obj._meta.proxy:
-                    continue
-                new_versions.append(Version(**version_data))
+            new_versions = [Version(**version_data) for obj, version_data in objects.iteritems()]
             # Check if there's some change in all the revision's objects.
             save_revision = True
             if ignore_duplicates:

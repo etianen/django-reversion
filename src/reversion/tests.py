@@ -80,14 +80,6 @@ class RegistrationTest(TestCase):
     def testProxyRegistration(self):
         # Test error if registering proxy models.
         self.assertRaises(RegistrationError, lambda: reversion.register(TestModel1Proxy))
-        # Test can register if parent model is registered.
-        reversion.register(TestModel1)
-        reversion.register(TestModel1Proxy)
-        self.assertTrue(reversion.is_registered(TestModel1Proxy))
-        # Test can unregister proxy model.
-        reversion.unregister(TestModel1Proxy)
-        reversion.unregister(TestModel1)
-        self.assertFalse(reversion.is_registered(TestModel1Proxy))
 
 
 class ReversionTestBase(TestCase):
@@ -286,27 +278,20 @@ class ApiTest(RevisionTestBase):
         self.assertEqual(TestModel2.objects.get(id=self.test22.pk).name, "model2 instance2 version1")
 
 
-class ProxyModelApiTest(TestModelBase):
+class TestModel1Child(TestModel1):
+
+    pass
+    
+    
+class MultiTableInheritanceApiTest(RevisionTestBase):
 
     def setUp(self):
-        super(ProxyModelApiTest, self).setUp()
-        reversion.register(TestModel1Proxy)
-        self.proxy1 = TestModel1Proxy.objects.get(id=self.test11.pk)
-    
-    def testProxyModelCantRetrieveParentRevisions(self):
-        self.assertEqual(reversion.get_for_object(self.proxy1).count(), 0)
-    
-    def testProxyModelDoesntSaveParentRevisions(self):
-        self.assertEqual(reversion.get_for_object(self.test11).count(), 1)
-        with reversion.context():
-            self.proxy1.save()
-        self.assertEqual(reversion.get_for_object(self.proxy1).count(), 1)
-        self.assertEqual(reversion.get_for_object(self.test11).count(), 1)
+        super(MultiTableInheritanceApiTest, self).setUp()
+        self.register(TestModel1Child)
         
     def tearDown(self):
-        super(ProxyModelApiTest, self).tearDown()
-        reversion.unregister(TestModel1Proxy)
-        del self.proxy1
+        super(MultiTableInheritanceApiTest, self).tearDown()
+        self.unregister(TestModel1Child)
 
 
 class TestFollowModel(TestModelBase):
