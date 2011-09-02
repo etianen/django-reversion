@@ -11,7 +11,7 @@ from reversion.admin import VersionAdmin
 
 
 # Legacy revision reference.
-revision = default_revision_manager  # TODO: Depricate eventually.
+revision = default_revision_manager  # TODO: Deprecate eventually.
 
 
 # Easy registration methods.
