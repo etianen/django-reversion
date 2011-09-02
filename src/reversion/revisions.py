@@ -358,8 +358,7 @@ class RevisionManager(object):
         """Returns the registration information for the given model class."""
         if self.is_registered(model):
             return self._registered_models[model]
-        else:
-            raise RegistrationError, "%r has not been registered with django-reversion" % model
+        raise RegistrationError, "%r has not been registered with django-reversion" % model
         
     def unregister(self, model):
         """Removes a model from version control."""

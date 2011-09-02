@@ -55,6 +55,12 @@ class TestModel2(TestModelBase):
     )
     
     
+class TestModel1Proxy(TestModel1):
+
+    class Meta:
+        proxy = True
+    
+    
 class RegistrationTest(TestCase):
 
     def testRegistration(self):
@@ -70,6 +76,18 @@ class RegistrationTest(TestCase):
         self.assertRaises(RegistrationError, lambda: reversion.unregister(TestModel1))
         self.assertTrue(TestModel1 not in reversion.get_registered_models())
         self.assertRaises(RegistrationError, lambda: isinstance(reversion.get_adapter(TestModel1)))
+        
+    def testProxyRegistration(self):
+        # Test error if registering proxy models.
+        self.assertRaises(RegistrationError, lambda: reversion.register(TestModel1Proxy))
+        # Test can register if parent model is registered.
+        reversion.register(TestModel1)
+        reversion.register(TestModel1Proxy)
+        self.assertTrue(reversion.is_registered(TestModel1Proxy))
+        # Test can unregister proxy model.
+        reversion.unregister(TestModel1Proxy)
+        reversion.unregister(TestModel1)
+        self.assertFalse(reversion.is_registered(TestModel1Proxy))
 
 
 class ReversionTestBase(TestCase):
