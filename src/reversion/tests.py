@@ -16,7 +16,7 @@ from django.utils.decorators import decorator_from_middleware
 from django.http import HttpResponse
 
 import reversion
-from reversion.revisions import RegistrationError
+from reversion.revisions import RegistrationError, RevisionManager
 from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE
 from reversion.middleware import RevisionMiddleware
 
@@ -525,6 +525,31 @@ class CreateInitialRevisionsTest(ReversionTestBase):
     def testCreateInitialRevisionsSpecificComment(self):
         call_command("createinitialrevisions", comment="Foo bar")
         self.assertEqual(Revision.objects.all()[0].comment, "Foo bar")
+
+
+excluded_revision_manager = RevisionManager("excluded")
+
+
+class ExcludedFieldsTest(RevisionTestBase):
+    
+    def setUp(self):
+        excluded_revision_manager.register(TestModel1, fields=("id",))
+        excluded_revision_manager.register(TestModel2, exclude=("name",))
+        super(ExcludedFieldsTest, self).setUp()
+    
+    def testExcludedRevisionManagerIsSeparate(self):
+        self.assertEqual(excluded_revision_manager.get_for_object(self.test11).count(), 1)
+        
+    def testExcludedFieldsAreRespected(self):
+        self.assertEqual(excluded_revision_manager.get_for_object(self.test11)[0].field_dict["id"], self.test11.id)
+        self.assertEqual(excluded_revision_manager.get_for_object(self.test11)[0].field_dict["name"], "")
+        self.assertEqual(excluded_revision_manager.get_for_object(self.test21)[0].field_dict["id"], self.test21.id)
+        self.assertEqual(excluded_revision_manager.get_for_object(self.test21)[0].field_dict["name"], "")
+        
+    def tearDown(self):
+        super(ExcludedFieldsTest, self).tearDown()
+        excluded_revision_manager.unregister(TestModel1)
+        excluded_revision_manager.unregister(TestModel2)
 
 
 try:
