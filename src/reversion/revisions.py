@@ -320,8 +320,8 @@ class RevisionManager(object):
         self._registered_models = {}
         self._revision_context_manager = revision_context_manager
         # Proxies to common context methods.
-        self.create_on_success = revision_context_manager.create_revision
-        self.add_meta = revision_context_manager.add_meta
+        self.create_on_success = deprecated("@revision.create_on_success", "@reversion.create_revision")(revision_context_manager.create_revision)
+        self.add_meta = deprecated("revision.add_meta()", "reversion.add_meta()")(revision_context_manager.add_meta)
 
     # Registration methods.
 
@@ -443,10 +443,12 @@ class RevisionManager(object):
     
     # Context management.
     
+    @deprecated("reversion.revision", "reversion.context()")
     def __enter__(self, *args, **kwargs):
         """Enters a revision management block."""
         return self._revision_context_manager.__enter__(*args, **kwargs)
-        
+    
+    @deprecated("reversion.revision", "reversion.context()")
     def __exit__(self, *args, **kwargs):
         """Exists a revision management block."""
         return self._revision_context_manager.__exit__(*args, **kwargs)
