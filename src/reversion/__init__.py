@@ -48,4 +48,3 @@ get_deleted = default_revision_manager.get_deleted
 # TODO: Test proxy model.
 # TODO: Test multi table inheritance.
 # TODO: Test meta
-# TOOD: Test follow and revert delete for 1-m relationships.

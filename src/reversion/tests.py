@@ -328,6 +328,18 @@ class FollowModelsTest(ReversionTestBase):
         self.assertEqual(Revision.objects.count(), 2)
         self.assertEqual(Version.objects.count(), 9)
     
+    def testReverseFollowRevertWithDelete(self):
+        with reversion.context():
+            follow2 = TestFollowModel.objects.create(
+                name = "related instance2 version 1",
+                test_model_1 = self.test11,
+            )
+        # Test that a revert with delete works.
+        follow2_pk = follow2.pk
+        reversion.get_for_object(self.test11)[1].revision.revert(delete=True)
+        self.assertEqual(TestFollowModel.objects.count(), 1)
+        self.assertRaises(TestFollowModel.DoesNotExist, lambda: TestFollowModel.objects.get(id=follow2_pk))
+    
     def tearDown(self):
         reversion.unregister(TestFollowModel)
         TestFollowModel.objects.all().delete()
