@@ -21,7 +21,7 @@ from django.utils.translation import ugettext as _
 from django.utils.encoding import force_unicode
 
 from reversion.models import Version
-from reversion.revisions import revision_context_manager, default_revision_manager as revision
+from reversion.revisions import revision_context_manager, default_revision_manager
 
 
 class VersionAdmin(admin.ModelAdmin):
@@ -38,6 +38,9 @@ class VersionAdmin(admin.ModelAdmin):
 
     recover_form_template = None
     
+    # The revision manager instance used to manage revisions.
+    revision_manager = default_revision_manager
+    
     # The serialization format to use when registering models with reversion.
     reversion_format = "json"
     
@@ -46,18 +49,18 @@ class VersionAdmin(admin.ModelAdmin):
     
     def _autoregister(self, model, follow=None):
         """Registers a model with reversion, if required."""
-        if not revision.is_registered(model):
+        if not self.revision_manager.is_registered(model):
             follow = follow or []
             for parent_cls, field in model._meta.parents.items():
                 follow.append(field.name)
                 self._autoregister(parent_cls)
-            revision.register(model, follow=follow, format=self.reversion_format)
+            self.revision_manager.register(model, follow=follow, format=self.reversion_format)
     
     def __init__(self, *args, **kwargs):
         """Initializes the VersionAdmin"""
         super(VersionAdmin, self).__init__(*args, **kwargs)
         # Automatically register models if required.
-        if not revision.is_registered(self.model):
+        if not self.revision_manager.is_registered(self.model):
             inline_fields = []
             for inline in self.inlines:
                 inline_model = inline.model
@@ -101,30 +104,29 @@ class VersionAdmin(admin.ModelAdmin):
     def log_addition(self, request, object):
         """Sets the version meta information."""
         super(VersionAdmin, self).log_addition(request, object)
-        revision.user = request.user
-        revision.comment = _(u"Initial version.")
-        revision.ignore_duplicates = self.ignore_duplicate_revisions
+        revision_context_manager.set_user(request.user)
+        revision_context_manager.set_comment(_(u"Initial version."))
+        revision_context_manager.set_ignore_duplicates(self.ignore_duplicate_revisions)
         
     def log_change(self, request, object, message):
         """Sets the version meta information."""
         super(VersionAdmin, self).log_change(request, object, message)
-        revision.user = request.user
-        revision.comment = message
-        revision.ignore_duplicates = self.ignore_duplicate_revisions
+        revision_context_manager.set_user(request.user)
+        revision_context_manager.set_comment(message)
+        revision_context_manager.set_ignore_duplicates(self.ignore_duplicate_revisions)
     
     def log_deletion(self, request, object, object_repr):
         """Sets the version meta information."""
-        """Sets the version meta information."""
         super(VersionAdmin, self).log_deletion(request, object, object_repr)
-        revision.user = request.user
-        revision.comment = _(u"Deleted %(verbose_name)s." % {"verbose_name": self.model._meta.verbose_name})
-        revision.ignore_duplicates = self.ignore_duplicate_revisions
+        revision_context_manager.set_user(request.user)
+        revision_context_manager.set_comment((u"Deleted %(verbose_name)s." % {"verbose_name": self.model._meta.verbose_name}))
+        revision_context_manager.set_ignore_duplicates(self.ignore_duplicate_revisions)
     
     def recoverlist_view(self, request, extra_context=None):
         """Displays a deleted model to allow recovery."""
         model = self.model
         opts = model._meta
-        deleted = Version.objects.get_deleted(self.model, select_related=("revision",))
+        deleted = self.revision_manager.get_deleted(self.model).order_by("pk")
         context = {
             "opts": opts,
             "app_label": opts.app_label,
@@ -376,7 +378,7 @@ class VersionAdmin(admin.ModelAdmin):
         opts = self.model._meta
         action_list = [{"revision": version.revision,
                         "url": reverse("%s:%s_%s_revision" % (self.admin_site.name, opts.app_label, opts.module_name), args=(version.object_id, version.id))}
-                       for version in Version.objects.get_for_object_reference(self.model, object_id).select_related("revision__user")]
+                       for version in self.revision_manager.get_for_object_reference(self.model, object_id).select_related("revision__user").order_by("pk")]
         # Compile the context.
         context = {"action_list": action_list}
         context.update(extra_context or {})
