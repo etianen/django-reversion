@@ -47,6 +47,9 @@ class VersionAdmin(admin.ModelAdmin):
     # Whether to ignore duplicate revision data.
     ignore_duplicate_revisions = False
     
+    # If True, then the default ordering of object_history and recover lists will be reversed.
+    history_latest_first = False
+    
     def _autoregister(self, model, follow=None):
         """Registers a model with reversion, if required."""
         if not self.revision_manager.is_registered(model):
@@ -122,11 +125,17 @@ class VersionAdmin(admin.ModelAdmin):
         revision_context_manager.set_comment((u"Deleted %(verbose_name)s." % {"verbose_name": self.model._meta.verbose_name}))
         revision_context_manager.set_ignore_duplicates(self.ignore_duplicate_revisions)
     
+    def _order_version_queryset(self, queryset):
+        """Applies the correct ordering to the given version queryset."""
+        if self.history_latest_first:
+            return queryset.order_by("-pk")
+        return queryset.order_by("pk")
+    
     def recoverlist_view(self, request, extra_context=None):
         """Displays a deleted model to allow recovery."""
         model = self.model
         opts = model._meta
-        deleted = self.revision_manager.get_deleted(self.model).order_by("pk")
+        deleted = self._order_version_queryset(self.revision_manager.get_deleted(self.model))
         context = {
             "opts": opts,
             "app_label": opts.app_label,
@@ -373,9 +382,17 @@ class VersionAdmin(admin.ModelAdmin):
         """Renders the history view."""
         object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
         opts = self.model._meta
-        action_list = [{"revision": version.revision,
-                        "url": reverse("%s:%s_%s_revision" % (self.admin_site.name, opts.app_label, opts.module_name), args=(version.object_id, version.id))}
-                       for version in self.revision_manager.get_for_object_reference(self.model, object_id).select_related("revision__user").order_by("pk")]
+        action_list = [
+            {
+                "revision": version.revision,
+                "url": reverse("%s:%s_%s_revision" % (self.admin_site.name, opts.app_label, opts.module_name), args=(version.object_id, version.id)),
+            }
+            for version
+            in self._order_version_queryset(self.revision_manager.get_for_object_reference(
+                self.model,
+                object_id,
+            ).select_related("revision__user"))
+        ]
         # Compile the context.
         context = {"action_list": action_list}
         context.update(extra_context or {})
