@@ -357,7 +357,7 @@ class VersionAdmin(admin.ModelAdmin):
     @transaction.commit_on_success
     @revision_context_manager.create_revision()
     def delete_view(self, *args, **kwargs):
-        """Deletes and existing model."""
+        """Deletes an existing model."""
         return super(VersionAdmin, self).delete_view(*args, **kwargs)
     
     @transaction.commit_on_success
