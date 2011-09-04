@@ -4,7 +4,7 @@ from django.contrib.contenttypes.generic import GenericStackedInline
 from reversion.admin import VersionAdmin
 
 
-from test_project.test_app.models import ChildModel, RelatedModel, GenericRelatedModel, ProxyModel
+from test_project.test_app.models import ChildModel, RelatedModel, GenericRelatedModel
 
 
 class RelatedModelInline(admin.StackedInline):
@@ -27,6 +27,3 @@ class ChildModelAdmin(VersionAdmin):
     
     
 admin.site.register(ChildModel, ChildModelAdmin)
-
-
-admin.site.register(ProxyModel, ChildModelAdmin)

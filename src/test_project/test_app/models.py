@@ -54,10 +54,3 @@ class GenericRelatedModel(models.Model):
     
     def __unicode__(self):
         return self.generic_related_name
-    
-    
-class ProxyModel(ChildModel):
-    
-    class Meta:
-        proxy = True
-        
