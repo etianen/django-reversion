@@ -4,6 +4,8 @@ Tests for the django-reversion API.
 These tests require Python 2.5 to run.
 """
 
+from __future__ import with_statement
+
 import datetime
 from unittest import skipUnless
 
