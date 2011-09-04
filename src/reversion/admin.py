@@ -164,7 +164,7 @@ class VersionAdmin(admin.ModelAdmin):
                                  and unicode(related_version.field_dict[fk_name]) == unicode(object_id)])
         return related_versions
     
-    def _hack_inline_formset_initial(self, FormSet, formset, obj, version):
+    def _hack_inline_formset_initial(self, FormSet, formset, obj, version, revert, recover):
         """Hacks the given formset to contain the correct initial data."""
          # Now we hack it to push in the data from the revision!
         initial = []
@@ -185,6 +185,10 @@ class VersionAdmin(admin.ModelAdmin):
         # Reconstruct the forms with the new revision data.
         formset.initial = initial
         formset.forms = [formset._construct_form(n) for n in xrange(len(initial))]
+        # Hack the formset to force a save of everything.
+        for form in formset.forms:
+            form.has_changed = lambda: True
+            form._get_changed_data = lambda: [field.name for field in form.fields]  # TODO: Scope this in a partial function.
         def total_form_count_hack(count):
             return lambda: count
         formset.total_form_count = total_form_count_hack(len(initial))
@@ -221,16 +225,13 @@ class VersionAdmin(admin.ModelAdmin):
                 formset = FormSet(request.POST, request.FILES,
                                   instance=new_object, prefix=prefix,
                                   queryset=inline.queryset(request))
-                self._hack_inline_formset_initial(FormSet, formset, obj, version)
+                self._hack_inline_formset_initial(FormSet, formset, obj, version, revert, recover)
                 # Add this hacked formset to the form.
                 formsets.append(formset)
             if all_valid(formsets) and form_validated:
                 self.save_model(request, new_object, form, change=True)
                 form.save_m2m()
                 for formset in formsets:
-                    # Hack the formset to force a save of everything.
-                    for form in formset.forms:
-                        form.has_changed = lambda: True
                     # HACK: If the value of a file field is None, remove the file from the model.
                     related_objects = formset.save(commit=False)
                     for related_obj, related_form in zip(related_objects, formset.saved_forms):
@@ -264,7 +265,7 @@ class VersionAdmin(admin.ModelAdmin):
                     prefix = "%s-%s" % (prefix, prefixes[prefix])
                 formset = FormSet(instance=obj, prefix=prefix,
                                   queryset=inline.queryset(request))
-                self._hack_inline_formset_initial(FormSet, formset, obj, version)
+                self._hack_inline_formset_initial(FormSet, formset, obj, version, revert, recover)
                 # Add this hacked formset to the form.
                 formsets.append(formset)
         # Generate admin form helper.
