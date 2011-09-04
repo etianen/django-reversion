@@ -143,7 +143,7 @@ class ReversionTestBase(TestCase):
 
 class RevisionTestBase(ReversionTestBase):
 
-    @reversion.create_revision
+    @reversion.create_revision()
     def setUp(self):
         super(RevisionTestBase, self).setUp()
 
@@ -156,21 +156,21 @@ class InternalsTest(RevisionTestBase):
         
     def testContextManager(self):
         # New revision should be created.
-        with reversion.context():
+        with reversion.create_revision():
             self.test11.name = "model1 instance1 version2"
             self.test11.save()
         self.assertEqual(Revision.objects.count(), 2)
         self.assertEqual(Version.objects.count(), 5)
         
     def testEmptyRevisionNotCreated(self):
-        with reversion.context():
+        with reversion.create_revision():
             pass
         self.assertEqual(Revision.objects.count(), 1)
         self.assertEqual(Version.objects.count(), 4)
         
     def testRevisionContextAbandonedOnError(self):
         try:
-            with reversion.context():
+            with reversion.create_revision():
                 self.test11.name = "model1 instance1 version2"
                 self.test11.save()
                 raise Exception("Foo")
@@ -180,7 +180,7 @@ class InternalsTest(RevisionTestBase):
         self.assertEqual(Version.objects.count(), 4)
         
     def testRevisionDecoratorAbandonedOnError(self):
-        @reversion.create_revision
+        @reversion.create_revision()
         def make_revision():
             self.test11.name = "model1 instance1 version2"
             self.test11.save()
@@ -196,12 +196,12 @@ class InternalsTest(RevisionTestBase):
         self.assertEqual(Version.objects.filter(type=VERSION_ADD).count(), 4)
         self.assertEqual(Version.objects.filter(type=VERSION_CHANGE).count(), 0)
         self.assertEqual(Version.objects.filter(type=VERSION_DELETE).count(), 0)
-        with reversion.context():
+        with reversion.create_revision():
             self.test11.save()
         self.assertEqual(Version.objects.filter(type=VERSION_ADD).count(), 4)
         self.assertEqual(Version.objects.filter(type=VERSION_CHANGE).count(), 1)
         self.assertEqual(Version.objects.filter(type=VERSION_DELETE).count(), 0)
-        with reversion.context():
+        with reversion.create_revision():
             self.test11.delete()
         self.assertEqual(Version.objects.filter(type=VERSION_ADD).count(), 4)
         self.assertEqual(Version.objects.filter(type=VERSION_CHANGE).count(), 1)
@@ -212,7 +212,7 @@ class ApiTest(RevisionTestBase):
     
     def setUp(self):
         super(ApiTest, self).setUp()
-        with reversion.context():
+        with reversion.create_revision():
             self.test11.name = "model1 instance1 version2"
             self.test11.save()
             self.test12.name = "model1 instance2 version2"
@@ -247,7 +247,7 @@ class ApiTest(RevisionTestBase):
         self.assertEqual(versions[1].field_dict["name"], "model2 instance1 version1")
         
     def testCanGetUniqueForObject(self):
-        with reversion.context():
+        with reversion.create_revision():
             self.test11.save()
             self.test21.save()
         # Test a model with an int pk.
@@ -269,7 +269,7 @@ class ApiTest(RevisionTestBase):
         self.assertRaises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test21, datetime.datetime(1970, 1, 1)))
         
     def testCanGetDeleted(self):
-        with reversion.context():
+        with reversion.create_revision():
             self.test11.delete()
             self.test21.delete()
         # Test a model with an int pk.
@@ -295,7 +295,7 @@ class ApiTest(RevisionTestBase):
         self.assertEqual(TestModel2.objects.get(id=self.test22.pk).name, "model2 instance2 version1")
     
     def testCanSaveIgnoringDuplicates(self):
-        with reversion.context():
+        with reversion.create_revision():
             self.test11.save()
             self.test12.save()
             self.test21.save()
@@ -305,7 +305,7 @@ class ApiTest(RevisionTestBase):
             self.assertTrue(reversion.get_ignore_duplicates())
         self.assertEqual(reversion.get_for_object(self.test11).count(), 2)
         # Save a non-duplicate revision.
-        with reversion.context():
+        with reversion.create_revision():
             self.test11.save()
             self.assertFalse(reversion.get_ignore_duplicates())
             reversion.set_ignore_duplicates(True)
@@ -313,7 +313,7 @@ class ApiTest(RevisionTestBase):
         
     def testCanAddMetaToRevision(self):
         # Create a revision with lots of meta data.
-        with reversion.context():
+        with reversion.create_revision():
             self.test11.save()
             reversion.set_comment("Foo bar")
             self.assertEqual(reversion.get_comment(), "Foo bar")
@@ -337,7 +337,7 @@ class MultiTableInheritanceApiTest(RevisionTestBase):
     def setUp(self):
         super(MultiTableInheritanceApiTest, self).setUp()
         reversion.register(TestModel1Child, follow=("testmodel1_ptr",))
-        with reversion.context():
+        with reversion.create_revision():
             self.testchild1 = TestModel1Child.objects.create(
                 name = "modelchild1 instance1 version 1",
             )
@@ -365,7 +365,7 @@ class TestFollowModel(TestModelBase):
     
 class FollowModelsTest(ReversionTestBase):
 
-    @reversion.create_revision
+    @reversion.create_revision()
     def setUp(self):
         super(FollowModelsTest, self).setUp()
         reversion.unregister(TestModel1)
@@ -380,13 +380,13 @@ class FollowModelsTest(ReversionTestBase):
     def testRelationsFollowed(self):
         self.assertEqual(Revision.objects.count(), 1)
         self.assertEqual(Version.objects.count(), 5)
-        with reversion.context():
+        with reversion.create_revision():
             self.follow1.save()
         self.assertEqual(Revision.objects.count(), 2)
         self.assertEqual(Version.objects.count(), 9)
     
     def testRevertWithDelete(self):
-        with reversion.context():
+        with reversion.create_revision():
             test23 = TestModel2.objects.create(
                 name = "model2 instance3 version1",
             )
@@ -407,13 +407,13 @@ class FollowModelsTest(ReversionTestBase):
     def testReverseRelationsFollowed(self):
         self.assertEqual(Revision.objects.count(), 1)
         self.assertEqual(Version.objects.count(), 5)
-        with reversion.context():
+        with reversion.create_revision():
             self.test11.save()
         self.assertEqual(Revision.objects.count(), 2)
         self.assertEqual(Version.objects.count(), 9)
     
     def testReverseFollowRevertWithDelete(self):
-        with reversion.context():
+        with reversion.create_revision():
             follow2 = TestFollowModel.objects.create(
                 name = "related instance2 version 1",
                 test_model_1 = self.test11,
@@ -564,7 +564,7 @@ class PatchTest(RevisionTestBase):
     
     def setUp(self):
         super(PatchTest, self).setUp()
-        with reversion.context():
+        with reversion.create_revision():
             self.test11.name = "model1 instance1 version2"
             self.test11.save()
         self.version2, self.version1 = reversion.get_for_object(self.test11) 

@@ -6,7 +6,7 @@ try:
 except ImportError:
     from django.utils.functional import wraps  # Python 2.4 fallback.
 
-import operator
+import operator, sys
 from threading import local
 from weakref import WeakValueDictionary
 
@@ -245,37 +245,51 @@ class RevisionContextManager(local):
     
     # High-level context management.
     
+    def create_revision(self):
+        """
+        Marks up a block of code as requiring a revision to be created.
+        
+        The returned context manager can also be used as a decorator.
+        """
+        return RevisionContext(self)
+
+
+class RevisionContext(object):
+
+    """An individual context for a revision."""
+
+    def __init__(self, context_manager):
+        """Initializes the revision context."""
+        self._context_manager = context_manager
+    
     def __enter__(self):
         """Enters a block of revision management."""
-        self.start()
+        self._context_manager.start()
         
     def __exit__(self, exc_type, exc_value, traceback):
         """Leaves a block of revision management."""
         try:
             if exc_type is not None:
-                self.invalidate()
+                self._context_manager.invalidate()
         finally:
-            self.end()
-        return False
+            self._context_manager.end()
         
-    def context(self):
-        """Defines a revision management context."""
-        return self  # TODO: Replace with contextlib context manager when Django drops 2.4 compatibility.
-        
-    def create_revision(self, func):
-        """Creates a revision when the given function exits successfully."""
-        def _create_on_success(*args, **kwargs):
-            self.start()
+    def __call__(self, func):
+        """Allows this revision context to be used as a decorator."""
+        @wraps(func)
+        def do_revision_context(*args, **kwargs):
+            self.__enter__()
+            exception = False
             try:
-                try:
-                    result = func(*args, **kwargs)
-                except:
-                    self.invalidate()
+                return func(*args, **kwargs)
+            except:
+                exception = True
+                if not self.__exit__(*sys.exc_info()):
                     raise
             finally:
-                self.end()
-            return result
-        return wraps(func)(_create_on_success)
+                if not exception:
+                    self.__exit__(None, None, None)
+        return do_revision_context
 
 
 # A shared, thread-safe context manager.
@@ -317,7 +331,8 @@ class RevisionManager(object):
         self._registered_models = {}
         self._revision_context_manager = revision_context_manager
         # Proxies to common context methods.
-        self.create_on_success = deprecated("@revision.create_on_success", "@reversion.create_revision")(revision_context_manager.create_revision)
+        self._revision_context = revision_context_manager.create_revision()
+        self.create_on_success = deprecated("@revision.create_on_success", "@reversion.create_revision")(self._revision_context)
         self.add_meta = deprecated("revision.add_meta()", "reversion.add_meta()")(revision_context_manager.add_meta)
 
     # Registration methods.
@@ -434,15 +449,15 @@ class RevisionManager(object):
     
     # Context management.
     
-    @deprecated("reversion.revision", "reversion.context()")
+    @deprecated("reversion.revision", "reversion.create_revision()")
     def __enter__(self, *args, **kwargs):
         """Enters a revision management block."""
-        return self._revision_context_manager.__enter__(*args, **kwargs)
-    
-    @deprecated("reversion.revision", "reversion.context()")
+        return self._revision_context.__enter__(*args, **kwargs)
+        
+    @deprecated("reversion.revision", "reversion.create_revision()")
     def __exit__(self, *args, **kwargs):
-        """Exists a revision management block."""
-        return self._revision_context_manager.__exit__(*args, **kwargs)
+        """Leaves a block of revision management."""
+        return self._revision_context.__exit__(*args, **kwargs)
     
     # Revision meta data.
     

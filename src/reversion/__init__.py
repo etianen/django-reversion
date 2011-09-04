@@ -24,7 +24,6 @@ get_registered_models = default_revision_manager.get_registered_models
 
 # Context management.
 create_revision = revision_context_manager.create_revision
-context = revision_context_manager.context
 
     
 # Revision meta data.

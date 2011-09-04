@@ -321,7 +321,7 @@ class VersionAdmin(admin.ModelAdmin):
         return render_to_response(form_template, context, template.RequestContext(request))
     
     @transaction.commit_on_success
-    @revision_context_manager.create_revision
+    @revision_context_manager.create_revision()
     def recover_view(self, request, version_id, extra_context=None):
         """Displays a form that can recover a deleted model."""
         version = get_object_or_404(Version, pk=version_id)
@@ -331,7 +331,7 @@ class VersionAdmin(admin.ModelAdmin):
         return self.render_revision_form(request, obj, version, context, recover=True)
         
     @transaction.commit_on_success
-    @revision_context_manager.create_revision
+    @revision_context_manager.create_revision()
     def revision_view(self, request, object_id, version_id, extra_context=None):
         """Displays the contents of the given revision."""
         object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
@@ -343,25 +343,25 @@ class VersionAdmin(admin.ModelAdmin):
         return self.render_revision_form(request, obj, version, context, revert=True)
     
     @transaction.commit_on_success
-    @revision_context_manager.create_revision
+    @revision_context_manager.create_revision()
     def add_view(self, *args, **kwargs):
         """Adds a new model to the application."""
         return super(VersionAdmin, self).add_view(*args, **kwargs)
     
     @transaction.commit_on_success
-    @revision_context_manager.create_revision
+    @revision_context_manager.create_revision()
     def change_view(self, *args, **kwargs):
         """Modifies an existing model."""
         return super(VersionAdmin, self).change_view(*args, **kwargs)
         
     @transaction.commit_on_success
-    @revision_context_manager.create_revision
+    @revision_context_manager.create_revision()
     def delete_view(self, *args, **kwargs):
         """Deletes and existing model."""
         return super(VersionAdmin, self).delete_view(*args, **kwargs)
     
     @transaction.commit_on_success
-    @revision_context_manager.create_revision
+    @revision_context_manager.create_revision()
     def changelist_view(self, request, extra_context=None):
         """Renders the change view."""
         opts = self.model._meta
