@@ -2,9 +2,11 @@ django-reversion changelog
 ==========================
 
 
-MASTER
-------
+1.5 - 04/09/2011
+----------------
 
+* Added in simplified low level API methods, and deprecated old low level API methods.
+* Added in support for multiple revision managers running in the same project.
 * Added in significant speedups for models with integer primary keys.
 * Added in cleanup improvements to patch generation helpers.
 * Minor bug fixes.
