@@ -11,6 +11,7 @@ from django.db import models
 from django.test import TestCase
 from django.core.management import call_command
 from django.conf.urls.defaults import *
+from django.contrib import admin
 from django.contrib.auth.models import User
 from django.utils.decorators import decorator_from_middleware
 from django.http import HttpResponse
@@ -97,10 +98,6 @@ class RegistrationTest(TestCase):
 class ReversionTestBase(TestCase):
 
     def setUp(self):
-        # Remove all the current registered models.
-        self.registered_models = reversion.get_registered_models()
-        for model in self.registered_models:
-            reversion.unregister(model)
         # Register the test models.
         reversion.register(TestModel1)
         reversion.register(TestModel2)
@@ -122,9 +119,6 @@ class ReversionTestBase(TestCase):
         )
         
     def tearDown(self):
-         # Re-register the old registered models.
-        for model in self.registered_models:
-            reversion.register(model)
         # Unregister the test models.
         reversion.unregister(TestModel1)
         reversion.unregister(TestModel2)
@@ -437,7 +431,64 @@ class FollowModelsTest(ReversionTestBase):
         TestFollowModel.objects.all().delete()
         del self.follow1
         super(FollowModelsTest, self).tearDown()
+
+
+excluded_revision_manager = RevisionManager("excluded")
+
+
+class ExcludedFieldsTest(RevisionTestBase):
+    
+    def setUp(self):
+        excluded_revision_manager.register(TestModel1, fields=("id",))
+        excluded_revision_manager.register(TestModel2, exclude=("name",))
+        super(ExcludedFieldsTest, self).setUp()
+    
+    def testExcludedRevisionManagerIsSeparate(self):
+        self.assertEqual(excluded_revision_manager.get_for_object(self.test11).count(), 1)
         
+    def testExcludedFieldsAreRespected(self):
+        self.assertEqual(excluded_revision_manager.get_for_object(self.test11)[0].field_dict["id"], self.test11.id)
+        self.assertEqual(excluded_revision_manager.get_for_object(self.test11)[0].field_dict["name"], "")
+        self.assertEqual(excluded_revision_manager.get_for_object(self.test21)[0].field_dict["id"], self.test21.id)
+        self.assertEqual(excluded_revision_manager.get_for_object(self.test21)[0].field_dict["name"], "")
+        
+    def tearDown(self):
+        super(ExcludedFieldsTest, self).tearDown()
+        excluded_revision_manager.unregister(TestModel1)
+        excluded_revision_manager.unregister(TestModel2)
+        
+        
+class CreateInitialRevisionsTest(ReversionTestBase):
+
+    def testCreateInitialRevisions(self):
+        self.assertEqual(Revision.objects.count(), 0)
+        self.assertEqual(Version.objects.count(), 0)
+        call_command("createinitialrevisions")
+        self.assertEqual(Revision.objects.count(), 4)
+        self.assertEqual(Version.objects.count(), 4)
+        call_command("createinitialrevisions")
+        self.assertEqual(Revision.objects.count(), 4)
+        self.assertEqual(Version.objects.count(), 4)
+        
+    def testCreateInitialRevisionsSpecificApps(self):
+        call_command("createinitialrevisions", "auth")
+        self.assertEqual(Revision.objects.count(), 4)
+        self.assertEqual(Version.objects.count(), 4)
+        
+    def testCreateInitialRevisionsSpecificModels(self):
+        call_command("createinitialrevisions", "auth.TestModel1")
+        self.assertEqual(Revision.objects.count(), 2)
+        self.assertEqual(Version.objects.count(), 2)
+        call_command("createinitialrevisions", "auth.TestModel2")
+        self.assertEqual(Revision.objects.count(), 4)
+        self.assertEqual(Version.objects.count(), 4)
+        
+    def testCreateInitialRevisionsSpecificComment(self):
+        call_command("createinitialrevisions", comment="Foo bar")
+        self.assertEqual(Revision.objects.all()[0].comment, "Foo bar")
+
+
+# Tests for reversion functionality that's tied to requests.        
 
 revision_middleware_decorator = decorator_from_middleware(RevisionMiddleware)
 
@@ -477,11 +528,44 @@ def error_revision_view(request):
     raise Exception("Foo")
 
 
+site = admin.AdminSite()
+
+
+class ParentTestAdminModel(models.Model):
+
+    parent_name = models.CharField(
+        max_length = 200,
+    )
+    
+    class Meta:
+        app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
+
+
+class ChildTestAdminModel(ParentTestAdminModel):
+
+    child_name = models.CharField(
+        max_length = 200,
+    )
+    
+    class Meta:
+        app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
+
+
+class ChildTestAdminModelAdmin(reversion.VersionAdmin):
+
+    pass
+    
+    
+site.register(ChildTestAdminModel, ChildTestAdminModelAdmin)
+
+
 urlpatterns = patterns("",
 
     url("^success/$", save_revision_view),
     
     url("^error/$", error_revision_view),
+    
+    url("^admin/", include(site.get_urls(), namespace="admin")),
 
 )
 
@@ -503,62 +587,63 @@ class RevisionMiddlewareTest(ReversionTestBase):
         self.assertRaises(Exception, lambda: self.client.get("/error/"))
         self.assertEqual(Revision.objects.count(), 0)
         self.assertEqual(Version.objects.count(), 0)
-                
-        
-class CreateInitialRevisionsTest(ReversionTestBase):
-
-    def testCreateInitialRevisions(self):
-        self.assertEqual(Revision.objects.count(), 0)
-        self.assertEqual(Version.objects.count(), 0)
-        call_command("createinitialrevisions")
-        self.assertEqual(Revision.objects.count(), 4)
-        self.assertEqual(Version.objects.count(), 4)
-        call_command("createinitialrevisions")
-        self.assertEqual(Revision.objects.count(), 4)
-        self.assertEqual(Version.objects.count(), 4)
-        
-    def testCreateInitialRevisionsSpecificApps(self):
-        call_command("createinitialrevisions", "auth")
-        self.assertEqual(Revision.objects.count(), 4)
-        self.assertEqual(Version.objects.count(), 4)
-        
-    def testCreateInitialRevisionsSpecificModels(self):
-        call_command("createinitialrevisions", "auth.TestModel1")
-        self.assertEqual(Revision.objects.count(), 2)
-        self.assertEqual(Version.objects.count(), 2)
-        call_command("createinitialrevisions", "auth.TestModel2")
-        self.assertEqual(Revision.objects.count(), 4)
-        self.assertEqual(Version.objects.count(), 4)
-        
-    def testCreateInitialRevisionsSpecificComment(self):
-        call_command("createinitialrevisions", comment="Foo bar")
-        self.assertEqual(Revision.objects.all()[0].comment, "Foo bar")
 
 
-excluded_revision_manager = RevisionManager("excluded")
+class VersionAdminTest(TestCase):
 
+    urls = "reversion.tests"
 
-class ExcludedFieldsTest(RevisionTestBase):
-    
     def setUp(self):
-        excluded_revision_manager.register(TestModel1, fields=("id",))
-        excluded_revision_manager.register(TestModel2, exclude=("name",))
-        super(ExcludedFieldsTest, self).setUp()
-    
-    def testExcludedRevisionManagerIsSeparate(self):
-        self.assertEqual(excluded_revision_manager.get_for_object(self.test11).count(), 1)
+        self.user = User(
+            username = "foo",
+            is_staff = True,
+            is_superuser = True,
+        )
+        self.user.set_password("bar")
+        self.user.save()
+        self.client.login(username="foo", password="bar")
+
+    def testAutoRegisterWorks(self):
+        self.assertTrue(reversion.is_registered(ChildTestAdminModel))
+        self.assertTrue(reversion.is_registered(ParentTestAdminModel))
         
-    def testExcludedFieldsAreRespected(self):
-        self.assertEqual(excluded_revision_manager.get_for_object(self.test11)[0].field_dict["id"], self.test11.id)
-        self.assertEqual(excluded_revision_manager.get_for_object(self.test11)[0].field_dict["name"], "")
-        self.assertEqual(excluded_revision_manager.get_for_object(self.test21)[0].field_dict["id"], self.test21.id)
-        self.assertEqual(excluded_revision_manager.get_for_object(self.test21)[0].field_dict["name"], "")
+    def testRevisionSavedOnPost(self):
+        self.assertEqual(ChildTestAdminModel.objects.count(), 0)
+        # Create an instance via the admin.
+        response = self.client.post("/admin/auth/childtestadminmodel/add/", {
+            "parent_name": "parent instance1 version1",
+            "child_name": "child instance1 version1",
+            "_continue": 1,
+        })
+        self.assertEqual(response.status_code, 302)
+        obj_pk = response["Location"].split("/")[-2]
+        obj = ChildTestAdminModel.objects.get(id=obj_pk)
+        # Check that a version is created.
+        versions = reversion.get_for_object(obj)
+        self.assertEqual(versions.count(), 1)
+        self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version1")
+        self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version1")
+        # Save a new version.
+        response = self.client.post("/admin/auth/childtestadminmodel/%s/" % obj_pk, {
+            "parent_name": "parent instance1 version2",
+            "child_name": "child instance1 version2",
+            "_continue": 1,
+        })
+        self.assertEqual(response.status_code, 302)
+        # Check that a version is created.
+        versions = reversion.get_for_object(obj)
+        self.assertEqual(versions.count(), 2)
+        self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version2")
+        self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version2")
         
     def tearDown(self):
-        super(ExcludedFieldsTest, self).tearDown()
-        excluded_revision_manager.unregister(TestModel1)
-        excluded_revision_manager.unregister(TestModel2)
+        self.client.logout()
+        self.user.delete()
+        del self.user
+        ChildTestAdminModel.objects.all().delete()
 
+
+# Tests for optional patch generation methods.
 
 try:
     from reversion.helpers import generate_patch, generate_patch_html
