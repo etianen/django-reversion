@@ -479,7 +479,11 @@ class RevisionManager(object):
     # Revision management API.
     
     def get_for_object_reference(self, model, object_id):
-        """Returns all versions for the given object reference."""
+        """
+        Returns all versions for the given object reference.
+        
+        The results are returned with the most recent versions first.
+        """
         content_type = ContentType.objects.get_for_model(model)
         versions = self._get_versions().filter(
             content_type = content_type,
@@ -496,11 +500,19 @@ class RevisionManager(object):
         return versions
     
     def get_for_object(self, obj):
-        """Returns all the versions of the given object, ordered by date created."""
+        """
+        Returns all the versions of the given object, ordered by date created.
+        
+        The results are returned with the most recent versions first.
+        """
         return self.get_for_object_reference(obj.__class__, obj.pk)
     
     def get_unique_for_object(self, obj):
-        """Returns unique versions associated with the object."""
+        """
+        Returns unique versions associated with the object.
+        
+        The results are returned with the most recent versions first.
+        """
         versions = self.get_for_object(obj)
         changed_versions = []
         last_serialized_data = None
@@ -525,8 +537,7 @@ class RevisionManager(object):
         """
         Returns all the deleted versions for the given model class.
         
-        You can specify a tuple of related fields to fetch using the
-        `select_related` argument.
+        The results are returned with the most recent versions first.
         """
         content_type = ContentType.objects.get_for_model(model_class)
         live_pk_queryset = model_class._default_manager.all().values_list("pk", flat=True)
@@ -546,7 +557,7 @@ class RevisionManager(object):
         deleted_version_pks = deleted_version_pks.annotate(
             latest_pk = Max("pk")
         ).values_list("latest_pk", flat=True)
-        return self._get_versions().filter(pk__in=deleted_version_pks).order_by("pk")
+        return self._get_versions().filter(pk__in=deleted_version_pks).order_by("-pk")
         
     # Signal receivers.
         
