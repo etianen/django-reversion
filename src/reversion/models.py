@@ -89,6 +89,7 @@ class Revision(models.Model):
             if unreverted_versions:
                 do_revert(unreverted_versions)
         do_revert(version_set)
+        
     def __unicode__(self):
         """Returns a unicode representation."""
         return u", ".join(unicode(version) for version in self.version_set.all())
