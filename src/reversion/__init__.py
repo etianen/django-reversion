@@ -6,8 +6,33 @@ Developed by Dave Hall.
 <http://www.etianen.com/>
 """
 
+import django, warnings
+
 from reversion.revisions import default_revision_manager, revision_context_manager, VersionAdapter
 from reversion.admin import VersionAdmin
+
+
+VERSION = (1, 5)
+
+SUPPORTED_DJANGO_VERSION = (1, 3, 0)
+
+def check_django_version():
+    """Checks the version of django being used, and issues a warning if incorrect."""
+    if django.VERSION[:3] != SUPPORTED_DJANGO_VERSION:
+        format_version = lambda v: u".".join(unicode(n) for n in v)
+        warnings.warn(
+            (
+                u"django-reversion %(reversion_version)s is intended for use with django %(supported_django_version)s. "
+                u"You are running django %(django_version)s, so some features, such as admin integration, may not work. "
+                u"Please see https://github.com/etianen/django-reversion/wiki/Compatible-Django-Versions"
+            ) % {
+                "reversion_version": format_version(VERSION),
+                "supported_django_version": format_version(SUPPORTED_DJANGO_VERSION),
+                "django_version": format_version(django.VERSION[:3]),
+            }
+        )
+        
+check_django_version()
 
 
 # Legacy revision reference.
