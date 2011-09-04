@@ -25,7 +25,7 @@ Documentation
 
 Please read the [Getting Started][] guide for more information.
 
-[Getting Started]: http://wiki.github.com/etianen/django-reversion/getting-started
+[Getting Started]: https://github.com/etianen/django-reversion/wiki
     "Getting started with django-reversion"
     
 Download instructions, bug reporting and links to full documentation can be
