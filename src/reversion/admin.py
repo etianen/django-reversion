@@ -164,6 +164,31 @@ class VersionAdmin(admin.ModelAdmin):
                                  and unicode(related_version.field_dict[fk_name]) == unicode(object_id)])
         return related_versions
     
+    def _hack_inline_formset_initial(self, FormSet, formset, obj, version):
+        """Hacks the given formset to contain the correct initial data."""
+         # Now we hack it to push in the data from the revision!
+        initial = []
+        related_versions = self.get_related_versions(obj, version, FormSet)
+        formset.related_versions = related_versions
+        for related_obj in formset.queryset:
+            if unicode(related_obj.pk) in related_versions:
+                initial.append(related_versions.pop(unicode(related_obj.pk)).field_dict)
+            else:
+                initial_data = model_to_dict(related_obj)
+                initial_data["DELETE"] = True
+                initial.append(initial_data)
+        for related_version in related_versions.values():
+            initial_row = related_version.field_dict
+            pk_name = ContentType.objects.get_for_id(related_version.content_type_id).model_class()._meta.pk.name
+            del initial_row[pk_name]
+            initial.append(initial_row)
+        # Reconstruct the forms with the new revision data.
+        formset.initial = initial
+        formset.forms = [formset._construct_form(n) for n in xrange(len(initial))]
+        def total_form_count_hack(count):
+            return lambda: count
+        formset.total_form_count = total_form_count_hack(len(initial))
+    
     def render_revision_form(self, request, obj, version, context, revert=False, recover=False):
         """Renders the object revision form."""
         model = self.model
@@ -196,31 +221,22 @@ class VersionAdmin(admin.ModelAdmin):
                 formset = FormSet(request.POST, request.FILES,
                                   instance=new_object, prefix=prefix,
                                   queryset=inline.queryset(request))
-                # Hack the formset to stuff in the new data.
-                related_versions = self.get_related_versions(obj, version, FormSet)
-                formset.related_versions = related_versions
-                new_forms = formset.forms[:len(related_versions)]
-                for formset_form in formset.forms[len(related_versions):]:
-                    if formset_form.fields["DELETE"].clean(formset_form._raw_value("DELETE")):
-                        new_forms.append(formset_form)
-                formset.forms = new_forms
-                def total_form_count_hack(count):
-                    return lambda: count
-                formset.total_form_count = total_form_count_hack(len(new_forms))
+                self._hack_inline_formset_initial(FormSet, formset, obj, version)
                 # Add this hacked formset to the form.
                 formsets.append(formset)
             if all_valid(formsets) and form_validated:
                 self.save_model(request, new_object, form, change=True)
                 form.save_m2m()
                 for formset in formsets:
+                    # Hack the formset to force a save of everything.
+                    for form in formset.forms:
+                        form.has_changed = lambda: True
                     # HACK: If the value of a file field is None, remove the file from the model.
                     related_objects = formset.save(commit=False)
                     for related_obj, related_form in zip(related_objects, formset.saved_forms):
                         for field in related_obj._meta.fields:
-                            if isinstance(field, models.FileField) and related_form._raw_value(field.name) is None:
-                                related_info = formset.related_versions.get(unicode(related_obj.pk))
-                                if related_info:
-                                    setattr(related_obj, field.name, related_info.field_dict[field.name])
+                            if isinstance(field, models.FileField) and field.name in related_form.cleaned_data and related_form.cleaned_data[field.name] is None:
+                                setattr(related_obj, field.name, None)
                         related_obj.save()
                     formset.save_m2m()
                 change_message = _(u"Reverted to previous version, saved on %(datetime)s") % {"datetime": format(version.revision.date_created, _(settings.DATETIME_FORMAT))}
@@ -248,27 +264,7 @@ class VersionAdmin(admin.ModelAdmin):
                     prefix = "%s-%s" % (prefix, prefixes[prefix])
                 formset = FormSet(instance=obj, prefix=prefix,
                                   queryset=inline.queryset(request))
-                # Now we hack it to push in the data from the revision!
-                initial = []
-                related_versions = self.get_related_versions(obj, version, FormSet)
-                for related_obj in formset.queryset:
-                    if unicode(related_obj.pk) in related_versions:
-                        initial.append(related_versions.pop(unicode(related_obj.pk)).field_dict)
-                    else:
-                        initial_data = model_to_dict(related_obj)
-                        initial_data["DELETE"] = True
-                        initial.append(initial_data)
-                for related_version in related_versions.values():
-                    initial_row = related_version.field_dict
-                    pk_name = ContentType.objects.get_for_id(related_version.content_type_id).model_class()._meta.pk.name
-                    del initial_row[pk_name]
-                    initial.append(initial_row)
-                # Reconstruct the forms with the new revision data.
-                formset.initial = initial
-                formset.forms = [formset._construct_form(n) for n in xrange(len(initial))]
-                def total_form_count_hack(count):
-                    return lambda: count
-                formset.total_form_count = total_form_count_hack(len(initial))
+                self._hack_inline_formset_initial(FormSet, formset, obj, version)
                 # Add this hacked formset to the form.
                 formsets.append(formset)
         # Generate admin form helper.
