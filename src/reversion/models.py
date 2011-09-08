@@ -88,7 +88,7 @@ class Revision(models.Model):
                 raise RevertError("Could not revert revision, due to database integrity errors.")
             if unreverted_versions:
                 do_revert(unreverted_versions)
-        do_revert(version_set)
+        do_revert([version for version in version_set if version.type != VERSION_DELETE])
         
     def __unicode__(self):
         """Returns a unicode representation."""
