@@ -290,6 +290,36 @@ class ApiTest(RevisionTestBase):
         self.assertEqual(TestModel2.objects.get(id=self.test22.pk).name, "model2 instance2 version1")
         self.assertEqual(TestModel2.objects.get(id=self.test22.pk).name, "model2 instance2 version1")
     
+    def testCanRevertRevisionWithDeletedVersions(self):
+        self.assertEqual(TestModel1.objects.count(), 2)
+        self.assertEqual(TestModel2.objects.count(), 2)
+        with reversion.create_revision():
+            self.test11.name = "model1 instance1 version3"
+            self.test11.save()
+            self.test12.delete()
+            self.test21.name = "model2 instance1 version3"
+            self.test21.save()
+            self.test22.delete()
+        self.assertEqual(TestModel1.objects.count(), 1)
+        self.assertEqual(TestModel2.objects.count(), 1)
+        with reversion.create_revision():
+            self.test11.name = "model1 instance1 version4"
+            self.test11.save()
+            self.test21.name = "model2 instance1 version4"
+            self.test21.save()
+        self.assertEqual(TestModel1.objects.count(), 1)
+        self.assertEqual(TestModel2.objects.count(), 1)
+        # Revert to a revision where some deletes were logged.
+        reversion.get_for_object(self.test11)[1].revision.revert()
+        self.assertEqual(TestModel1.objects.count(), 1)
+        self.assertEqual(TestModel2.objects.count(), 1)
+        self.assertEqual(TestModel1.objects.get(id=self.test11.id).name, "model1 instance1 version3")
+        self.assertEqual(TestModel2.objects.get(id=self.test21.id).name, "model2 instance1 version3")
+        # Revert the a revision before the deletes were logged.
+        reversion.get_for_object(self.test11)[2].revision.revert()
+        self.assertEqual(TestModel1.objects.count(), 2)
+        self.assertEqual(TestModel2.objects.count(), 2)
+    
     def testCanSaveIgnoringDuplicates(self):
         with reversion.create_revision():
             self.test11.save()
