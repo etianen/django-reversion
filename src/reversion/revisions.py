@@ -281,11 +281,12 @@ class RevisionContext(object):
             self.__enter__()
             exception = False
             try:
-                return func(*args, **kwargs)
-            except:
-                exception = True
-                if not self.__exit__(*sys.exc_info()):
-                    raise
+                try:
+                    return func(*args, **kwargs)
+                except:
+                    exception = True
+                    if not self.__exit__(*sys.exc_info()):
+                        raise
             finally:
                 if not exception:
                     self.__exit__(None, None, None)
