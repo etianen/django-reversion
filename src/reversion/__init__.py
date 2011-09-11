@@ -14,11 +14,14 @@ from reversion.admin import VersionAdmin
 
 VERSION = (1, 5)
 
-SUPPORTED_DJANGO_VERSION = (1, 3, 0)
+SUPPORTED_DJANGO_VERSIONS = (
+    (1, 3, 1),
+    (1, 3, 0),
+)
 
 def check_django_version():
     """Checks the version of django being used, and issues a warning if incorrect."""
-    if django.VERSION[:3] != SUPPORTED_DJANGO_VERSION:
+    if django.VERSION[:3] not in SUPPORTED_DJANGO_VERSIONS:
         format_version = lambda v: u".".join(unicode(n) for n in v)
         warnings.warn(
             (
