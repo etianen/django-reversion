@@ -13,7 +13,7 @@ from reversion.models import Version, Revision, VERSION_ADD, VERSION_CHANGE, VER
 from reversion.revisions import RegistrationError
 
 
-class TestModel(models.Model):
+class ReversionTestModel(models.Model):
     
     """A test model for reversion."""
     
@@ -31,7 +31,7 @@ def get_str_pk():
     return str(str_pk_gen)
         
         
-class TestModelStrPrimary(models.Model):
+class ReversionTestModelStrPrimary(models.Model):
     
     """A test model for reversion."""
     
@@ -52,39 +52,39 @@ class ReversionRegistrationTest(TestCase):
     """Tests the django-reversion registration functionality."""
     
     def setUp(self):
-        """Sets up the TestModel."""
-        reversion.register(TestModel)
+        """Sets up the ReversionTestModel."""
+        reversion.register(ReversionTestModel)
         
     def testCanRegisterModel(self):
         """Tests that a model can be registered."""
-        self.assertTrue(reversion.is_registered(TestModel))
+        self.assertTrue(reversion.is_registered(ReversionTestModel))
         # Check that duplicate registration is disallowed.
-        self.assertRaises(RegistrationError, lambda: reversion.register(TestModel))
+        self.assertRaises(RegistrationError, lambda: reversion.register(ReversionTestModel))
         
     def testCanUnregisterModel(self):
         """Tests that a model can be unregistered."""
-        reversion.unregister(TestModel)
+        reversion.unregister(ReversionTestModel)
         try:
-            self.assertFalse(reversion.is_registered(TestModel))
+            self.assertFalse(reversion.is_registered(ReversionTestModel))
             # Check that duplicate unregistration is disallowed.
-            self.assertRaises(RegistrationError, lambda: reversion.unregister(TestModel))
+            self.assertRaises(RegistrationError, lambda: reversion.unregister(ReversionTestModel))
         finally:
             # Re-register the model.
-            reversion.register(TestModel)
+            reversion.register(ReversionTestModel)
         
     def tearDown(self):
         """Tears down the tests."""
-        reversion.unregister(TestModel)
+        reversion.unregister(ReversionTestModel)
         
         
 class ReversionCreateTest(TestCase):
     
     """Tests the django-reversion revision creation functionality."""
     
-    model = TestModel
+    model = ReversionTestModel
     
     def setUp(self):
-        """Sets up the TestModel."""
+        """Sets up the ReversionTestModel."""
         # Clear the database.
         Revision.objects.all().delete()
         self.model.objects.all().delete()
@@ -138,17 +138,17 @@ class ReversionCreateTest(TestCase):
         
 class ReversionCreateStrPrimaryTest(ReversionCreateTest):
 
-    model = TestModelStrPrimary
+    model = ReversionTestModelStrPrimary
         
         
 class ReversionQueryTest(TestCase):
     
     """Tests that django-reversion can retrieve revisions using the api."""
     
-    model = TestModel
+    model = ReversionTestModel
     
     def setUp(self):
-        """Sets up the TestModel."""
+        """Sets up the ReversionTestModel."""
         # Clear the database.
         Revision.objects.all().delete()
         self.model.objects.all().delete()
@@ -242,7 +242,7 @@ class ReversionQueryTest(TestCase):
 
 class ReversionQueryStrPrimaryTest(ReversionQueryTest):
 
-    model = TestModelStrPrimary
+    model = ReversionTestModelStrPrimary
         
         
 class ReversionCustomRegistrationTest(TestCase):
@@ -250,15 +250,15 @@ class ReversionCustomRegistrationTest(TestCase):
     """Tests the custom model registration options."""
     
     def setUp(self):
-        """Sets up the TestModel."""
+        """Sets up the ReversionTestModel."""
         # Clear the database.
         Revision.objects.all().delete()
-        TestModel.objects.all().delete()
+        ReversionTestModel.objects.all().delete()
         # Register the model.
-        reversion.register(TestModel, fields=("id",), format="xml")
+        reversion.register(ReversionTestModel, fields=("id",), format="xml")
         # Create some initial revisions.
         with reversion.revision:
-            self.test = TestModel.objects.create(name="test1.0")
+            self.test = ReversionTestModel.objects.create(name="test1.0")
         with reversion.revision:
             self.test.name = "test1.1"
             self.test.save()
@@ -268,13 +268,13 @@ class ReversionCustomRegistrationTest(TestCase):
             
     def testCustomRegistrationHonored(self):
         """Ensures that the custom settings were honored."""
-        self.assertEqual(tuple(reversion.revision.get_adapter(TestModel).get_fields_to_serialize()), ("id",))
-        self.assertEqual(reversion.revision.get_adapter(TestModel).get_serialization_format(), "xml")
+        self.assertEqual(tuple(reversion.revision.get_adapter(ReversionTestModel).get_fields_to_serialize()), ("id",))
+        self.assertEqual(reversion.revision.get_adapter(ReversionTestModel).get_serialization_format(), "xml")
         
     def testCanRevertOnlySpecifiedFields(self):
         """"Ensures that only the restricted set of fields are loaded."""
         Version.objects.get_for_object(self.test)[0].revert()
-        self.assertEqual(TestModel.objects.get().name, "")
+        self.assertEqual(ReversionTestModel.objects.get().name, "")
             
     def testCustomSerializationFormat(self):
         """Ensures that the custom serialization format is used."""
@@ -295,10 +295,10 @@ class ReversionCustomRegistrationTest(TestCase):
     def tearDown(self):
         """Tears down the tests."""
         # Unregister the model.
-        reversion.unregister(TestModel)
+        reversion.unregister(ReversionTestModel)
         # Clear the database.
         Revision.objects.all().delete()
-        TestModel.objects.all().delete()
+        ReversionTestModel.objects.all().delete()
         # Clear references.
         del self.test
         
@@ -309,7 +309,7 @@ class TestRelatedModel(models.Model):
     
     name = models.CharField(max_length=100)
     
-    relation = models.ForeignKey(TestModel)
+    relation = models.ForeignKey(ReversionTestModel)
     
     class Meta:
         app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
@@ -320,19 +320,19 @@ class ReversionRelatedTest(TestCase):
     """Tests the ForeignKey and OneToMany support."""
     
     def setUp(self):
-        """Sets up the TestModel."""
+        """Sets up the ReversionTestModel."""
         # Clear the database.
         Revision.objects.all().delete()
-        TestModel.objects.all().delete()
+        ReversionTestModel.objects.all().delete()
         TestRelatedModel.objects.all().delete()
         # Register the models.
-        reversion.register(TestModel, follow=("testrelatedmodel_set",))
+        reversion.register(ReversionTestModel, follow=("testrelatedmodel_set",))
         reversion.register(TestRelatedModel, follow=("relation",))
     
     def testCanCreateRevisionForiegnKey(self):
         """Tests that a revision containing both models is created."""
         with reversion.revision:
-            test = TestModel.objects.create(name="test1.0")
+            test = ReversionTestModel.objects.create(name="test1.0")
             related = TestRelatedModel.objects.create(name="related1.0", relation=test)
         self.assertEqual(Version.objects.get_for_object(test).count(), 1)
         self.assertEqual(Version.objects.get_for_object(related).count(), 1)
@@ -342,7 +342,7 @@ class ReversionRelatedTest(TestCase):
     def testCanCreateRevisionOneToMany(self):
         """Tests that a revision containing both models is created."""
         with reversion.revision:
-            test = TestModel.objects.create(name="test1.0")
+            test = ReversionTestModel.objects.create(name="test1.0")
             related = TestRelatedModel.objects.create(name="related1.0", relation=test)
         with reversion.revision:
             test.save()
@@ -354,7 +354,7 @@ class ReversionRelatedTest(TestCase):
     def testCanRevertRevision(self):
         """Tests that an entire revision can be reverted."""
         with reversion.revision:
-            test = TestModel.objects.create(name="test1.0")
+            test = ReversionTestModel.objects.create(name="test1.0")
             related = TestRelatedModel.objects.create(name="related1.0", relation=test)
         with reversion.revision:
             test.name = "test1.1"
@@ -363,13 +363,13 @@ class ReversionRelatedTest(TestCase):
             related.save()
         # Attempt revert.
         Version.objects.get_for_object(test)[0].revision.revert()
-        self.assertEqual(TestModel.objects.get().name, "test1.0")
+        self.assertEqual(ReversionTestModel.objects.get().name, "test1.0")
         self.assertEqual(TestRelatedModel.objects.get().name, "related1.0")
     
     def testCanRevertDeleteRevistion(self):
         """Tests that an entire revision can be reverted with the delete functionality enabled."""
         with reversion.revision:
-            test = TestModel.objects.create(name="test1.0")
+            test = ReversionTestModel.objects.create(name="test1.0")
             related = TestRelatedModel.objects.create(name="related-a-1.0", relation=test)
         with reversion.revision:
             related2 = TestRelatedModel.objects.create(name="related-b-1.0", relation=test)
@@ -379,7 +379,7 @@ class ReversionRelatedTest(TestCase):
             related.save()
         # Attempt revert with delete.
         Version.objects.get_for_object(test)[0].revision.revert(delete=True)
-        self.assertEqual(TestModel.objects.get().name, "test1.0")
+        self.assertEqual(ReversionTestModel.objects.get().name, "test1.0")
         self.assertEqual(TestRelatedModel.objects.get(id=related.id).name, "related-a-1.0")
         self.assertEqual(TestRelatedModel.objects.filter(id=related2.id).count(), 0)
         self.assertEqual(TestRelatedModel.objects.count(), 1)
@@ -387,7 +387,7 @@ class ReversionRelatedTest(TestCase):
     def testCanRecoverRevision(self):
         """Tests that an entire revision can be recovered."""
         with reversion.revision:
-            test = TestModel.objects.create(name="test1.0")
+            test = ReversionTestModel.objects.create(name="test1.0")
             related = TestRelatedModel.objects.create(name="related1.0", relation=test)
         with reversion.revision:
             test.name = "test1.1"
@@ -397,24 +397,24 @@ class ReversionRelatedTest(TestCase):
         # Delete the models.
         test.delete()
         # Ensure deleted.
-        self.assertEqual(TestModel.objects.count(), 0)
+        self.assertEqual(ReversionTestModel.objects.count(), 0)
         self.assertEqual(TestRelatedModel.objects.count(), 0)
         # Query the deleted models..
-        self.assertEqual(len(Version.objects.get_deleted(TestModel)), 1)
+        self.assertEqual(len(Version.objects.get_deleted(ReversionTestModel)), 1)
         self.assertEqual(len(Version.objects.get_deleted(TestRelatedModel)), 1)
         # Revert the revision.
-        Version.objects.get_deleted(TestModel)[0].revision.revert()
+        Version.objects.get_deleted(ReversionTestModel)[0].revision.revert()
         # Ensure reverted.
-        self.assertEqual(TestModel.objects.count(), 1)
+        self.assertEqual(ReversionTestModel.objects.count(), 1)
         self.assertEqual(TestRelatedModel.objects.count(), 1)
         # Ensure correct version.
-        self.assertEqual(TestModel.objects.get().name, "test1.1")
+        self.assertEqual(ReversionTestModel.objects.get().name, "test1.1")
         self.assertEqual(TestRelatedModel.objects.get().name, "related1.1")
     
     def testIgnoreDuplicates(self):
         """Ensures the ignoring duplicates works across a foreign key."""
         with reversion.revision:
-            test = TestModel.objects.create(name="test1.0")
+            test = ReversionTestModel.objects.create(name="test1.0")
             related = TestRelatedModel.objects.create(name="related1.0", relation=test)
         with reversion.revision:
             test.name = "test1.1"
@@ -433,11 +433,11 @@ class ReversionRelatedTest(TestCase):
     def tearDown(self):
         """Tears down the tests."""
         # Unregister the models.
-        reversion.unregister(TestModel)
+        reversion.unregister(ReversionTestModel)
         reversion.unregister(TestRelatedModel)
         # Clear the database.
         Revision.objects.all().delete()
-        TestModel.objects.all().delete()
+        ReversionTestModel.objects.all().delete()
         TestRelatedModel.objects.all().delete()
 
 
@@ -447,7 +447,7 @@ class TestManyToManyModel(models.Model):
     
     name = models.CharField(max_length=100)
     
-    relations = models.ManyToManyField(TestModel)
+    relations = models.ManyToManyField(ReversionTestModel)
     
     class Meta:
         app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
@@ -458,20 +458,20 @@ class ReversionManyToManyTest(TestCase):
     """Tests the ManyToMany support."""
     
     def setUp(self):
-        """Sets up the TestModel."""
+        """Sets up the ReversionTestModel."""
         # Clear the database.
         Revision.objects.all().delete()
-        TestModel.objects.all().delete()
+        ReversionTestModel.objects.all().delete()
         TestManyToManyModel.objects.all().delete()
         # Register the models.
-        reversion.register(TestModel, follow=("testmanytomanymodel_set",))
+        reversion.register(ReversionTestModel, follow=("testmanytomanymodel_set",))
         reversion.register(TestManyToManyModel, follow=("relations",))
     
     def testCanCreateRevision(self):
         """Tests that a revision containing both models is created."""
         with reversion.revision:
-            test1 = TestModel.objects.create(name="test1.0")
-            test2 = TestModel.objects.create(name="test2.0")
+            test1 = ReversionTestModel.objects.create(name="test1.0")
+            test2 = ReversionTestModel.objects.create(name="test2.0")
             related = TestManyToManyModel.objects.create(name="related1.0")
             related.relations.add(test1)
             related.relations.add(test2)
@@ -484,7 +484,7 @@ class ReversionManyToManyTest(TestCase):
     def testCanCreateRevisionRelated(self):
         """Tests that a revision containing both models is created."""
         with reversion.revision:
-            test = TestModel.objects.create(name="test1.0")
+            test = ReversionTestModel.objects.create(name="test1.0")
             related1 = TestManyToManyModel.objects.create(name="related1.0")
             related2 = TestManyToManyModel.objects.create(name="related2.0")
             test.testmanytomanymodel_set.add(related1)
@@ -500,8 +500,8 @@ class ReversionManyToManyTest(TestCase):
     def testCanRevertRevision(self):
         """Tests that an entire revision can be reverted."""
         with reversion.revision:
-            test1 = TestModel.objects.create(name="test1.0")
-            test2 = TestModel.objects.create(name="test2.0")
+            test1 = ReversionTestModel.objects.create(name="test1.0")
+            test2 = ReversionTestModel.objects.create(name="test2.0")
             related = TestManyToManyModel.objects.create(name="related1.0")
             related.relations.add(test1)
             related.relations.add(test2)
@@ -514,15 +514,15 @@ class ReversionManyToManyTest(TestCase):
             related.save()
         # Attempt revert.
         Version.objects.get_for_object(related)[0].revision.revert()
-        self.assertEqual(TestModel.objects.get(pk=test1.pk).name, "test1.0")
-        self.assertEqual(TestModel.objects.get(pk=test2.pk).name, "test2.0")
+        self.assertEqual(ReversionTestModel.objects.get(pk=test1.pk).name, "test1.0")
+        self.assertEqual(ReversionTestModel.objects.get(pk=test2.pk).name, "test2.0")
         self.assertEqual(TestManyToManyModel.objects.get().name, "related1.0")
         
     def testCanRecoverRevision(self):
         """Tests that an entire revision can be recovered."""
         with reversion.revision:
-            test1 = TestModel.objects.create(name="test1.0")
-            test2 = TestModel.objects.create(name="test2.0")
+            test1 = ReversionTestModel.objects.create(name="test1.0")
+            test2 = ReversionTestModel.objects.create(name="test2.0")
             related = TestManyToManyModel.objects.create(name="related1.0")
             related.relations.add(test1)
             related.relations.add(test2)
@@ -541,29 +541,29 @@ class ReversionManyToManyTest(TestCase):
         test1.delete()
         test2.delete()
         # Ensure deleted.
-        self.assertEqual(TestModel.objects.count(), 0)
+        self.assertEqual(ReversionTestModel.objects.count(), 0)
         self.assertEqual(TestManyToManyModel.objects.count(), 0)
         # Query the deleted models..
-        self.assertEqual(len(Version.objects.get_deleted(TestModel)), 2)
+        self.assertEqual(len(Version.objects.get_deleted(ReversionTestModel)), 2)
         self.assertEqual(len(Version.objects.get_deleted(TestManyToManyModel)), 1)
         # Revert the revision.
         Version.objects.get_deleted(TestManyToManyModel)[0].revision.revert()
         # Ensure reverted.
-        self.assertEqual(TestModel.objects.count(), 2)
+        self.assertEqual(ReversionTestModel.objects.count(), 2)
         self.assertEqual(TestManyToManyModel.objects.count(), 1)
         # Ensure correct version.
-        self.assertEqual(TestModel.objects.get(pk=test1_pk).name, "test1.1")
-        self.assertEqual(TestModel.objects.get(pk=test2_pk).name, "test2.1")
+        self.assertEqual(ReversionTestModel.objects.get(pk=test1_pk).name, "test1.1")
+        self.assertEqual(ReversionTestModel.objects.get(pk=test2_pk).name, "test2.1")
         self.assertEqual(TestManyToManyModel.objects.get().name, "related1.1")
     
     def tearDown(self):
         """Tears down the tests."""
         # Unregister the models.
-        reversion.unregister(TestModel)
+        reversion.unregister(ReversionTestModel)
         reversion.unregister(TestManyToManyModel)
         # Clear the database.
         Revision.objects.all().delete()
-        TestModel.objects.all().delete()
+        ReversionTestModel.objects.all().delete()
         TestManyToManyModel.objects.all().delete()
 
 
@@ -571,10 +571,10 @@ class ReversionCreateInitialRevisionsTest(TestCase):
 
     """Tests that the createinitialrevisions command works."""
     
-    model = TestModel
+    model = ReversionTestModel
     
     def setUp(self):
-        """Sets up the TestModel."""
+        """Sets up the ReversionTestModel."""
         # Clear the database.
         Revision.objects.all().delete()
         self.model.objects.all().delete()
@@ -601,4 +601,4 @@ class ReversionCreateInitialRevisionsTest(TestCase):
         
 class ReversionCreateInitialRevisionsStrPrimaryTest(ReversionCreateInitialRevisionsTest):
 
-    model = TestModelStrPrimary
+    model = ReversionTestModelStrPrimary
