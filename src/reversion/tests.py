@@ -7,7 +7,6 @@ These tests require Python 2.5 to run.
 from __future__ import with_statement
 
 import datetime
-from unittest import skipUnless
 
 from django.db import models
 from django.test import TestCase
@@ -17,6 +16,7 @@ from django.contrib import admin
 from django.contrib.auth.models import User
 from django.utils.decorators import decorator_from_middleware
 from django.http import HttpResponse
+from django.utils.unittest import skipUnless
 
 import reversion
 from reversion.revisions import RegistrationError, RevisionManager
