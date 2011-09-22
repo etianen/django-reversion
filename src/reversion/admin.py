@@ -122,7 +122,7 @@ class VersionAdmin(admin.ModelAdmin):
         """Sets the version meta information."""
         super(VersionAdmin, self).log_deletion(request, object, object_repr)
         revision_context_manager.set_user(request.user)
-        revision_context_manager.set_comment((u"Deleted %(verbose_name)s." % {"verbose_name": self.model._meta.verbose_name}))
+        revision_context_manager.set_comment(_(u"Deleted %(verbose_name)s.") % {"verbose_name": self.model._meta.verbose_name})
         revision_context_manager.set_ignore_duplicates(self.ignore_duplicate_revisions)
     
     def _order_version_queryset(self, queryset):
