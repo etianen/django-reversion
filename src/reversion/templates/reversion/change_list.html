@@ -4,7 +4,7 @@
 
 {% block object-tools-items %}
     {% if not is_popup %}
-        <li><a href="{{recoverlist_url}}" class="recoverlink">{% blocktrans with cl.opts.verbose_name|escape as name %}Recover deleted {{name}}{% endblocktrans %}</a></li>
+        <li><a href="{{recoverlist_url}}" class="recoverlink">{% blocktrans with cl.opts.verbose_name_plural|escape as name %}Recover deleted {{name}}{% endblocktrans %}</a></li>
     {% endif %}
     {{block.super}}
 {% endblock %}

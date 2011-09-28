@@ -140,7 +140,7 @@ class VersionAdmin(admin.ModelAdmin):
             "opts": opts,
             "app_label": opts.app_label,
             "module_name": capfirst(opts.verbose_name),
-            "title": _("Recover deleted %(name)s") % {"name": force_unicode(opts.verbose_name)},
+            "title": _("Recover deleted %(name)s") % {"name": force_unicode(opts.verbose_name_plural)},
             "deleted": deleted,
             "changelist_url": reverse("%s:%s_%s_changelist" % (self.admin_site.name, opts.app_label, opts.module_name)),
         }
