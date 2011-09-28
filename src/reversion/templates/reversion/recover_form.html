@@ -7,7 +7,7 @@
 		<a href="{% url admin:index %}">{% trans "Home" %}</a> &rsaquo;
 		<a href="{% url admin:app_list app_label %}">{{app_label|capfirst|escape}}</a> &rsaquo; 
 		<a href="{{changelist_url}}">{{opts.verbose_name_plural|capfirst}}</a> &rsaquo;
-		<a href="{{recoverlist_url}}">{% blocktrans with opts.verbose_name as verbose_name %}Recover deleted {{verbose_name}}{% endblocktrans %}</a> &rsaquo;
+		<a href="{{recoverlist_url}}">{% blocktrans with opts.verbose_name_plural as name %}Recover deleted {{name}}{% endblocktrans %}</a> &rsaquo;
 		{{title}}
 	</div>
 {% endblock %}
