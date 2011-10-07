@@ -434,7 +434,6 @@ class FollowModelsTest(ReversionTestBase):
         # Roll back to a revision where a delete flag is present.
         reversion.get_for_object(self.follow1)[0].revision.revert(delete=True)
         self.assertEqual(self.follow1.test_model_2s.all().count(), 2)
-        
     
     def testReverseRelationsFollowed(self):
         self.assertEqual(Revision.objects.count(), 1)
@@ -455,6 +454,19 @@ class FollowModelsTest(ReversionTestBase):
         reversion.get_for_object(self.test11)[1].revision.revert(delete=True)
         self.assertEqual(TestFollowModel.objects.count(), 1)
         self.assertRaises(TestFollowModel.DoesNotExist, lambda: TestFollowModel.objects.get(id=follow2_pk))
+    
+    def testRecoverDeleted(self):
+        # Delete the test model.
+        with reversion.create_revision():
+            self.test11.delete()
+        self.assertEqual(TestFollowModel.objects.count(), 0)
+        self.assertEqual(ReversionTestModel1.objects.count(), 1)
+        # Recover the test model.
+        with reversion.create_revision():
+            reversion.get_deleted(ReversionTestModel1)[0].revision.revert()
+        # Make sure it was recovered.
+        self.assertEqual(TestFollowModel.objects.count(), 1)
+        self.assertEqual(ReversionTestModel1.objects.count(), 2)
     
     def tearDown(self):
         reversion.unregister(TestFollowModel)
