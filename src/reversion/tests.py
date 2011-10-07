@@ -272,12 +272,10 @@ class ApiTest(RevisionTestBase):
         versions = reversion.get_deleted(ReversionTestModel1)
         self.assertEqual(len(versions), 1)
         self.assertEqual(versions[0].field_dict["name"], "model1 instance1 version2")
-        self.assertEqual(versions[0].type, VERSION_DELETE)
         # Test a model with a str pk.
         versions = reversion.get_deleted(ReversionTestModel2)
         self.assertEqual(len(versions), 1)
         self.assertEqual(versions[0].field_dict["name"], "model2 instance1 version2")
-        self.assertEqual(versions[0].type, VERSION_DELETE)
         
     def testCanRevertVersion(self):
         reversion.get_for_object(self.test11)[1].revert()

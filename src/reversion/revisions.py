@@ -555,7 +555,9 @@ class RevisionManager(object):
             deleted_version_pks = versioned_objs.exclude(
                 object_id__in = list(live_pk_queryset.iterator())
             ).values_list("object_id")
-        deleted_version_pks = deleted_version_pks.annotate(
+        deleted_version_pks = deleted_version_pks.exclude(
+            type = VERSION_DELETE,
+        ).annotate(
             latest_pk = Max("pk")
         ).values_list("latest_pk", flat=True)
         return self._get_versions().filter(pk__in=deleted_version_pks).order_by("-pk")
