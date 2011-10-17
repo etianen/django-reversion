@@ -575,7 +575,7 @@ class RevisionManager(object):
             self._revision_context_manager.add_to_context(self, instance, version_data)
             
     def _pre_delete_receiver(self, instance, **kwargs):
-        """Adds registerted models to the current revision, if any."""
+        """Adds registered models to the current revision, if any."""
         if self._revision_context_manager.is_active():
             adapter = self.get_adapter(instance.__class__)
             version_data = adapter.get_version_data(instance, VERSION_DELETE)
