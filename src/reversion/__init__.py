@@ -30,7 +30,7 @@ def check_django_version():
                 u"Please see https://github.com/etianen/django-reversion/wiki/Compatible-Django-Versions"
             ) % {
                 "reversion_version": format_version(VERSION),
-                "supported_django_version": format_version(SUPPORTED_DJANGO_VERSION),
+                "supported_django_version": ' or '.join(format_version(v) for v in SUPPORTED_DJANGO_VERSIONS),
                 "django_version": format_version(django.VERSION[:3]),
             }
         )
