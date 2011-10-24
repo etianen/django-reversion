@@ -5,7 +5,7 @@ from django.db import models, transaction
 from django.conf.urls.defaults import patterns, url
 from django.conf import settings
 from django.contrib import admin
-from django.contrib.admin import helpers
+from django.contrib.admin import helpers, options
 from django.contrib.admin.util import unquote
 from django.contrib.contenttypes.generic import GenericInlineModelAdmin, GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -68,7 +68,13 @@ class VersionAdmin(admin.ModelAdmin):
             for inline in self.inlines:
                 inline_model = inline.model
                 self._autoregister(inline_model)
-                if issubclass(inline, (admin.TabularInline, admin.StackedInline)):
+                if issubclass(inline, GenericInlineModelAdmin):
+                    ct_field = inline.ct_field
+                    ct_fk_field = inline.ct_fk_field
+                    for field in self.model._meta.many_to_many:
+                        if isinstance(field, GenericRelation) and field.object_id_field_name == ct_fk_field and field.content_type_field_name == ct_field:
+                            inline_fields.append(field.name)
+                elif issubclass(inline, options.InlineModelAdmin):
                     fk_name = inline.fk_name
                     if not fk_name:
                         for field in inline_model._meta.fields:
@@ -76,12 +82,6 @@ class VersionAdmin(admin.ModelAdmin):
                                 fk_name = field.name
                     accessor = inline_model._meta.get_field(fk_name).rel.related_name or inline_model.__name__.lower() + "_set"
                     inline_fields.append(accessor)
-                elif issubclass(inline, GenericInlineModelAdmin):
-                    ct_field = inline.ct_field
-                    ct_fk_field = inline.ct_fk_field
-                    for field in self.model._meta.many_to_many:
-                        if isinstance(field, GenericRelation) and field.object_id_field_name == ct_fk_field and field.content_type_field_name == ct_field:
-                            inline_fields.append(field.name)
             self._autoregister(self.model, inline_fields)
 
     def _get_template_list(self, template_name):
