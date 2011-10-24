@@ -69,7 +69,6 @@ class VersionAdmin(admin.ModelAdmin):
                 inline_model = inline.model
                 self._autoregister(inline_model)
                 if issubclass(inline, options.InlineModelAdmin):
-                    import ipdb; ipdb.set_trace();
                     fk_name = inline.fk_name
                     if not fk_name:
                         for field in inline_model._meta.fields:
