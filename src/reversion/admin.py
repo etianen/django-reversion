@@ -5,7 +5,7 @@ from django.db import models, transaction
 from django.conf.urls.defaults import patterns, url
 from django.conf import settings
 from django.contrib import admin
-from django.contrib.admin import helpers
+from django.contrib.admin import helpers, options
 from django.contrib.admin.util import unquote
 from django.contrib.contenttypes.generic import GenericInlineModelAdmin, GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -68,7 +68,8 @@ class VersionAdmin(admin.ModelAdmin):
             for inline in self.inlines:
                 inline_model = inline.model
                 self._autoregister(inline_model)
-                if issubclass(inline, admin.InlineModelAdmin):
+                if issubclass(inline, options.InlineModelAdmin):
+                    import ipdb; ipdb.set_trace();
                     fk_name = inline.fk_name
                     if not fk_name:
                         for field in inline_model._meta.fields:
