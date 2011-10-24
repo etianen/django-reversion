@@ -68,7 +68,7 @@ class VersionAdmin(admin.ModelAdmin):
             for inline in self.inlines:
                 inline_model = inline.model
                 self._autoregister(inline_model)
-                if issubclass(inline, (admin.TabularInline, admin.StackedInline)):
+                if issubclass(inline, admin.InlineModelAdmin):
                     fk_name = inline.fk_name
                     if not fk_name:
                         for field in inline_model._meta.fields:
