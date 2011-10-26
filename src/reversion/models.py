@@ -8,7 +8,6 @@ from django.contrib.contenttypes import generic
 from django.core import serializers
 from django.conf import settings
 from django.db import models, IntegrityError
-from django.db.models import Count, Max
 
 
 def deprecated(original, replacement):

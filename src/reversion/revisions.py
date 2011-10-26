@@ -322,7 +322,7 @@ class RevisionManager(object):
     
     def __init__(self, manager_slug, revision_context_manager=revision_context_manager):
         """Initializes the revision manager."""
-         # Check the slug is unique for this revision manager.
+        # Check the slug is unique for this revision manager.
         if manager_slug in RevisionManager._created_managers:
             raise RegistrationError("A revision manager has already been created with the slug %r" % manager_slug)
         # Store a reference to this manager.

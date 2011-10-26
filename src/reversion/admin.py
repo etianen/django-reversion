@@ -3,7 +3,6 @@
 from django import template
 from django.db import models, transaction
 from django.conf.urls.defaults import patterns, url
-from django.conf import settings
 from django.contrib import admin
 from django.contrib.admin import helpers, options
 from django.contrib.admin.util import unquote
@@ -175,7 +174,7 @@ class VersionAdmin(admin.ModelAdmin):
     
     def _hack_inline_formset_initial(self, FormSet, formset, obj, version, revert, recover):
         """Hacks the given formset to contain the correct initial data."""
-         # Now we hack it to push in the data from the revision!
+        # Now we hack it to push in the data from the revision!
         initial = []
         related_versions = self.get_related_versions(obj, version, FormSet)
         formset.related_versions = related_versions
