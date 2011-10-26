@@ -71,7 +71,7 @@ class VersionAdmin(admin.ModelAdmin):
                     ct_field = inline.ct_field
                     ct_fk_field = inline.ct_fk_field
                     for field in self.model._meta.many_to_many:
-                        if isinstance(field, GenericRelation) and field.object_id_field_name == ct_fk_field and field.content_type_field_name == ct_field:
+                        if isinstance(field, GenericRelation) and field.rel.to == inline_model and field.object_id_field_name == ct_fk_field and field.content_type_field_name == ct_field:
                             inline_fields.append(field.name)
                 elif issubclass(inline, options.InlineModelAdmin):
                     fk_name = inline.fk_name
