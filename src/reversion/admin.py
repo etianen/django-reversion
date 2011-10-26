@@ -79,7 +79,7 @@ class VersionAdmin(admin.ModelAdmin):
                         for field in inline_model._meta.fields:
                             if isinstance(field, (models.ForeignKey, models.OneToOneField)) and issubclass(self.model, field.rel.to):
                                 fk_name = field.name
-                    accessor = inline_model._meta.get_field(fk_name).rel.related_name or inline_model.__name__.lower() + "_set"
+                    accessor = inline_model._meta.get_field(fk_name).related.get_accessor_name()
                     inline_fields.append(accessor)
             self._autoregister(self.model, inline_fields)
 
