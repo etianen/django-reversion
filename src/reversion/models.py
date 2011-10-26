@@ -9,7 +9,7 @@ from django.core import serializers
 from django.conf import settings
 from django.db import models, IntegrityError
 from django.db.models import Count, Max
-
+from tools import recursive_revert
 
 def deprecated(original, replacement):
     """Decorator that defines a deprecated method."""
@@ -53,7 +53,9 @@ class Revision(models.Model):
                                help_text="A text comment on this revision.")
     
     def revert(self, delete=False):
-        """Reverts all objects in this revision."""
+        """Reverts all objects in this revision. 
+           Result: all objects will be at the version created by this revision. If you are looking to undo this revision, you will need to write your own function.
+        """
         version_set = self.version_set.all()
         # Optionally delete objects no longer in the current revision.
         if delete:
@@ -77,19 +79,8 @@ class Revision(models.Model):
                 else:
                     item.delete()
         # Attempt to revert all revisions.
-        def do_revert(versions):
-            unreverted_versions = []
-            for version in versions:
-                try:
-                    version.revert()
-                except IntegrityError:
-                    unreverted_versions.append(version)
-            if len(unreverted_versions) == len(versions):
-                raise RevertError("Could not revert revision, due to database integrity errors.")
-            if unreverted_versions:
-                do_revert(unreverted_versions)
-        do_revert([version for version in version_set if version.type != VERSION_DELETE])
-        
+        recursive_revert([version for version in version_set if version.type != VERSION_DELETE])
+
     def __unicode__(self):
         """Returns a unicode representation."""
         return u", ".join(unicode(version) for version in self.version_set.all())
