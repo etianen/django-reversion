@@ -2,6 +2,13 @@ django-reversion changelog
 ==========================
 
 
+1.5.1 - 20/10/2011
+------------------
+
+* Polish translation.
+* Minor bug fixes.
+
+
 1.5 - 04/09/2011
 ----------------
 
