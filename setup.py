@@ -13,7 +13,7 @@ except ImportError:
 
 
 setup(name="django-reversion",
-      version="1.5",
+      version="1.5.1",
       description="An extension to the Django web framework that provides comprehensive version control facilities",
       author="Dave Hall",
       author_email="dave@etianen.com",
