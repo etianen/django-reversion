@@ -233,15 +233,9 @@ class RevisionContextManager(local):
         Called at the end of a request, ensuring that any open revisions
         are closed. Not closing all active revisions can cause memory leaks
         and weird behaviour.
-        
-        If you use the low level API correctly, this shouldn't ever be the case.
-        If it does happen, a RevisionManagementError will be raised.
         """
-        if self.is_active():
-            raise RevisionManagementError(
-                "Request finished with an open revision. All calls to revision.start() "
-                "should be balanced by a call to revision.end()."
-            )
+        while self.is_active():
+            self.end()
     
     # High-level context management.
     
