@@ -225,7 +225,7 @@ class VersionAdmin(admin.ModelAdmin):
                 new_object = obj
             prefixes = {}
             for FormSet, inline in zip(self.get_formsets(request, new_object),
-                                       self.inline_instances):
+                                       self.get_inline_instances(request)):
                 prefix = FormSet.get_default_prefix()
                 prefixes[prefix] = prefixes.get(prefix, 0) + 1
                 if prefixes[prefix] != 1:
@@ -265,7 +265,7 @@ class VersionAdmin(admin.ModelAdmin):
             # of queries required to construct the formets.
             form = ModelForm(instance=obj, initial=self.get_revision_form_data(request, obj, version))
             prefixes = {}
-            for FormSet, inline in zip(self.get_formsets(request, obj), self.inline_instances):
+            for FormSet, inline in zip(self.get_formsets(request, obj), self.get_inline_instances(request)):
                 # This code is standard for creating the formset.
                 prefix = FormSet.get_default_prefix()
                 prefixes[prefix] = prefixes.get(prefix, 0) + 1
@@ -283,7 +283,7 @@ class VersionAdmin(admin.ModelAdmin):
         media = self.media + adminForm.media
         # Generate formset helpers.
         inline_admin_formsets = []
-        for inline, formset in zip(self.inline_instances, formsets):
+        for inline, formset in zip(self.get_inline_instances(request), formsets):
             fieldsets = list(inline.get_fieldsets(request, obj))
             readonly = list(inline.get_readonly_fields(request, obj))
             inline_admin_formset = helpers.InlineAdminFormSet(inline, formset,
