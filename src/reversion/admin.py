@@ -79,8 +79,9 @@ class VersionAdmin(admin.ModelAdmin):
                         for field in inline_model._meta.fields:
                             if isinstance(field, (models.ForeignKey, models.OneToOneField)) and issubclass(self.model, field.rel.to):
                                 fk_name = field.name
-                    accessor = inline_model._meta.get_field(fk_name).related.get_accessor_name()
-                    inline_fields.append(accessor)
+                    if not inline_model._meta.get_field(fk_name).rel.is_hidden():
+                        accessor = inline_model._meta.get_field(fk_name).related.get_accessor_name()
+                        inline_fields.append(accessor)
             self._autoregister(self.model, inline_fields)
 
     def _get_template_list(self, template_name):
