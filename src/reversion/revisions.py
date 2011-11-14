@@ -141,7 +141,11 @@ class RevisionContextManager(local):
     def is_active(self):
         """Returns whether there is an active revision for this thread."""
         return self._depth > 0
-    
+
+    @property
+    def db(self):
+        return self._db
+
     def _assert_active(self):
         """Checks for an active revision, throwning an exception if none."""
         if not self.is_active():
@@ -411,7 +415,6 @@ class RevisionManager(object):
         """Saves a new revision."""
 
         db = db or django.db.DEFAULT_DB_ALIAS
-        import pudb; pudb.set_trace()
 
         # Adapt the objects to a dict.
         if isinstance(objects, (list, tuple)):
@@ -581,16 +584,16 @@ class RevisionManager(object):
         if self._revision_context_manager.is_active():
             adapter = self.get_adapter(instance.__class__)
             if created:
-                version_data = adapter.get_version_data(instance, VERSION_ADD, instance._state.db)
+                version_data = adapter.get_version_data(instance, VERSION_ADD, self._revision_context_manager.db)
             else:
-                version_data = adapter.get_version_data(instance, VERSION_CHANGE, instance._state.db)
+                version_data = adapter.get_version_data(instance, VERSION_CHANGE, self._revision_context_manager.db)
             self._revision_context_manager.add_to_context(self, instance, version_data)
             
     def _pre_delete_receiver(self, instance, **kwargs):
         """Adds registered models to the current revision, if any."""
         if self._revision_context_manager.is_active():
             adapter = self.get_adapter(instance.__class__)
-            version_data = adapter.get_version_data(instance, VERSION_DELETE, instance._state.db)
+            version_data = adapter.get_version_data(instance, VERSION_DELETE, self._revision_context_manager.db)
             self._revision_context_manager.add_to_context(self, instance, version_data)
 
         
