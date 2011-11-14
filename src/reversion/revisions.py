@@ -10,11 +10,13 @@ import operator, sys
 from threading import local
 from weakref import WeakValueDictionary
 
+import django
+
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.signals import request_finished
-from django.db import models, DEFAULT_DB_ALIAS
+from django.db import models
 from django.db.models import Q, Max
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
@@ -90,10 +92,11 @@ class VersionAdapter(object):
             fields = self.get_fields_to_serialize(),
         )
         
-    def get_version_data(self, obj, type_flag):
+    def get_version_data(self, obj, type_flag, db=None):
         """Creates the version data to be saved to the version model."""
         object_id = unicode(obj.pk)
-        content_type = ContentType.objects.db_manager(obj._state.db).get_for_model(obj)
+        db = db or django.db.DEFAULT_DB_ALIAS
+        content_type = ContentType.objects.db_manager(db).get_for_model(obj)
         if has_int_pk(obj.__class__):
             object_id_int = int(obj.pk)
         else:
@@ -133,6 +136,7 @@ class RevisionContextManager(local):
         self._is_invalid = False
         self._meta = []
         self._ignore_duplicates = False
+        self._db = None
     
     def is_active(self):
         """Returns whether there is an active revision for this thread."""
@@ -143,7 +147,7 @@ class RevisionContextManager(local):
         if not self.is_active():
             raise RevisionManagementError("There is no active revision for this thread")
         
-    def start(self):
+    def start(self, db=None):
         """
         Begins a revision for this thread.
         
@@ -151,6 +155,11 @@ class RevisionContextManager(local):
         leave these methods alone and instead use the revision context manager
         or the `create_on_success` decorator.
         """
+        if db:
+            if self._db is None:
+                self._db = db
+            elif self._db != db:
+                raise RevisionManagementError("Invalid use of revision management using multiple distinct databases.")
         self._depth += 1
     
     def end(self, db=None):
@@ -260,7 +269,7 @@ class RevisionContext(object):
     
     def __enter__(self):
         """Enters a block of revision management."""
-        self._context_manager.start()
+        self._context_manager.start(db=self._db)
         
     def __exit__(self, exc_type, exc_value, traceback):
         """Leaves a block of revision management."""
@@ -391,8 +400,9 @@ class RevisionManager(object):
             _follow(obj)
         return followed
     
-    def _get_versions(self, db):
+    def _get_versions(self, db=None):
         """Returns all versions that apply to this manager."""
+        db = db or django.db.DEFAULT_DB_ALIAS
         return Version.objects.using(db).filter(
             revision__manager_slug = self._manager_slug,
         ).select_related("revision")
@@ -400,12 +410,13 @@ class RevisionManager(object):
     def save_revision(self, objects, ignore_duplicates=False, user=None, comment="", meta=(), db=None):
         """Saves a new revision."""
 
-        db = db or DEFAULT_DB_ALIAS
+        db = db or django.db.DEFAULT_DB_ALIAS
+        import pudb; pudb.set_trace()
 
         # Adapt the objects to a dict.
         if isinstance(objects, (list, tuple)):
             objects = dict(
-                (obj, self.get_adapter(obj.__class__).get_version_data(obj, VERSION_CHANGE))
+                (obj, self.get_adapter(obj.__class__).get_version_data(obj, VERSION_CHANGE, db))
                 for obj in objects
             )
         # Create the revision.
@@ -484,7 +495,7 @@ class RevisionManager(object):
         
         The results are returned with the most recent versions first.
         """
-        db = db or DEFAULT_DB_ALIAS
+        db = db or django.db.DEFAULT_DB_ALIAS
         content_type = ContentType.objects.db_manager(db).get_for_model(model)
         versions = self._get_versions(db).filter(
             content_type = content_type,
@@ -506,15 +517,15 @@ class RevisionManager(object):
         
         The results are returned with the most recent versions first.
         """
-        return self.get_for_object_reference(obj.__class__, obj.pk, db or obj._state.db)
+        return self.get_for_object_reference(obj.__class__, obj.pk, db)
     
-    def get_unique_for_object(self, obj):
+    def get_unique_for_object(self, obj, db=None):
         """
         Returns unique versions associated with the object.
         
         The results are returned with the most recent versions first.
         """
-        versions = self.get_for_object(obj)
+        versions = self.get_for_object(obj, db)
         changed_versions = []
         last_serialized_data = None
         for version in versions:
@@ -523,9 +534,9 @@ class RevisionManager(object):
             last_serialized_data = version.serialized_data
         return changed_versions
     
-    def get_for_date(self, object, date):
+    def get_for_date(self, object, date, db=None):
         """Returns the latest version of an object for the given date."""
-        versions = self.get_for_object(object)
+        versions = self.get_for_object(object, db)
         versions = versions.filter(revision__date_created__lte=date)
         try:
             version = versions[0]
@@ -540,7 +551,7 @@ class RevisionManager(object):
         
         The results are returned with the most recent versions first.
         """
-        db = db or DEFAULT_DB_ALIAS
+        db = db or django.db.DEFAULT_DB_ALIAS
         content_type = ContentType.objects.db_manager(db).get_for_model(model_class)
         live_pk_queryset = model_class._default_manager.db_manager(db).all().values_list("pk", flat=True)
         versioned_objs = self._get_versions(db).filter(
@@ -570,16 +581,16 @@ class RevisionManager(object):
         if self._revision_context_manager.is_active():
             adapter = self.get_adapter(instance.__class__)
             if created:
-                version_data = adapter.get_version_data(instance, VERSION_ADD)
+                version_data = adapter.get_version_data(instance, VERSION_ADD, instance._state.db)
             else:
-                version_data = adapter.get_version_data(instance, VERSION_CHANGE)
+                version_data = adapter.get_version_data(instance, VERSION_CHANGE, instance._state.db)
             self._revision_context_manager.add_to_context(self, instance, version_data)
             
     def _pre_delete_receiver(self, instance, **kwargs):
         """Adds registered models to the current revision, if any."""
         if self._revision_context_manager.is_active():
             adapter = self.get_adapter(instance.__class__)
-            version_data = adapter.get_version_data(instance, VERSION_DELETE)
+            version_data = adapter.get_version_data(instance, VERSION_DELETE, instance._state.db)
             self._revision_context_manager.add_to_context(self, instance, version_data)
 
         
