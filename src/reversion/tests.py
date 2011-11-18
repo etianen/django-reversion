@@ -11,6 +11,7 @@ import datetime
 from django.db import models
 from django.test import TestCase
 from django.core.management import call_command
+from django.conf import settings
 from django.conf.urls.defaults import *
 from django.contrib import admin
 from django.contrib.auth.models import User
@@ -634,6 +635,8 @@ class RevisionMiddlewareTest(ReversionTestBase):
         self.assertEqual(Version.objects.count(), 0)
 
 
+@skipUnless('django.contrib.admin' in settings.INSTALLED_APPS,
+            "django.contrib.admin not activated")
 class VersionAdminTest(TestCase):
 
     urls = "reversion.tests"
