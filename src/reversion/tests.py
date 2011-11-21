@@ -635,8 +635,6 @@ class RevisionMiddlewareTest(ReversionTestBase):
         self.assertEqual(Version.objects.count(), 0)
 
 
-@skipUnless('django.contrib.admin' in settings.INSTALLED_APPS,
-            "django.contrib.admin not activated")
 class VersionAdminTest(TestCase):
 
     urls = "reversion.tests"
@@ -651,10 +649,14 @@ class VersionAdminTest(TestCase):
         self.user.save()
         self.client.login(username="foo", password="bar")
 
+    @skipUnless('django.contrib.admin' in settings.INSTALLED_APPS,
+                "django.contrib.admin not activated")
     def testAutoRegisterWorks(self):
         self.assertTrue(reversion.is_registered(ChildTestAdminModel))
         self.assertTrue(reversion.is_registered(ParentTestAdminModel))
-        
+
+    @skipUnless('django.contrib.admin' in settings.INSTALLED_APPS,
+                "django.contrib.admin not activated")
     def testRevisionSavedOnPost(self):
         self.assertEqual(ChildTestAdminModel.objects.count(), 0)
         # Create an instance via the admin.
