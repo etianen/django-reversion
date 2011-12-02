@@ -11,6 +11,7 @@ import datetime
 from django.db import models
 from django.test import TestCase
 from django.core.management import call_command
+from django.conf import settings
 from django.conf.urls.defaults import *
 from django.contrib import admin
 from django.contrib.auth.models import User
@@ -648,10 +649,14 @@ class VersionAdminTest(TestCase):
         self.user.save()
         self.client.login(username="foo", password="bar")
 
+    @skipUnless('django.contrib.admin' in settings.INSTALLED_APPS,
+                "django.contrib.admin not activated")
     def testAutoRegisterWorks(self):
         self.assertTrue(reversion.is_registered(ChildTestAdminModel))
         self.assertTrue(reversion.is_registered(ParentTestAdminModel))
-        
+
+    @skipUnless('django.contrib.admin' in settings.INSTALLED_APPS,
+                "django.contrib.admin not activated")
     def testRevisionSavedOnPost(self):
         self.assertEqual(ChildTestAdminModel.objects.count(), 0)
         # Create an instance via the admin.
