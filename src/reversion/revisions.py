@@ -154,15 +154,21 @@ class RevisionContextManager(local):
         self._depth += 1
     
     def end(self):
-        """Ends a revision for this thread."""
+        """
+        Ends a revision for this thread.
+        Returns None if a save was not triggered.
+        Returns a {RevisionManager: Revision} dict.
+        Revision may be None if nothing was saved for that manager.
+        """
         self._assert_active()
         self._depth -= 1
+        revisions = {}
         if self._depth == 0:
             try:
                 if not self.is_invalid():
                     # Save the revision data.
                     for manager, manager_context in self._objects.iteritems():
-                        manager.save_revision(
+                        revisions[manager] = manager.save_revision(
                             manager_context,
                             user = self._user,
                             comment = self._comment,
@@ -171,6 +177,8 @@ class RevisionContextManager(local):
                         )
             finally:
                 self.clear()
+            return revisions
+        return None
 
     def invalidate(self):
         """Marks this revision as broken, so should not be commited."""
@@ -255,10 +263,24 @@ class RevisionContext(object):
     def __init__(self, context_manager):
         """Initializes the revision context."""
         self._context_manager = context_manager
-    
+        self._result = None
+   
+    def result(self):
+        """
+        Get any save results.
+        Returns None if a save was not triggered or we haven't left the context yet.
+        Returns a {RevisionManager: Revision} dict.
+        Revision may be None if nothing was saved for that manager.
+        """
+        return self._result
+
     def __enter__(self):
-        """Enters a block of revision management."""
+        """
+        Enters a block of revision management.
+        Returns this RevisionContext, to allow retrieval of results.
+        """
         self._context_manager.start()
+        return self
         
     def __exit__(self, exc_type, exc_value, traceback):
         """Leaves a block of revision management."""
@@ -266,7 +288,7 @@ class RevisionContext(object):
             if exc_type is not None:
                 self._context_manager.invalidate()
         finally:
-            self._context_manager.end()
+            self._result = self._context_manager.end()
         
     def __call__(self, func):
         """Allows this revision context to be used as a decorator."""
@@ -396,7 +418,10 @@ class RevisionManager(object):
         ).select_related("revision")
         
     def save_revision(self, objects, ignore_duplicates=False, user=None, comment="", meta=()):
-        """Saves a new revision."""
+        """
+        Saves a new revision.
+        Returns the new revision, or None if no revision has been saved.
+        """
         # Adapt the objects to a dict.
         if isinstance(objects, (list, tuple)):
             objects = dict(
@@ -441,6 +466,8 @@ class RevisionManager(object):
                 # Save the meta information.
                 for cls, kwargs in meta:
                     cls._default_manager.create(revision=revision, **kwargs)
+                return revision
+        return None
     
     # Context management.
     
