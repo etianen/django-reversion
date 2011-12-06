@@ -157,7 +157,7 @@ class RevisionContextManager(local):
         """
         Ends a revision for this thread.
         Returns None if a save was not triggered.
-        Returns a {RevisionManager: Revision} dict.
+        Returns a {RevisionManager-slug: Revision} dict.
         Revision may be None if nothing was saved for that manager.
         """
         self._assert_active()
@@ -168,7 +168,7 @@ class RevisionContextManager(local):
                 if not self.is_invalid():
                     # Save the revision data.
                     for manager, manager_context in self._objects.iteritems():
-                        revisions[manager] = manager.save_revision(
+                        revisions[manager._manager_slug] = manager.save_revision(
                             manager_context,
                             user = self._user,
                             comment = self._comment,
@@ -269,7 +269,7 @@ class RevisionContext(object):
         """
         Get any save results.
         Returns None if a save was not triggered or we haven't left the context yet.
-        Returns a {RevisionManager: Revision} dict.
+        Returns a {RevisionManager-slug: Revision} dict.
         Revision may be None if nothing was saved for that manager.
         """
         return self._result
