@@ -87,7 +87,7 @@ class VersionAdapter(object):
         return serializers.serialize(
             self.get_serialization_format(),
             (obj,),
-            fields = self.get_fields_to_serialize(),
+            fields = list(self.get_fields_to_serialize()),
         )
         
     def get_version_data(self, obj, type_flag):
