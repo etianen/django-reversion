@@ -1,7 +1,7 @@
 """Admin extensions for django-reversion."""
 
 from django import template
-from django.db import models, transaction
+from django.db import models, transaction, connection
 from django.conf.urls.defaults import patterns, url
 from django.contrib import admin
 from django.contrib.admin import helpers, options
@@ -9,6 +9,7 @@ from django.contrib.admin.util import unquote
 from django.contrib.contenttypes.generic import GenericInlineModelAdmin, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.urlresolvers import reverse
+from django.core.exceptions import ImproperlyConfigured
 from django.forms.formsets import all_valid
 from django.forms.models import model_to_dict
 from django.http import HttpResponseRedirect
@@ -19,7 +20,7 @@ from django.utils.text import capfirst
 from django.utils.translation import ugettext as _
 from django.utils.encoding import force_unicode
 
-from reversion.models import Version
+from reversion.models import Revision, Version, has_int_pk
 from reversion.revisions import revision_context_manager, default_revision_manager
 
 
@@ -397,3 +398,44 @@ class VersionAdmin(admin.ModelAdmin):
         context = {"action_list": action_list}
         context.update(extra_context or {})
         return super(VersionAdmin, self).history_view(request, object_id, context)
+
+
+class VersionMetaAdmin(VersionAdmin):
+    
+    """
+    An enhanced VersionAdmin that annotates the given object with information about
+    the last version that was saved.
+    """
+    
+    def __init__(self, *args, **kwargs):
+        """Initializes the VersionMetaAdmin."""
+        super(VersionMetaAdmin, self).__init__(*args, **kwargs)
+        # Check that the model has an int pk.
+        if not has_int_pk(self.model):
+            raise ImproperlyConfigured("Cannot use VersionMetaAdmin unless the model has an integer primary key.")
+        
+    def queryset(self, request):
+        """Returns the annotated queryset."""
+        content_type = ContentType.objects.get_for_model(self.model)
+        pk = self.model._meta.pk
+        return super(VersionMetaAdmin, self).queryset(request).extra(
+            select = {
+                "date_modified": """
+                    SELECT MAX(%(revision_table)s.date_created)
+                    FROM %(version_table)s
+                    JOIN %(revision_table)s ON %(revision_table)s.id = %(version_table)s.revision_id 
+                    WHERE %(version_table)s.content_type_id = %%s AND %(version_table)s.object_id_int = %(table)s.%(pk)s 
+                """ % {
+                    "revision_table": connection.ops.quote_name(Revision._meta.db_table),
+                    "version_table": connection.ops.quote_name(Version._meta.db_table),
+                    "table": connection.ops.quote_name(self.model._meta.db_table),
+                    "pk": connection.ops.quote_name(pk.db_column or pk.attname),
+                }
+            },
+            select_params = (content_type.id,),
+        )
+        
+    def get_date_modified(self, obj):
+        """Displays the last modified date of the given object, typically for use in a change list."""
+        return format(obj.date_modified, _('DATETIME_FORMAT'))
+    get_date_modified.short_description = "date modified"
