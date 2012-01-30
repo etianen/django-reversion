@@ -102,7 +102,7 @@ class VersionAdmin(admin.ModelAdmin):
         reversion_urls = patterns("",
                                   url("^recover/$", admin_site.admin_view(self.recoverlist_view), name='%s_%s_recoverlist' % info),
                                   url("^recover/([^/]+)/$", admin_site.admin_view(self.recover_view), name='%s_%s_recover' % info),
-                                  url("^([^/]+)/history/([^/]+)/$", admin_site.admin_view(self.revision_view), name='%s_%s_revision' % info),)
+                                  url("^(.+)/history/([^/]+)/$", admin_site.admin_view(self.revision_view), name='%s_%s_revision' % info),)
         return reversion_urls + urls
     
     def log_addition(self, request, object):
