@@ -20,7 +20,7 @@ from django.http import HttpResponse
 from django.utils.unittest import skipUnless
 
 import reversion
-from reversion.revisions import RegistrationError, RevisionManager
+from reversion.revisions import RegistrationError, RevisionManager, RevisionManagementError
 from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE
 from reversion.middleware import RevisionMiddleware
 
@@ -158,6 +158,17 @@ class InternalsTest(RevisionTestBase):
             self.test11.save()
         self.assertEqual(Revision.objects.count(), 2)
         self.assertEqual(Version.objects.count(), 5)
+        
+    def testNestedContextManagerRaisingException(self):
+        # New revision should be created.
+        try:
+            with reversion.create_revision(db='default'):
+                with reversion.create_revision(db='shard_a'):
+                  self.test11.name = "model1 instance1 version2"
+                  self.test11.save()
+            self.fail('Nested manager with different dbs was supposed to raise an exception...')
+        except RevisionManagementError, rme:
+            pass
         
     def testEmptyRevisionNotCreated(self):
         with reversion.create_revision():
