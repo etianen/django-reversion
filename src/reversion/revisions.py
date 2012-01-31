@@ -391,9 +391,7 @@ class RevisionManager(object):
     
     def _get_versions(self):
         """Returns all versions that apply to this manager."""
-        return Version.objects.filter(
-            revision__manager_slug = self._manager_slug,
-        ).select_related("revision")
+        return Version.objects.filter(revision__manager_slug=self._manager_slug)
         
     def save_revision(self, objects, ignore_duplicates=False, user=None, comment="", meta=()):
         """Saves a new revision."""
@@ -535,26 +533,22 @@ class RevisionManager(object):
         The results are returned with the most recent versions first.
         """
         content_type = ContentType.objects.get_for_model(model_class)
-        live_pk_queryset = model_class._default_manager.all().values_list("pk", flat=True)
-        versioned_objs = self._get_versions().filter(
+        live_pk_queryset = model_class._default_manager.all()
+        deleted_versions = self._get_versions().filter(
             content_type = content_type,
+        ).exclude(
+            type = VERSION_DELETE
         )
         if has_int_pk(model_class):
-            # We can do this as a fast, in-database join.
-            deleted_version_pks = versioned_objs.exclude(
+            # This should be a little bit faster because it's only on int
+            deleted_versions = deleted_versions.exclude(
                 object_id_int__in = live_pk_queryset
-            ).values_list("object_id_int")
+            )
         else:
-            # This join has to be done as two separate queries.
-            deleted_version_pks = versioned_objs.exclude(
-                object_id__in = list(live_pk_queryset.iterator())
-            ).values_list("object_id")
-        deleted_version_pks = deleted_version_pks.exclude(
-            type = VERSION_DELETE,
-        ).annotate(
-            latest_pk = Max("pk")
-        ).values_list("latest_pk", flat=True)
-        return self._get_versions().filter(pk__in=deleted_version_pks).order_by("-pk")
+            deleted_versions = deleted_versions.exclude(
+                object_id__in = live_pk_queryset
+            )
+        return deleted_versions.order_by("-pk")
         
     # Signal receivers.
         
