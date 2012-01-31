@@ -5,7 +5,7 @@ from django.db import models, transaction, connection
 from django.conf.urls.defaults import patterns, url
 from django.contrib import admin
 from django.contrib.admin import helpers, options
-from django.contrib.admin.util import unquote
+from django.contrib.admin.util import unquote, quote
 from django.contrib.contenttypes.generic import GenericInlineModelAdmin, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.urlresolvers import reverse
@@ -102,7 +102,7 @@ class VersionAdmin(admin.ModelAdmin):
         reversion_urls = patterns("",
                                   url("^recover/$", admin_site.admin_view(self.recoverlist_view), name='%s_%s_recoverlist' % info),
                                   url("^recover/([^/]+)/$", admin_site.admin_view(self.recover_view), name='%s_%s_recover' % info),
-                                  url("^(.+)/history/([^/]+)/$", admin_site.admin_view(self.revision_view), name='%s_%s_revision' % info),)
+                                  url("^([^/]+)/history/([^/]+)/$", admin_site.admin_view(self.revision_view), name='%s_%s_revision' % info),)
         return reversion_urls + urls
     
     def log_addition(self, request, object):
@@ -257,7 +257,7 @@ class VersionAdmin(admin.ModelAdmin):
                 if revert:
                     return HttpResponseRedirect("../../")
                 elif recover:
-                    return HttpResponseRedirect("../../%s/" % object_id)
+                    return HttpResponseRedirect("../../%s/" % quote(object_id))
                 else:
                     assert False
         else:
@@ -317,8 +317,8 @@ class VersionAdmin(admin.ModelAdmin):
                         "save_as": False,
                         "save_on_top": self.save_on_top,
                         "changelist_url": reverse("%s:%s_%s_changelist" % (self.admin_site.name, opts.app_label, opts.module_name)),
-                        "change_url": reverse("%s:%s_%s_change" % (self.admin_site.name, opts.app_label, opts.module_name), args=(obj.pk,)),
-                        "history_url": reverse("%s:%s_%s_history" % (self.admin_site.name, opts.app_label, opts.module_name), args=(obj.pk,)),
+                        "change_url": reverse("%s:%s_%s_change" % (self.admin_site.name, opts.app_label, opts.module_name), args=(quote(obj.pk),)),
+                        "history_url": reverse("%s:%s_%s_history" % (self.admin_site.name, opts.app_label, opts.module_name), args=(quote(obj.pk),)),
                         "recoverlist_url": reverse("%s:%s_%s_recoverlist" % (self.admin_site.name, opts.app_label, opts.module_name))})
         # Render the form.
         if revert:
@@ -386,7 +386,7 @@ class VersionAdmin(admin.ModelAdmin):
         action_list = [
             {
                 "revision": version.revision,
-                "url": reverse("%s:%s_%s_revision" % (self.admin_site.name, opts.app_label, opts.module_name), args=(version.object_id, version.id)),
+                "url": reverse("%s:%s_%s_revision" % (self.admin_site.name, opts.app_label, opts.module_name), args=(quote(version.object_id), version.id)),
             }
             for version
             in self._order_version_queryset(self.revision_manager.get_for_object_reference(
