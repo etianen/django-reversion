@@ -350,7 +350,7 @@ class RevisionManager(object):
             raise RegistrationError, "%r has already been registered with django-reversion" % model
         # Prevent proxy models being registered.
         if model._meta.proxy:
-            raise RegistrationError("Proxy models cannot be used with django-reversion, register the parent class instead" % model)
+            raise RegistrationError("Proxy models cannot be used with django-reversion, register the parent class instead")
         # Perform any customization.
         if field_overrides:
             adapter_cls = type("Custom" + adapter_cls.__name__, (adapter_cls,), field_overrides)

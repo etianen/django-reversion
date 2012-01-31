@@ -21,7 +21,7 @@ from django.utils.translation import ugettext as _
 from django.utils.encoding import force_unicode
 
 from reversion.models import Revision, Version, has_int_pk
-from reversion.revisions import revision_context_manager, default_revision_manager
+from reversion.revisions import revision_context_manager, default_revision_manager, RegistrationError
 
 
 class VersionAdmin(admin.ModelAdmin):
@@ -52,6 +52,8 @@ class VersionAdmin(admin.ModelAdmin):
     
     def _autoregister(self, model, follow=None):
         """Registers a model with reversion, if required."""
+        if model._meta.proxy:
+            raise RegistrationError("Proxy models cannot be used with django-reversion, register the parent class instead")
         if not self.revision_manager.is_registered(model):
             follow = follow or []
             for parent_cls, field in model._meta.parents.items():
