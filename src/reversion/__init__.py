@@ -55,6 +55,8 @@ create_revision = revision_context_manager.create_revision
 
     
 # Revision meta data.
+get_db = revision_context_manager.get_db
+set_db = revision_context_manager.set_db
 get_user = revision_context_manager.get_user
 set_user = revision_context_manager.set_user
 get_comment = revision_context_manager.get_comment
