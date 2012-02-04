@@ -550,14 +550,14 @@ class RevisionManager(object):
         """
         db = db or DEFAULT_DB_ALIAS
         content_type = ContentType.objects.db_manager(db).get_for_model(model_class)
-        live_pk_queryset = model_class._default_manager.db_manager(db).all().values_list("pk", flat=True)
+        live_pk_queryset = model_class._default_manager.all().values_list("pk", flat=True)
         versioned_objs = self._get_versions(db).filter(
             content_type = content_type,
         )
         if has_int_pk(model_class):
             # We can do this as a fast, in-database join.
             deleted_version_pks = versioned_objs.exclude(
-                object_id_int__in = live_pk_queryset
+                object_id_int__in = list(live_pk_queryset.iterator())
             ).values_list("object_id_int")
         else:
             # This join has to be done as two separate queries.
