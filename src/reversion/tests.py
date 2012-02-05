@@ -20,7 +20,7 @@ from django.http import HttpResponse
 from django.utils.unittest import skipUnless
 
 import reversion
-from reversion.revisions import RegistrationError, RevisionManager
+from reversion.revisions import RegistrationError, RevisionManager, RevisionManagementError
 from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE
 from reversion.middleware import RevisionMiddleware
 

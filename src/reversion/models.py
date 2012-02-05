@@ -25,6 +25,25 @@ def deprecated(original, replacement):
     return decorator
 
 
+def safe_revert(versions):
+    """
+    Attempts to revert the given models contained in the give versions.
+    
+    This method will attempt to resolve dependencies between the versions to revert
+    them in the correct order to avoid database integrity errors.
+    """
+    unreverted_versions = []
+    for version in versions:
+        try:
+            version.revert()
+        except IntegrityError:
+            unreverted_versions.append(version)
+    if len(unreverted_versions) == len(versions):
+        raise RevertError("Could not revert revision, due to database integrity errors.")
+    if unreverted_versions:
+        safe_revert(unreverted_versions)
+
+
 class RevertError(Exception):
     
     """Exception thrown when something goes wrong with reverting a model."""
@@ -76,18 +95,7 @@ class Revision(models.Model):
                 else:
                     item.delete()
         # Attempt to revert all revisions.
-        def do_revert(versions):
-            unreverted_versions = []
-            for version in versions:
-                try:
-                    version.revert()
-                except IntegrityError:
-                    unreverted_versions.append(version)
-            if len(unreverted_versions) == len(versions):
-                raise RevertError("Could not revert revision, due to database integrity errors.")
-            if unreverted_versions:
-                do_revert(unreverted_versions)
-        do_revert([version for version in version_set if version.type != VERSION_DELETE])
+        safe_revert([version for version in version_set if version.type != VERSION_DELETE])
         
     def __unicode__(self):
         """Returns a unicode representation."""
