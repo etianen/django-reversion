@@ -542,19 +542,23 @@ class RevisionManager(object):
         else:
             return version
     
-    def get_deleted(self, model_class, db=None):
+    def get_deleted(self, model_class, db=None, model_db=None):
         """
         Returns all the deleted versions for the given model class.
         
         The results are returned with the most recent versions first.
         """
         db = db or DEFAULT_DB_ALIAS
+        model_db = model_db or db
         content_type = ContentType.objects.db_manager(db).get_for_model(model_class)
-        live_pk_queryset = model_class._default_manager.db_manager(db).all().values_list("pk", flat=True)
+        live_pk_queryset = model_class._default_manager.db_manager(model_db).all().values_list("pk", flat=True)
         versioned_objs = self._get_versions(db).filter(
             content_type = content_type,
         )
         if has_int_pk(model_class):
+            # If the model and version data are in different databases, decouple the queries.
+            if model_db != db:
+                live_pk_queryset = list(live_pk_queryset.iterator())
             # We can do this as a fast, in-database join.
             deleted_version_pks = versioned_objs.exclude(
                 object_id_int__in = live_pk_queryset
