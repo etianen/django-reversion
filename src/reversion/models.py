@@ -282,7 +282,7 @@ class Version(models.Model):
                     parent_version = Version.objects.get(revision__id=self.revision_id,
                                                          content_type=content_type,
                                                          object_id=parent_id)
-                except parent_class.DoesNotExist:
+                except Version.DoesNotExist:
                     pass
                 else:
                     result.update(parent_version.field_dict)
