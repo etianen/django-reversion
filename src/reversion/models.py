@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.core import serializers
+from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from django.db import models, IntegrityError
 
@@ -36,7 +37,7 @@ def safe_revert(versions):
     for version in versions:
         try:
             version.revert()
-        except IntegrityError:
+        except (IntegrityError, ObjectDoesNotExist):
             unreverted_versions.append(version)
     if len(unreverted_versions) == len(versions):
         raise RevertError("Could not revert revision, due to database integrity errors.")
@@ -282,7 +283,7 @@ class Version(models.Model):
                     parent_version = Version.objects.get(revision__id=self.revision_id,
                                                          content_type=content_type,
                                                          object_id=parent_id)
-                except parent_class.DoesNotExist:
+                except Version.DoesNotExist:
                     pass
                 else:
                     result.update(parent_version.field_dict)
