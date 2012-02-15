@@ -6,7 +6,7 @@ These tests require Python 2.5 to run.
 
 from __future__ import with_statement
 
-import datetime
+import datetime, os
 
 from django.db import models
 from django.test import TestCase
@@ -642,6 +642,10 @@ class VersionAdminTest(TestCase):
     urls = "reversion.tests"
 
     def setUp(self):
+        self.old_TEMPLATE_DIRS = settings.TEMPLATE_DIRS
+        settings.TEMPLATE_DIRS = (
+            os.path.join(os.path.dirname(admin.__file__), "templates"),
+        )
         self.user = User(
             username = "foo",
             is_staff = True,
@@ -718,6 +722,7 @@ class VersionAdminTest(TestCase):
         self.user.delete()
         del self.user
         ChildTestAdminModel.objects.all().delete()
+        settings.TEMPLATE_DIRS = self.old_TEMPLATE_DIRS
 
 
 # Tests for optional patch generation methods.
