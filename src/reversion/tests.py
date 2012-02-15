@@ -651,6 +651,8 @@ class VersionAdminTest(TestCase):
             is_staff = True,
             is_superuser = True,
         )
+        self.global_site = admin.site
+        admin.site = site
         self.user.set_password("bar")
         self.user.save()
         self.client.login(username="foo", password="bar")
@@ -721,6 +723,7 @@ class VersionAdminTest(TestCase):
         self.client.logout()
         self.user.delete()
         del self.user
+        admin.site = self.global_site
         ChildTestAdminModel.objects.all().delete()
         settings.TEMPLATE_DIRS = self.old_TEMPLATE_DIRS
 
