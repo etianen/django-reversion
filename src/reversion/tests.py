@@ -121,6 +121,13 @@ class ReversionTestBase(TestCase):
             username = "user1",
         )
         
+        # Since we're creating a user, we need to bias our assertions
+        # depending on whether or not it will create versions/revisions for
+        # self.user.
+        self.registered_instance_offset = 0
+        if reversion.is_registered(User):
+            self.registered_instance_offset = 1
+
     def tearDown(self):
         # Unregister the test models.
         reversion.unregister(ReversionTestModel1)
@@ -149,7 +156,7 @@ class InternalsTest(RevisionTestBase):
 
     def testRevisionsCreated(self):
         self.assertEqual(Revision.objects.count(), 1)
-        self.assertEqual(Version.objects.count(), 4)
+        self.assertEqual(Version.objects.count(), 4 + self.registered_instance_offset)
         
     def testContextManager(self):
         # New revision should be created.
@@ -157,13 +164,13 @@ class InternalsTest(RevisionTestBase):
             self.test11.name = "model1 instance1 version2"
             self.test11.save()
         self.assertEqual(Revision.objects.count(), 2)
-        self.assertEqual(Version.objects.count(), 5)
+        self.assertEqual(Version.objects.count(), 5 + self.registered_instance_offset)
         
     def testEmptyRevisionNotCreated(self):
         with reversion.create_revision():
             pass
         self.assertEqual(Revision.objects.count(), 1)
-        self.assertEqual(Version.objects.count(), 4)
+        self.assertEqual(Version.objects.count(), 4 + self.registered_instance_offset)
         
     def testRevisionContextAbandonedOnError(self):
         try:
@@ -174,7 +181,7 @@ class InternalsTest(RevisionTestBase):
         except:
             pass
         self.assertEqual(Revision.objects.count(), 1)
-        self.assertEqual(Version.objects.count(), 4)
+        self.assertEqual(Version.objects.count(), 4 + self.registered_instance_offset)
         
     def testRevisionDecoratorAbandonedOnError(self):
         @reversion.create_revision()
@@ -187,20 +194,20 @@ class InternalsTest(RevisionTestBase):
         except:
             pass
         self.assertEqual(Revision.objects.count(), 1)
-        self.assertEqual(Version.objects.count(), 4)
+        self.assertEqual(Version.objects.count(), 4 + self.registered_instance_offset)
         
     def testCorrectVersionFlags(self):
-        self.assertEqual(Version.objects.filter(type=VERSION_ADD).count(), 4)
+        self.assertEqual(Version.objects.filter(type=VERSION_ADD).count(), 4 + self.registered_instance_offset)
         self.assertEqual(Version.objects.filter(type=VERSION_CHANGE).count(), 0)
         self.assertEqual(Version.objects.filter(type=VERSION_DELETE).count(), 0)
         with reversion.create_revision():
             self.test11.save()
-        self.assertEqual(Version.objects.filter(type=VERSION_ADD).count(), 4)
+        self.assertEqual(Version.objects.filter(type=VERSION_ADD).count(), 4 + self.registered_instance_offset)
         self.assertEqual(Version.objects.filter(type=VERSION_CHANGE).count(), 1)
         self.assertEqual(Version.objects.filter(type=VERSION_DELETE).count(), 0)
         with reversion.create_revision():
             self.test11.delete()
-        self.assertEqual(Version.objects.filter(type=VERSION_ADD).count(), 4)
+        self.assertEqual(Version.objects.filter(type=VERSION_ADD).count(), 4 + self.registered_instance_offset)
         self.assertEqual(Version.objects.filter(type=VERSION_CHANGE).count(), 1)
         self.assertEqual(Version.objects.filter(type=VERSION_DELETE).count(), 1)
 
@@ -404,11 +411,11 @@ class FollowModelsTest(ReversionTestBase):
     
     def testRelationsFollowed(self):
         self.assertEqual(Revision.objects.count(), 1)
-        self.assertEqual(Version.objects.count(), 5)
+        self.assertEqual(Version.objects.count(), 5 + self.registered_instance_offset)
         with reversion.create_revision():
             self.follow1.save()
         self.assertEqual(Revision.objects.count(), 2)
-        self.assertEqual(Version.objects.count(), 9)
+        self.assertEqual(Version.objects.count(), 9 + self.registered_instance_offset)
     
     def testRevertWithDelete(self):
         with reversion.create_revision():
@@ -438,11 +445,11 @@ class FollowModelsTest(ReversionTestBase):
     
     def testReverseRelationsFollowed(self):
         self.assertEqual(Revision.objects.count(), 1)
-        self.assertEqual(Version.objects.count(), 5)
+        self.assertEqual(Version.objects.count(), 5 + self.registered_instance_offset)
         with reversion.create_revision():
             self.test11.save()
         self.assertEqual(Revision.objects.count(), 2)
-        self.assertEqual(Version.objects.count(), 9)
+        self.assertEqual(Version.objects.count(), 9 + self.registered_instance_offset)
     
     def testReverseFollowRevertWithDelete(self):
         with reversion.create_revision():
@@ -509,16 +516,16 @@ class CreateInitialRevisionsTest(ReversionTestBase):
         call_command("createinitialrevisions")
         revcount = Revision.objects.count()
         vercount = Version.objects.count()
-        self.assertTrue(revcount >= 4)
-        self.assertTrue(vercount >= 4)
+        self.assertTrue(revcount >= 4 + self.registered_instance_offset)
+        self.assertTrue(vercount >= 4 + self.registered_instance_offset)
         call_command("createinitialrevisions")
         self.assertEqual(Revision.objects.count(), revcount)
         self.assertEqual(Version.objects.count(), vercount)
         
     def testCreateInitialRevisionsSpecificApps(self):
         call_command("createinitialrevisions", "auth")
-        self.assertEqual(Revision.objects.count(), 4)
-        self.assertEqual(Version.objects.count(), 4)
+        self.assertEqual(Revision.objects.count(), 4 + self.registered_instance_offset)
+        self.assertEqual(Version.objects.count(), 4 + self.registered_instance_offset)
         
     def testCreateInitialRevisionsSpecificModels(self):
         call_command("createinitialrevisions", "auth.ReversionTestModel1")
