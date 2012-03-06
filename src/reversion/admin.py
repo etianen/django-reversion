@@ -411,30 +411,28 @@ class VersionMetaAdmin(VersionAdmin):
     An enhanced VersionAdmin that annotates the given object with information about
     the last version that was saved.
     """
-    
-    def __init__(self, *args, **kwargs):
-        """Initializes the VersionMetaAdmin."""
-        super(VersionMetaAdmin, self).__init__(*args, **kwargs)
-        # Check that the model has an int pk.
-        if not has_int_pk(self.model):
-            raise ImproperlyConfigured("Cannot use VersionMetaAdmin unless the model has an integer primary key.")
         
     def queryset(self, request):
         """Returns the annotated queryset."""
         content_type = ContentType.objects.get_for_model(self.model)
         pk = self.model._meta.pk
+        if has_int_pk(self.model):
+            version_table_field = "object_id_int"
+        else:
+            version_table_field = "object_id"
         return super(VersionMetaAdmin, self).queryset(request).extra(
             select = {
                 "date_modified": """
                     SELECT MAX(%(revision_table)s.date_created)
                     FROM %(version_table)s
                     JOIN %(revision_table)s ON %(revision_table)s.id = %(version_table)s.revision_id 
-                    WHERE %(version_table)s.content_type_id = %%s AND %(version_table)s.object_id_int = %(table)s.%(pk)s 
+                    WHERE %(version_table)s.content_type_id = %%s AND %(version_table)s.%(version_table_field)s = %(table)s.%(pk)s 
                 """ % {
                     "revision_table": connection.ops.quote_name(Revision._meta.db_table),
                     "version_table": connection.ops.quote_name(Version._meta.db_table),
                     "table": connection.ops.quote_name(self.model._meta.db_table),
                     "pk": connection.ops.quote_name(pk.db_column or pk.attname),
+                    "version_table_field": connection.ops.quote_name(version_table_field),
                 }
             },
             select_params = (content_type.id,),
