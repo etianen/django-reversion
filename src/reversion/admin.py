@@ -1,4 +1,5 @@
 """Admin extensions for django-reversion."""
+from functools import partial
 
 from django import template
 from django.db import models, transaction, connection
@@ -223,9 +224,11 @@ class VersionAdmin(admin.ModelAdmin):
         formset.initial = initial
         formset.forms = [formset._construct_form(n) for n in xrange(len(initial))]
         # Hack the formset to force a save of everything.
+        def get_changed_data(form):
+            return [field.name for field in form.fields]
         for form in formset.forms:
             form.has_changed = lambda: True
-            form._get_changed_data = lambda: [field.name for field in form.fields]  # TODO: Scope this in a partial function.
+            form._get_changed_data = partial(get_changed_data, form=form)
         def total_form_count_hack(count):
             return lambda: count
         formset.total_form_count = total_form_count_hack(len(initial))
