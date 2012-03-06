@@ -130,7 +130,7 @@ class RevisionContextManager(local):
         self._objects = {}
         self._user = None
         self._comment = ""
-        self._depth = 0
+        self._stack = []
         self._is_invalid = False
         self._meta = []
         self._ignore_duplicates = False
@@ -138,14 +138,19 @@ class RevisionContextManager(local):
     
     def is_active(self):
         """Returns whether there is an active revision for this thread."""
-        return self._depth > 0
-
+        return bool(self._stack)
+    
+    def is_managing_manually(self):
+        """Returns whether this revision context has manual management enabled."""
+        self._assert_active()
+        return self._stack[-1]
+    
     def _assert_active(self):
         """Checks for an active revision, throwning an exception if none."""
         if not self.is_active():
             raise RevisionManagementError("There is no active revision for this thread")
         
-    def start(self):
+    def start(self, manage_manually=False):
         """
         Begins a revision for this thread.
         
@@ -153,13 +158,13 @@ class RevisionContextManager(local):
         leave these methods alone and instead use the revision context manager
         or the `create_on_success` decorator.
         """
-        self._depth += 1
+        self._stack.append(manage_manually)
     
     def end(self):
         """Ends a revision for this thread."""
         self._assert_active()
-        self._depth -= 1
-        if self._depth == 0:
+        self._stack.pop()
+        if not self._stack:
             try:
                 if not self.is_invalid():
                     # Save the revision data.
@@ -250,26 +255,27 @@ class RevisionContextManager(local):
     
     # High-level context management.
     
-    def create_revision(self):
+    def create_revision(self, manage_manually=False):
         """
         Marks up a block of code as requiring a revision to be created.
         
         The returned context manager can also be used as a decorator.
         """
-        return RevisionContext(self)
+        return RevisionContext(self, manage_manually)
 
 
 class RevisionContext(object):
 
     """An individual context for a revision."""
 
-    def __init__(self, context_manager):
+    def __init__(self, context_manager, manage_manually):
         """Initializes the revision context."""
         self._context_manager = context_manager
+        self._manage_manually = manage_manually
     
     def __enter__(self):
         """Enters a block of revision management."""
-        self._context_manager.start()
+        self._context_manager.start(self._manage_manually)
         
     def __exit__(self, exc_type, exc_value, traceback):
         """Leaves a block of revision management."""
@@ -579,7 +585,7 @@ class RevisionManager(object):
         
     def _post_save_receiver(self, instance, created, **kwargs):
         """Adds registered models to the current revision, if any."""
-        if self._revision_context_manager.is_active():
+        if self._revision_context_manager.is_active() and not self._revision_context_manager.is_managing_manually():
             adapter = self.get_adapter(instance.__class__)
             if created:
                 version_data = adapter.get_version_data(instance, VERSION_ADD, self._revision_context_manager._db)
@@ -589,7 +595,7 @@ class RevisionManager(object):
             
     def _pre_delete_receiver(self, instance, **kwargs):
         """Adds registered models to the current revision, if any."""
-        if self._revision_context_manager.is_active():
+        if self._revision_context_manager.is_active() and not self._revision_context_manager.is_managing_manually():
             adapter = self.get_adapter(instance.__class__)
             version_data = adapter.get_version_data(instance, VERSION_DELETE, self._revision_context_manager._db)
             self._revision_context_manager.add_to_context(self, instance, version_data)

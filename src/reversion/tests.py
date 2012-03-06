@@ -158,6 +158,18 @@ class InternalsTest(RevisionTestBase):
             self.test11.save()
         self.assertEqual(Revision.objects.count(), 2)
         self.assertEqual(Version.objects.count(), 5)
+    
+    def testManualRevisionManagement(self):
+        # When manage manually is on, no revisions created.
+        with reversion.create_revision(manage_manually=True):
+            self.test11.name = "model1 instance1 version2"
+            self.test11.save()
+        self.assertEqual(Revision.objects.count(), 1)
+        self.assertEqual(Version.objects.count(), 4)
+        # Save a manual revision.
+        reversion.default_revision_manager.save_revision([self.test11])
+        self.assertEqual(Revision.objects.count(), 2)
+        self.assertEqual(Version.objects.count(), 5)
         
     def testEmptyRevisionNotCreated(self):
         with reversion.create_revision():
