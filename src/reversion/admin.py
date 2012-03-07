@@ -22,7 +22,7 @@ from django.utils.translation import ugettext as _
 from django.utils.encoding import force_unicode
 
 from reversion.models import Revision, Version, has_int_pk, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE
-from reversion.revisions import revision_context_manager as default_revision_context_manager, default_revision_manager, RegistrationError
+from reversion.revisions import default_revision_manager, RegistrationError
 
 
 class VersionAdmin(admin.ModelAdmin):
@@ -41,9 +41,6 @@ class VersionAdmin(admin.ModelAdmin):
     
     # The revision manager instance used to manage revisions.
     revision_manager = default_revision_manager
-    
-    # The revision context manager used to manage revision contexts.
-    revision_context_manager = default_revision_context_manager
     
     # The serialization format to use when registering models with reversion.
     reversion_format = "json"
@@ -64,6 +61,11 @@ class VersionAdmin(admin.ModelAdmin):
                 follow.append(field.name)
                 self._autoregister(parent_cls)
             self.revision_manager.register(model, follow=follow, format=self.reversion_format)
+    
+    @property
+    def revision_context_manager(self):
+        """The revision context manager for this VersionAdmin."""
+        return self.revision_manager._revision_context_manager
     
     def __init__(self, *args, **kwargs):
         """Initializes the VersionAdmin"""
