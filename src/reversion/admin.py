@@ -21,7 +21,7 @@ from django.utils.translation import ugettext as _
 from django.utils.encoding import force_unicode
 
 from reversion.models import Revision, Version, has_int_pk, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE
-from reversion.revisions import revision_context_manager as default_revision_context_manager, default_revision_manager, RegistrationError
+from reversion.revisions import default_revision_manager, RegistrationError
 
 
 class VersionAdmin(admin.ModelAdmin):
