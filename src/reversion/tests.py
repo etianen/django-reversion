@@ -101,6 +101,11 @@ class RegistrationTest(TestCase):
 class ReversionTestBase(TestCase):
 
     def setUp(self):
+        # Unregister all registered models.
+        self.initial_registered_models = []
+        for registered_model in reversion.get_registered_models():
+            self.initial_registered_models.append((registered_model, reversion.get_adapter(registered_model).__class__))
+            reversion.unregister(registered_model)
         # Register the test models.
         reversion.register(ReversionTestModel1)
         reversion.register(ReversionTestModel2)
@@ -136,6 +141,10 @@ class ReversionTestBase(TestCase):
         del self.user
         # Delete the revisions index.
         Revision.objects.all().delete()
+        # Re-register initial registered models.
+        for initial_model, adapter in self.initial_registered_models:
+            reversion.register(initial_model, adapter_cls=adapter)
+        del self.initial_registered_models
 
 
 class RevisionTestBase(ReversionTestBase):
