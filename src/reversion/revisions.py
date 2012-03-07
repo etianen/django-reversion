@@ -14,7 +14,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.signals import request_finished
-from django.db import models, DEFAULT_DB_ALIAS
+from django.db import models, DEFAULT_DB_ALIAS, connection
 from django.db.models import Q, Max
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
@@ -579,6 +579,11 @@ class RevisionManager(object):
         ).annotate(
             latest_pk = Max("pk")
         ).values_list("latest_pk", flat=True)
+        # HACK: MySQL deals extremely badly with this as a subquery, and can hang infinitely.
+        # TODO: If a version is identified where this bug no longer applies, we can add a version specifier.
+        if connection.vendor == "mysql":
+            deleted_version_pks = list(deleted_version_pks)
+        # Return the deleted versions!
         return self._get_versions(db).filter(pk__in=deleted_version_pks).order_by("-pk")
         
     # Signal receivers.
