@@ -120,12 +120,22 @@ class VersionAdmin(admin.ModelAdmin):
                                   url("^([^/]+)/history/([^/]+)/$", admin_site.admin_view(self.revision_view), name='%s_%s_revision' % info),)
         return reversion_urls + urls
     
+    def get_revision_instances(self, request, object):
+        """Returns all the instances to be used in the object's revision."""
+        return [object]
+    
+    def get_revision_data(self, request, object, flag):
+        """Returns all the revision data to be used in the object's revision."""
+        return dict(
+            (o, self.revision_manager.get_adapter(o.__class__).get_version_data(o, flag))
+            for o in self.get_revision_instances(request, object)
+        )
+    
     def log_addition(self, request, object):
         """Sets the version meta information."""
         super(VersionAdmin, self).log_addition(request, object)
-        adapter = self.revision_manager.get_adapter(self.model)
         self.revision_manager.save_revision(
-            {object: adapter.get_version_data(object, VERSION_ADD)},
+            self.get_revision_data(request, object, VERSION_ADD),
             user = request.user,
             comment = _(u"Initial version."),
             ignore_duplicates = self.ignore_duplicate_revisions,
@@ -135,9 +145,8 @@ class VersionAdmin(admin.ModelAdmin):
     def log_change(self, request, object, message):
         """Sets the version meta information."""
         super(VersionAdmin, self).log_change(request, object, message)
-        adapter = self.revision_manager.get_adapter(self.model)
         self.revision_manager.save_revision(
-            {object: adapter.get_version_data(object, VERSION_CHANGE)},
+            self.get_revision_data(request, object, VERSION_CHANGE),
             user = request.user,
             comment = message,
             ignore_duplicates = self.ignore_duplicate_revisions,
@@ -147,9 +156,8 @@ class VersionAdmin(admin.ModelAdmin):
     def log_deletion(self, request, object, object_repr):
         """Sets the version meta information."""
         super(VersionAdmin, self).log_deletion(request, object, object_repr)
-        adapter = self.revision_manager.get_adapter(self.model)
         self.revision_manager.save_revision(
-            {object: adapter.get_version_data(object, VERSION_DELETE)},
+            self.get_revision_data(request, object, VERSION_DELETE),
             user = request.user,
             comment = _(u"Deleted %(verbose_name)s.") % {"verbose_name": self.model._meta.verbose_name},
             ignore_duplicates = self.ignore_duplicate_revisions,
