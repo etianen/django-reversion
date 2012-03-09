@@ -170,7 +170,11 @@ class RevisionContextManager(local):
                     # Save the revision data.
                     for manager, manager_context in self._objects.iteritems():
                         manager.save_revision(
-                            manager_context,
+                            dict(
+                                (obj, callable(data) and data() or data)
+                                for obj, data
+                                in manager_context.iteritems()
+                            ),
                             user = self._user,
                             comment = self._comment,
                             meta = self._meta,
@@ -593,9 +597,9 @@ class RevisionManager(object):
         if self._revision_context_manager.is_active() and not self._revision_context_manager.is_managing_manually():
             adapter = self.get_adapter(instance.__class__)
             if created:
-                version_data = adapter.get_version_data(instance, VERSION_ADD, self._revision_context_manager._db)
+                version_data = lambda: adapter.get_version_data(instance, VERSION_ADD, self._revision_context_manager._db)
             else:
-                version_data = adapter.get_version_data(instance, VERSION_CHANGE, self._revision_context_manager._db)
+                version_data = lambda: adapter.get_version_data(instance, VERSION_CHANGE, self._revision_context_manager._db)
             self._revision_context_manager.add_to_context(self, instance, version_data)
             
     def _pre_delete_receiver(self, instance, **kwargs):
