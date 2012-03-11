@@ -240,6 +240,28 @@ class ApiTest(RevisionTestBase):
             self.test22.name = "model2 instance2 version2"
             self.test22.save()
     
+    def testRevisionSignals(self):
+        pre_revision_receiver_called = []
+        def pre_revision_receiver(**kwargs):
+            self.assertEqual(kwargs["instances"], [self.test11])
+            self.assertTrue(isinstance(kwargs["revision"], Revision))
+            self.assertEqual(len(kwargs["versions"]), 1)
+            pre_revision_receiver_called.append(True)
+        post_revision_receiver_called = []
+        def post_revision_receiver(**kwargs):
+            self.assertEqual(kwargs["instances"], [self.test11])
+            self.assertTrue(isinstance(kwargs["revision"], Revision))
+            self.assertEqual(len(kwargs["versions"]), 1)
+            post_revision_receiver_called.append(True)
+        reversion.pre_revision_commit.connect(pre_revision_receiver)
+        reversion.post_revision_commit.connect(post_revision_receiver)
+        # Create a revision.
+        with reversion.create_revision():
+            self.test11.save()
+        # Check the signals were called.
+        self.assertTrue(pre_revision_receiver_called)
+        self.assertTrue(post_revision_receiver_called)
+    
     def testCanGetForObjectReference(self):
         # Test a model with an int pk.
         versions = reversion.get_for_object_reference(ReversionTestModel1, self.test11.pk)

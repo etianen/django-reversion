@@ -1,6 +1,7 @@
 """Database models used by django-reversion."""
 
 import warnings
+from functools import partial
 
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
@@ -9,6 +10,8 @@ from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from django.db import models, IntegrityError
+from django.db.models.signals import pre_save, post_save
+from django.dispatch.dispatcher import Signal, _make_id
 
 
 def deprecated(original, replacement):
@@ -293,7 +296,26 @@ class Version(models.Model):
     def revert(self):
         """Recovers the model in this version."""
         self.object_version.save()
-        
+    
     def __unicode__(self):
         """Returns a unicode representation."""
         return self.object_repr
+
+
+# Version management signals.
+pre_revision_commit = Signal(providing_args=["instances", "revision", "versions"])
+post_revision_commit = Signal(providing_args=["instances", "revision", "versions"])
+    
+
+def check_for_receivers(sender, sending_signal, **kwargs):
+    """Checks that no other signal receivers have been connected."""
+    if len(sending_signal._live_receivers(_make_id(sender))) > 1:
+        warnings.warn("pre_save and post_save signals will not longer be sent for Revision and Version models in django-reversion 1.8. Please use the pre_revision_commit and post_revision_commit signals instead.")
+
+check_for_pre_save_receivers = partial(check_for_receivers, sending_signal=pre_save)
+check_for_post_save_receivers = partial(check_for_receivers, sending_signal=post_save) 
+
+pre_save.connect(check_for_pre_save_receivers, sender=Revision)
+pre_save.connect(check_for_pre_save_receivers, sender=Version)
+post_save.connect(check_for_post_save_receivers, sender=Revision)
+post_save.connect(check_for_post_save_receivers, sender=Version)

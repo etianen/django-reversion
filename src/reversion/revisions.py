@@ -19,7 +19,7 @@ from django.db.models import Q, Max
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
 
-from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE, has_int_pk, deprecated
+from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE, has_int_pk, deprecated, pre_revision_commit, post_revision_commit
 
 
 class VersionAdapter(object):
@@ -419,6 +419,7 @@ class RevisionManager(object):
         
     def save_revision(self, objects, ignore_duplicates=False, user=None, comment="", meta=(), db=None):
         """Saves a new revision."""
+        # Get the db alias.
         db = db or DEFAULT_DB_ALIAS
         # Adapt the objects to a dict.
         if isinstance(objects, (list, tuple)):
@@ -434,7 +435,8 @@ class RevisionManager(object):
                     adapter = self.get_adapter(obj.__class__)
                     objects[obj] = adapter.get_version_data(obj, VERSION_CHANGE)
             # Create all the versions without saving them
-            new_versions = [Version(**version_data) for obj, version_data in objects.iteritems()]
+            ordered_objects = list(objects.iterkeys())
+            new_versions = [Version(**objects[obj]) for obj in ordered_objects]
             # Check if there's some change in all the revision's objects.
             save_revision = True
             if ignore_duplicates:
@@ -450,13 +452,21 @@ class RevisionManager(object):
                         if sorted(previous_versions) == sorted(all_serialized_data):
                             save_revision = False
             # Only save if we're always saving, or have changes.
-            if save_revision:
+            if save_revision:                
                 # Save a new revision.
-                revision = Revision.objects.using(db).create(
+                revision = Revision(
                     manager_slug = self._manager_slug,
                     user = user,
                     comment = comment,
                 )
+                # Send the pre_revision_commit signal.
+                pre_revision_commit.send(self,
+                    instances = ordered_objects,
+                    revision = revision,
+                    versions = new_versions,
+                )
+                # Save the revision.
+                revision.save(using=db)
                 # Save version models.
                 for version in new_versions:
                     version.revision = revision
@@ -464,6 +474,12 @@ class RevisionManager(object):
                 # Save the meta information.
                 for cls, kwargs in meta:
                     cls._default_manager.db_manager(db).create(revision=revision, **kwargs)
+                # Send the pre_revision_commit signal.
+                post_revision_commit.send(self,
+                    instances = ordered_objects,
+                    revision = revision,
+                    versions = new_versions,
+                )
     
     # Context management.
     
