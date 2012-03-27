@@ -1,4 +1,5 @@
 """Admin extensions for django-reversion."""
+from functools import partial
 
 from django import template
 from django.db import models, transaction, connection
@@ -119,12 +120,22 @@ class VersionAdmin(admin.ModelAdmin):
                                   url("^([^/]+)/history/([^/]+)/$", admin_site.admin_view(self.revision_view), name='%s_%s_revision' % info),)
         return reversion_urls + urls
     
+    def get_revision_instances(self, request, object):
+        """Returns all the instances to be used in the object's revision."""
+        return [object]
+    
+    def get_revision_data(self, request, object, flag):
+        """Returns all the revision data to be used in the object's revision."""
+        return dict(
+            (o, self.revision_manager.get_adapter(o.__class__).get_version_data(o, flag))
+            for o in self.get_revision_instances(request, object)
+        )
+    
     def log_addition(self, request, object):
         """Sets the version meta information."""
         super(VersionAdmin, self).log_addition(request, object)
-        adapter = self.revision_manager.get_adapter(self.model)
         self.revision_manager.save_revision(
-            {object: adapter.get_version_data(object, VERSION_ADD)},
+            self.get_revision_data(request, object, VERSION_ADD),
             user = request.user,
             comment = _(u"Initial version."),
             ignore_duplicates = self.ignore_duplicate_revisions,
@@ -134,9 +145,8 @@ class VersionAdmin(admin.ModelAdmin):
     def log_change(self, request, object, message):
         """Sets the version meta information."""
         super(VersionAdmin, self).log_change(request, object, message)
-        adapter = self.revision_manager.get_adapter(self.model)
         self.revision_manager.save_revision(
-            {object: adapter.get_version_data(object, VERSION_CHANGE)},
+            self.get_revision_data(request, object, VERSION_CHANGE),
             user = request.user,
             comment = message,
             ignore_duplicates = self.ignore_duplicate_revisions,
@@ -146,9 +156,8 @@ class VersionAdmin(admin.ModelAdmin):
     def log_deletion(self, request, object, object_repr):
         """Sets the version meta information."""
         super(VersionAdmin, self).log_deletion(request, object, object_repr)
-        adapter = self.revision_manager.get_adapter(self.model)
         self.revision_manager.save_revision(
-            {object: adapter.get_version_data(object, VERSION_DELETE)},
+            self.get_revision_data(request, object, VERSION_DELETE),
             user = request.user,
             comment = _(u"Deleted %(verbose_name)s.") % {"verbose_name": self.model._meta.verbose_name},
             ignore_duplicates = self.ignore_duplicate_revisions,
@@ -225,9 +234,11 @@ class VersionAdmin(admin.ModelAdmin):
         formset.initial = initial
         formset.forms = [formset._construct_form(n) for n in xrange(len(initial))]
         # Hack the formset to force a save of everything.
+        def get_changed_data(form):
+            return [field.name for field in form.fields]
         for form in formset.forms:
             form.has_changed = lambda: True
-            form._get_changed_data = lambda: [field.name for field in form.fields]  # TODO: Scope this in a partial function.
+            form._get_changed_data = partial(get_changed_data, form=form)
         def total_form_count_hack(count):
             return lambda: count
         formset.total_form_count = total_form_count_hack(len(initial))
@@ -256,7 +267,7 @@ class VersionAdmin(admin.ModelAdmin):
                 new_object = obj
             prefixes = {}
             for FormSet, inline in zip(self.get_formsets(request, new_object),
-                                       self.inline_instances):
+                                       self.get_inline_instances(request)):
                 prefix = FormSet.get_default_prefix()
                 prefixes[prefix] = prefixes.get(prefix, 0) + 1
                 if prefixes[prefix] != 1:
@@ -296,7 +307,7 @@ class VersionAdmin(admin.ModelAdmin):
             # of queries required to construct the formets.
             form = ModelForm(instance=obj, initial=self.get_revision_form_data(request, obj, version))
             prefixes = {}
-            for FormSet, inline in zip(self.get_formsets(request, obj), self.inline_instances):
+            for FormSet, inline in zip(self.get_formsets(request, obj), self.get_inline_instances(request)):
                 # This code is standard for creating the formset.
                 prefix = FormSet.get_default_prefix()
                 prefixes[prefix] = prefixes.get(prefix, 0) + 1
@@ -314,11 +325,12 @@ class VersionAdmin(admin.ModelAdmin):
         media = self.media + adminForm.media
         # Generate formset helpers.
         inline_admin_formsets = []
-        for inline, formset in zip(self.inline_instances, formsets):
+        for inline, formset in zip(self.get_inline_instances(request), formsets):
             fieldsets = list(inline.get_fieldsets(request, obj))
             readonly = list(inline.get_readonly_fields(request, obj))
+            prepopulated = inline.get_prepopulated_fields(request, obj)
             inline_admin_formset = helpers.InlineAdminFormSet(inline, formset,
-                fieldsets, readonly, model_admin=self)
+                fieldsets, prepopulated, readonly, model_admin=self)
             inline_admin_formsets.append(inline_admin_formset)
             media = media + inline_admin_formset.media
         # Generate the context.
