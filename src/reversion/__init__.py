@@ -12,7 +12,7 @@ from reversion.revisions import default_revision_manager, revision_context_manag
 from reversion.admin import VersionAdmin
 
 
-VERSION = (1, 5, 1)
+VERSION = (1, 5, 2)
 
 SUPPORTED_DJANGO_VERSIONS = (
     (1, 3, 1),
