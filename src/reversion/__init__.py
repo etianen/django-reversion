@@ -13,7 +13,7 @@ from reversion.admin import VersionAdmin
 from reversion.models import pre_revision_commit, post_revision_commit
 
 
-VERSION = (1, 5, 2)
+VERSION = (1, 6, 0)
 
 SUPPORTED_DJANGO_VERSIONS = (
     (1, 4, 0),
