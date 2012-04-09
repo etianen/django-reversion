@@ -20,6 +20,7 @@ from django.utils.html import mark_safe
 from django.utils.text import capfirst
 from django.utils.translation import ugettext as _
 from django.utils.encoding import force_unicode
+from django.conf import settings
 
 from reversion.models import Revision, Version, has_int_pk, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE
 from reversion.revisions import default_revision_manager, RegistrationError
@@ -290,7 +291,7 @@ class VersionAdmin(admin.ModelAdmin):
                                 setattr(related_obj, field.name, None)
                         related_obj.save()
                     formset.save_m2m()
-                change_message = _(u"Reverted to previous version, saved on %(datetime)s") % {"datetime": format(version.revision.date_created, _('DATETIME_FORMAT'))}
+                change_message = _(u"Reverted to previous version, saved on %(datetime)s") % {"datetime": format(version.revision.date_created, settings.DATETIME_FORMAT)}
                 self.log_change(request, new_object, change_message)
                 self.message_user(request, _(u'The %(model)s "%(name)s" was reverted successfully. You may edit it again below.') % {"model": force_unicode(opts.verbose_name), "name": unicode(obj)})
                 # Redirect to the model change form.
@@ -454,5 +455,5 @@ class VersionMetaAdmin(VersionAdmin):
         
     def get_date_modified(self, obj):
         """Displays the last modified date of the given object, typically for use in a change list."""
-        return format(obj.date_modified, _('DATETIME_FORMAT'))
+        return format(obj.date_modified, settings.DATETIME_FORMAT)
     get_date_modified.short_description = "date modified"
