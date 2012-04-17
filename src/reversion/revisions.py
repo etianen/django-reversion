@@ -280,7 +280,7 @@ class RevisionContext(object):
 
     """An individual context for a revision."""
 
-    def __init__(self, context_manager, manage_manually):
+    def __init__(self, context_manager, manage_manually=False):
         """Initializes the revision context."""
         self._context_manager = context_manager
         self._manage_manually = manage_manually
