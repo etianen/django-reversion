@@ -10,13 +10,13 @@ import django, warnings
 
 from reversion.revisions import default_revision_manager, revision_context_manager, VersionAdapter
 from reversion.admin import VersionAdmin
+from reversion.models import pre_revision_commit, post_revision_commit
 
 
-VERSION = (1, 5, 1)
+VERSION = (1, 6, 0)
 
 SUPPORTED_DJANGO_VERSIONS = (
-    (1, 3, 1),
-    (1, 3, 0),
+    (1, 4, 0),
 )
 
 def check_django_version():
@@ -55,6 +55,8 @@ create_revision = revision_context_manager.create_revision
 
     
 # Revision meta data.
+get_db = revision_context_manager.get_db
+set_db = revision_context_manager.set_db
 get_user = revision_context_manager.get_user
 set_user = revision_context_manager.set_user
 get_comment = revision_context_manager.get_comment
