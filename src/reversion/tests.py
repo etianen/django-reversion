@@ -696,7 +696,18 @@ class VersionAdminTest(TestCase):
         )
         self.user.set_password("bar")
         self.user.save()
-        self.client.login(username="foo", password="bar")
+        # Log the user in.
+        if hasattr(self, "settings"):
+            with self.settings(INSTALLED_APPS=tuple(set(tuple(settings.INSTALLED_APPS) + ("django.contrib.sessions",)))):  # HACK: Without this the client won't log in, for some reason.
+                self.client.login(
+                    username = "foo",
+                    password = "bar",
+                )
+        else:
+            self.client.login(
+                username = "foo",
+                password = "bar",
+            )
 
     @skipUnless('django.contrib.admin' in settings.INSTALLED_APPS,
                 "django.contrib.admin not activated")
