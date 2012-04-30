@@ -10,7 +10,6 @@ from django.contrib.admin.util import unquote, quote
 from django.contrib.contenttypes.generic import GenericInlineModelAdmin, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.urlresolvers import reverse
-from django.core.exceptions import ImproperlyConfigured
 from django.forms.formsets import all_valid
 from django.forms.models import model_to_dict
 from django.http import HttpResponseRedirect
@@ -25,9 +24,9 @@ from reversion.models import Revision, Version, has_int_pk, VERSION_ADD, VERSION
 from reversion.revisions import default_revision_manager, RegistrationError
 
 
-class VersionAdminMixin(object):
+class VersionAdmin(admin.ModelAdmin):
     
-    """Mixin methods for the version admin integration."""
+    """Abstract admin class for handling version controlled models."""
 
     object_history_template = "reversion/object_history.html"
     
@@ -69,7 +68,7 @@ class VersionAdminMixin(object):
     
     def __init__(self, *args, **kwargs):
         """Initializes the VersionAdmin"""
-        super(VersionAdminMixin, self).__init__(*args, **kwargs)
+        super(VersionAdmin, self).__init__(*args, **kwargs)
         # Automatically register models if required.
         if not self.revision_manager.is_registered(self.model):
             inline_fields = []
@@ -110,7 +109,7 @@ class VersionAdminMixin(object):
     
     def get_urls(self):
         """Returns the additional urls used by the Reversion admin."""
-        urls = super(VersionAdminMixin, self).get_urls()
+        urls = super(VersionAdmin, self).get_urls()
         admin_site = self.admin_site
         opts = self.model._meta
         info = opts.app_label, opts.module_name,
@@ -133,7 +132,7 @@ class VersionAdminMixin(object):
     
     def log_addition(self, request, object):
         """Sets the version meta information."""
-        super(VersionAdminMixin, self).log_addition(request, object)
+        super(VersionAdmin, self).log_addition(request, object)
         self.revision_manager.save_revision(
             self.get_revision_data(request, object, VERSION_ADD),
             user = request.user,
@@ -144,7 +143,7 @@ class VersionAdminMixin(object):
         
     def log_change(self, request, object, message):
         """Sets the version meta information."""
-        super(VersionAdminMixin, self).log_change(request, object, message)
+        super(VersionAdmin, self).log_change(request, object, message)
         self.revision_manager.save_revision(
             self.get_revision_data(request, object, VERSION_CHANGE),
             user = request.user,
@@ -155,7 +154,7 @@ class VersionAdminMixin(object):
     
     def log_deletion(self, request, object, object_repr):
         """Sets the version meta information."""
-        super(VersionAdminMixin, self).log_deletion(request, object, object_repr)
+        super(VersionAdmin, self).log_deletion(request, object, object_repr)
         self.revision_manager.save_revision(
             self.get_revision_data(request, object, VERSION_DELETE),
             user = request.user,
@@ -396,7 +395,7 @@ class VersionAdminMixin(object):
         context = {"recoverlist_url": reverse("%s:%s_%s_recoverlist" % (self.admin_site.name, opts.app_label, opts.module_name)),
                    "add_url": reverse("%s:%s_%s_add" % (self.admin_site.name, opts.app_label, opts.module_name)),}
         context.update(extra_context or {})
-        return super(VersionAdminMixin, self).changelist_view(request, context)
+        return super(VersionAdmin, self).changelist_view(request, context)
     
     def history_view(self, request, object_id, extra_context=None):
         """Renders the history view."""
@@ -416,17 +415,15 @@ class VersionAdminMixin(object):
         # Compile the context.
         context = {"action_list": action_list}
         context.update(extra_context or {})
-        return super(VersionAdminMixin, self).history_view(request, object_id, context)
+        return super(VersionAdmin, self).history_view(request, object_id, context)
 
 
-class VersionAdmin(VersionAdminMixin, admin.ModelAdmin):
+class VersionMetaAdmin(VersionAdmin):
     
-    """Abstract admin class for handling version controlled models."""
-
-
-class VersionMetaAdminMixin(VersionAdminMixin):
-    
-    """Mixin methods for the version meta admin."""
+    """
+    An enhanced VersionAdmin that annotates the given object with information about
+    the last version that was saved.
+    """
         
     def queryset(self, request):
         """Returns the annotated queryset."""
@@ -436,7 +433,7 @@ class VersionMetaAdminMixin(VersionAdminMixin):
             version_table_field = "object_id_int"
         else:
             version_table_field = "object_id"
-        return super(VersionMetaAdminMixin, self).queryset(request).extra(
+        return super(VersionMetaAdmin, self).queryset(request).extra(
             select = {
                 "date_modified": """
                     SELECT MAX(%(revision_table)s.date_created)
@@ -458,11 +455,3 @@ class VersionMetaAdminMixin(VersionAdminMixin):
         """Displays the last modified date of the given object, typically for use in a change list."""
         return format(obj.date_modified, _('DATETIME_FORMAT'))
     get_date_modified.short_description = "date modified"
-
-
-class VersionMetaAdmin(VersionMetaAdminMixin, admin.ModelAdmin):
-    
-    """
-    An enhanced VersionAdmin that annotates the given object with information about
-    the last version that was saved.
-    """
