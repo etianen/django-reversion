@@ -4,7 +4,7 @@
 from django.contrib import admin
 from django.contrib.admin.sites import NotRegistered
 
-from reversion.admin import VersionAdminMixin
+from reversion.admin import VersionAdmin
 
 
 def patch_admin(model, admin_site=None):
@@ -23,7 +23,7 @@ def patch_admin(model, admin_site=None):
     # Unregister existing admin class.
     admin_site.unregister(model)
     # Register patched admin class.
-    class PatchedModelAdmin(VersionAdminMixin, ModelAdmin):
+    class PatchedModelAdmin(VersionAdmin, ModelAdmin):
         pass
     admin_site.register(model, PatchedModelAdmin)
 
@@ -57,7 +57,7 @@ else:
         else:
             raise ValueError("cleanup parameter should be one of 'semantic', 'efficiency' or None.")
         return diffs
-    
+
     def generate_patch(old_version, new_version, field_name, cleanup=None):
         """
         Generates a text patch of the named field between the two versions.
@@ -68,7 +68,7 @@ else:
         diffs = generate_diffs(old_version, new_version, field_name, cleanup)
         patch = dmp.patch_make(diffs)
         return dmp.patch_toText(patch)
-    
+
     def generate_patch_html(old_version, new_version, field_name, cleanup=None):
         """
         Generates a pretty html version of the differences between the named 
@@ -79,4 +79,4 @@ else:
         """
         diffs = generate_diffs(old_version, new_version, field_name, cleanup)
         return dmp.diff_prettyHtml(diffs)
-    
+
