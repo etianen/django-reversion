@@ -161,15 +161,21 @@ class RevisionContextManager(local):
         self._stack.append(manage_manually)
     
     def end(self):
-        """Ends a revision for this thread."""
+        """
+        Ends a revision for this thread.
+        Returns None if a save was not triggered.
+        Returns a {RevisionManager-slug: Revision} dict.
+        Revision may be None if nothing was saved for that manager.
+        """
         self._assert_active()
         self._stack.pop()
         if not self._stack:
+            revisions = {}
             try:
                 if not self.is_invalid():
                     # Save the revision data.
                     for manager, manager_context in self._objects.iteritems():
-                        manager.save_revision(
+                        revisions[manager._manager_slug] = manager.save_revision(
                             dict(
                                 (obj, callable(data) and data() or data)
                                 for obj, data
@@ -183,6 +189,8 @@ class RevisionContextManager(local):
                         )
             finally:
                 self.clear()
+            return revisions
+        return None
 
     def invalidate(self):
         """Marks this revision as broken, so should not be commited."""
@@ -272,14 +280,28 @@ class RevisionContext(object):
 
     """An individual context for a revision."""
 
-    def __init__(self, context_manager, manage_manually):
+    def __init__(self, context_manager, manage_manually=False):
         """Initializes the revision context."""
         self._context_manager = context_manager
         self._manage_manually = manage_manually
-    
+        self._result = None
+   
+    def result(self):
+        """
+        Get any save results.
+        Returns None if a save was not triggered or we haven't left the context yet.
+        Returns a {RevisionManager-slug: Revision} dict.
+        Revision may be None if nothing was saved for that manager.
+        """
+        return self._result
+
     def __enter__(self):
-        """Enters a block of revision management."""
+        """
+        Enters a block of revision management.
+        Returns this RevisionContext, to allow retrieval of results.
+        """
         self._context_manager.start(self._manage_manually)
+        return self
         
     def __exit__(self, exc_type, exc_value, traceback):
         """Leaves a block of revision management."""
@@ -287,7 +309,7 @@ class RevisionContext(object):
             if exc_type is not None:
                 self._context_manager.invalidate()
         finally:
-            self._context_manager.end()
+            self._result = self._context_manager.end()
         
     def __call__(self, func):
         """Allows this revision context to be used as a decorator."""
@@ -418,7 +440,10 @@ class RevisionManager(object):
         ).select_related("revision")
         
     def save_revision(self, objects, ignore_duplicates=False, user=None, comment="", meta=(), db=None):
-        """Saves a new revision."""
+        """
+        Saves a new revision.
+        Returns the new revision, or None if no revision has been saved.
+        """
         # Get the db alias.
         db = db or DEFAULT_DB_ALIAS
         # Adapt the objects to a dict.
@@ -480,6 +505,8 @@ class RevisionManager(object):
                     revision = revision,
                     versions = new_versions,
                 )
+                return revision
+        return None
     
     # Context management.
     
