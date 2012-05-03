@@ -480,6 +480,9 @@ class RevisionManager(object):
                     revision = revision,
                     versions = new_versions,
                 )
+                # Return the revision.
+                return revision
+                
     
     # Context management.
     
