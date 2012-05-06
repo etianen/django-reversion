@@ -11,6 +11,8 @@ from django.utils.encoding import smart_unicode
 
 from reversion import default_revision_manager
 from reversion.models import Version, has_int_pk
+from django.utils import translation
+from django.conf import settings
 
 
 class Command(BaseCommand):
@@ -25,6 +27,10 @@ class Command(BaseCommand):
     help = "Creates initial revisions for a given app [and model]."
 
     def handle(self, *app_labels, **options):
+        
+        # Activate project's default language
+        translation.activate(settings.LANGUAGE_CODE)
+        
         comment = options["comment"]
         verbosity = int(options.get("verbosity", 1))
         app_list = SortedDict()
@@ -69,6 +75,9 @@ class Command(BaseCommand):
         for app, model_classes in app_list.items():
             for model_class in model_classes:
                 self.create_initial_revisions(app, model_class, comment, verbosity)
+        
+        # Go back to default language
+        translation.deactivate()
 
     def create_initial_revisions(self, app, model_class, comment, verbosity=2, **kwargs):
         """Creates the set of initial revisions for the given model."""
