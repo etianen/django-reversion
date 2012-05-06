@@ -191,5 +191,7 @@ Examples:
 
         # Delete versions and revisions
         print "Deleting revisions..."
-        revision_query.delete()
+        # revision_query.delete() // Fails on sqlite
+        for item in revision_query:
+            item.delete()
         print "Done"
