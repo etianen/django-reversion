@@ -7,6 +7,7 @@ from django.db.models import Q, Count
 from django.contrib.contenttypes.models import ContentType
 
 from reversion.models import Revision, Version
+from django.db.utils import DatabaseError
 
 
 class Command(BaseCommand):
@@ -191,5 +192,13 @@ Examples:
 
         # Delete versions and revisions
         print "Deleting revisions..."
-        revision_query.delete()
+        
+        try:
+            revision_query.delete()
+        except DatabaseError:
+            # may fail on sqlite if the query is too long
+            print "Delete failed. Trying again with slower method."
+            for item in revision_query:
+                item.delete()
+                
         print "Done"
