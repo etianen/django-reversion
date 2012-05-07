@@ -3,16 +3,16 @@
 
 
 {% block breadcrumbs %}
-	<div class="breadcrumbs">
-		<a href="{% url admin:index %}">{% trans "Home" %}</a> &rsaquo;
-		<a href="{% url admin:app_list app_label %}">{{app_label|capfirst|escape}}</a> &rsaquo; 
-		<a href="{{changelist_url}}">{{opts.verbose_name_plural|capfirst}}</a> &rsaquo;
-		<a href="{{recoverlist_url}}">{% blocktrans with opts.verbose_name_plural as name %}Recover deleted {{name}}{% endblocktrans %}</a> &rsaquo;
-		{{title}}
-	</div>
+    <div class="breadcrumbs">
+        <a href="{% url admin:index %}">{% trans "Home" %}</a> &rsaquo;
+        <a href="{% url admin:app_list app_label %}">{{app_label|capfirst|escape}}</a> &rsaquo; 
+        <a href="{{changelist_url}}">{{opts.verbose_name_plural|capfirst}}</a> &rsaquo;
+        <a href="{{recoverlist_url}}">{% blocktrans with opts.verbose_name_plural as name %}Recover deleted {{name}}{% endblocktrans %}</a> &rsaquo;
+        {{title}}
+    </div>
 {% endblock %}
 
 
 {% block form_top %}
-	<p>{% blocktrans %}Press the save button below to recover this version of the object.{% endblocktrans %}</p>
+    <p>{% blocktrans %}Press the save button below to recover this version of the object.{% endblocktrans %}</p>
 {% endblock %}
