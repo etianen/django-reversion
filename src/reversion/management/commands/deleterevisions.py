@@ -196,7 +196,8 @@ Examples:
         try:
             revision_query.delete()
         except DatabaseError:
-            # may fail on sqlite if the query is too long 
+            # may fail on sqlite if the query is too long
+            print "Delete failed. Trying again with slower method."
             for item in revision_query:
                 item.delete()
                 
