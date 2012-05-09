@@ -11,9 +11,10 @@ import django, warnings
 from reversion.revisions import default_revision_manager, revision_context_manager, VersionAdapter
 from reversion.admin import VersionAdmin
 from reversion.models import pre_revision_commit, post_revision_commit
+from reversion.version import __version__ 
 
 
-VERSION = (1, 6, 0)
+VERSION = __version__ 
 
 SUPPORTED_DJANGO_VERSIONS = (
     (1, 4, 0),
