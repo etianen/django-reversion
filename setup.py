@@ -14,7 +14,9 @@ except ImportError:
 
 setup(name="django-reversion",
       version="1.6.0",
+      license=open("LICENSE").read(),
       description="An extension to the Django web framework that provides comprehensive version control facilities",
+      long_description=open("README.markdown").read(),
       author="Dave Hall",
       author_email="dave@etianen.com",
       url="http://github.com/etianen/django-reversion",
