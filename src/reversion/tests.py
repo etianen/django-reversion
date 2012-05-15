@@ -650,6 +650,33 @@ class ChildTestAdminModelAdmin(reversion.VersionAdmin):
 site.register(ChildTestAdminModel, ChildTestAdminModelAdmin)
 
 
+class Pet(models.Model):
+    name = models.CharField(max_length=100)
+    def __unicode__(self):
+        return self.name
+    class Meta:
+        app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
+
+class Person(models.Model):
+    name = models.CharField(max_length=100)
+    pets = models.ManyToManyField(Pet, blank=True)
+    def __unicode__(self):
+        return self.name
+    class Meta:
+        app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
+
+reversion.register(Person, follow=["pets"])
+reversion.register(Pet, follow=["person_set"])
+
+class PersonAdmin(reversion.VersionAdmin):
+    pass
+site.register(Person, PersonAdmin)
+
+class PetAdmin(reversion.VersionAdmin):
+    pass
+site.register(Pet, PetAdmin)
+
+
 urlpatterns = patterns("",
 
     url("^success/$", save_revision_view),
@@ -777,6 +804,78 @@ class VersionAdminTest(TestCase):
         del self.user
         ChildTestAdminModel.objects.all().delete()
         settings.TEMPLATE_DIRS = self.old_TEMPLATE_DIRS
+
+
+
+
+
+
+class PersonPetModelTest(VersionAdminTest):
+
+    def setUp(self):
+        super(PersonPetModelTest, self).setUp()
+
+        with reversion.create_revision():
+            self.pet1 = Pet.objects.create(name="Catworth")
+            self.pet2 = Pet.objects.create(name="Dogwoth")
+            self.person = Person.objects.create(name="Dave")
+            self.person.pets.add(self.pet1, self.pet2)
+
+        #print "version 1:", self.person, self.person.pets.all()
+        # Dave [<Pet: Catworth>, <Pet: Dogwoth>]
+
+        with reversion.create_revision():
+            self.pet1.name = "Catworth the second"
+            self.pet1.save()
+            self.pet2.save()
+            self.pet2.delete()
+            self.person.save()
+
+        #print "version 2:", self.person, self.person.pets.all()
+        # Dave [<Pet: Catworth the second>]
+
+    def assertContainsHtml(self, response, *args):
+        for html in args:
+            try:
+                self.assertContains(response, html, html=True)
+            except AssertionError, e:
+                try:
+                    from django_tools.unittest_utils.BrowserDebug import debug_response
+                except ImportError:
+                    pass
+                else:
+                    debug_response(response, msg="%s" % e) # from django-tools
+                raise
+
+    def test_initial_state(self):
+        self.assertTrue(reversion.is_registered(Pet))
+        self.assertTrue(reversion.is_registered(Person))
+
+        self.assertEqual(Pet.objects.count(), 1)
+        self.assertEqual(Pet.objects.all()[0].name, "Catworth the second")
+
+        self.assertEqual(reversion.get_for_object(self.pet1).count(), 2)
+        self.assertEqual(Revision.objects.all().count(), 2)
+        self.assertEqual(Version.objects.all().count(), 6)
+
+    def test_select_history(self):
+        response = self.client.get("/admin/auth/person/%s/history/" % self.person.pk)
+        #debug_response(response) # from django-tools
+        self.assertContains(response, '<a href="/admin/auth/person/%s/history/3/">' % self.person.pk)
+        self.assertContains(response, '<a href="/admin/auth/person/%s/history/5/">' % self.person.pk)
+
+    def test_old_history(self):
+        response = self.client.get("/admin/auth/person/%s/history/5/" % self.person.pk)
+        #debug_response(response) # from django-tools
+        self.assertContainsHtml(response,
+            '<input name="name" value="Dave" class="vTextField" maxlength="100" type="text" id="id_name" />',
+            '<option value="1" selected="selected">Catworth</option>',
+            '<option value="2" selected="selected">Dogwoth</option>',
+        )
+
+
+
+
 
 
 # Tests for optional patch generation methods.
