@@ -12,6 +12,7 @@ from django.conf import settings
 from django.db import models, IntegrityError
 from django.db.models.signals import pre_save, post_save
 from django.dispatch.dispatcher import Signal, _make_id
+from django.utils.translation import ugettext_lazy as _
 
 
 def deprecated(original, replacement):
@@ -64,14 +65,17 @@ class Revision(models.Model):
     )
     
     date_created = models.DateTimeField(auto_now_add=True,
+                                        verbose_name=_("date created"),
                                         help_text="The date and time this revision was created.")
     
     user = models.ForeignKey(User,
                              blank=True,
                              null=True,
+                             verbose_name=_("user"),
                              help_text="The user who created this revision.")
     
     comment = models.TextField(blank=True,
+                               verbose_name=_("comment"),
                                help_text="A text comment on this revision.")
     
     def revert(self, delete=False):
