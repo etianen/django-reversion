@@ -418,7 +418,6 @@ class MultiTableInheritanceApiTest(RevisionTestBase):
     
     def tearDown(self):
         super(MultiTableInheritanceApiTest, self).tearDown()
-        reversion.unregister(ReversionTestModel1Child)
         ReversionTestModel1Child.objects.all().delete()
         del self.testchild1
 
