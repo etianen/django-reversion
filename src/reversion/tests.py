@@ -24,6 +24,20 @@ from reversion.revisions import RegistrationError, RevisionManager, RevisionMana
 from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE
 from reversion.middleware import RevisionMiddleware
 
+ZERO = datetime.timedelta(0)
+HOUR = datetime.timedelta(hours=1)
+
+class UTC(datetime.tzinfo):
+    """UTC"""
+
+    def utcoffset(self, dt):
+        return ZERO
+
+    def tzname(self, dt):
+        return "UTC"
+
+    def dst(self, dt):
+        return ZERO
 
 class ReversionTestModelBase(models.Model):
 
@@ -298,15 +312,15 @@ class ApiTest(RevisionTestBase):
         self.assertEqual(len(reversion.get_unique_for_object(self.test21)), 2)
         
     def testCanGetForDate(self):
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(UTC())
         # Test a model with an int pk.
         version = reversion.get_for_date(self.test11, now)
         self.assertEqual(version.field_dict["name"], "model1 instance1 version2")
-        self.assertRaises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test11, datetime.datetime(1970, 1, 1)))
+        self.assertRaises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test11, datetime.datetime(1970, 1, 1, tzinfo=UTC())))
         # Test a model with a str pk.
         version = reversion.get_for_date(self.test21, now)
         self.assertEqual(version.field_dict["name"], "model2 instance1 version2")
-        self.assertRaises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test21, datetime.datetime(1970, 1, 1)))
+        self.assertRaises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test21, datetime.datetime(1970, 1, 1, tzinfo=UTC())))
         
     def testCanGetDeleted(self):
         with reversion.create_revision():
