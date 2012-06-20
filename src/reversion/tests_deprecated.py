@@ -185,7 +185,8 @@ class ReversionQueryTest(TestCase):
         
     def testCanGetForDate(self):
         """Tests that the latest version for a particular date can be loaded."""
-        self.assertEqual(Version.objects.get_for_date(self.test, datetime.datetime.now(UTC())).field_dict["name"], "test1.2")
+        with self.settings(USE_TZ=True):
+            self.assertEqual(Version.objects.get_for_date(self.test, datetime.datetime.now(UTC())).field_dict["name"], "test1.2")
     
     def testCanRevert(self):
         """Tests that an object can be reverted to a previous revision."""
