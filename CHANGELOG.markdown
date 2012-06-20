@@ -1,6 +1,14 @@
 django-reversion changelog
 ==========================
 
+1.6.1 - 27/03/2012
+------------------
+
+* Swedish translation.
+* Fixing formating for PyPi readme and license.
+* Minor features and bugfixes.
+
+
 1.6 - 27/03/2012
 ----------------
 
