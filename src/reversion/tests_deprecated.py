@@ -11,7 +11,7 @@ from django.core.management import call_command
 import reversion
 from reversion.models import Version, Revision, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE
 from reversion.revisions import RegistrationError
-
+from reversion.tests import UTC
 
 class ReversionTestModel(models.Model):
     
@@ -185,7 +185,7 @@ class ReversionQueryTest(TestCase):
         
     def testCanGetForDate(self):
         """Tests that the latest version for a particular date can be loaded."""
-        self.assertEqual(Version.objects.get_for_date(self.test, datetime.datetime.now()).field_dict["name"], "test1.2")
+        self.assertEqual(Version.objects.get_for_date(self.test, datetime.datetime.now(UTC())).field_dict["name"], "test1.2")
     
     def testCanRevert(self):
         """Tests that an object can be reverted to a previous revision."""
