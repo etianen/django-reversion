@@ -74,19 +74,20 @@ class VersionAdmin(admin.ModelAdmin):
             inline_fields = []
             for inline in self.inlines:
                 inline_model = inline.model
-                self._autoregister(inline_model)
                 if issubclass(inline, GenericInlineModelAdmin):
                     ct_field = inline.ct_field
                     ct_fk_field = inline.ct_fk_field
                     for field in self.model._meta.many_to_many:
                         if isinstance(field, GenericRelation) and field.rel.to == inline_model and field.object_id_field_name == ct_fk_field and field.content_type_field_name == ct_field:
                             inline_fields.append(field.name)
+                    self._autoregister(inline_model)
                 elif issubclass(inline, options.InlineModelAdmin):
                     fk_name = inline.fk_name
                     if not fk_name:
                         for field in inline_model._meta.fields:
                             if isinstance(field, (models.ForeignKey, models.OneToOneField)) and issubclass(self.model, field.rel.to):
                                 fk_name = field.name
+                    self._autoregister(inline_model, follow=(fk_name,))
                     if not inline_model._meta.get_field(fk_name).rel.is_hidden():
                         accessor = inline_model._meta.get_field(fk_name).related.get_accessor_name()
                         inline_fields.append(accessor)
