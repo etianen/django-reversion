@@ -4,7 +4,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 from django.contrib.contenttypes.models import ContentType
-from django.db import models
+from django.db import models, reset_queries
 from django.utils.importlib import import_module
 from django.utils.datastructures import SortedDict
 from django.utils.encoding import smart_unicode
@@ -22,6 +22,12 @@ class Command(BaseCommand):
             dest="comment",
             default=u"Initial version.",
             help='Specify the comment to add to the revisions. Defaults to "Initial version.".'),
+        make_option("--batch-size",
+            action="store",
+            dest="batch_size",
+            type=int,
+            default=500,
+            help="For large sets of data, revisions will be populated in batches. Defaults to 500"),
         )
     args = '[appname, appname.ModelName, ...] [--comment="Initial version."]'
     help = "Creates initial revisions for a given app [and model]."
@@ -32,6 +38,8 @@ class Command(BaseCommand):
         translation.activate(settings.LANGUAGE_CODE)
         
         comment = options["comment"]
+        batch_size = options["batch_size"]
+
         verbosity = int(options.get("verbosity", 1))
         app_list = SortedDict()
         # if no apps given, use all installed.
@@ -74,12 +82,12 @@ class Command(BaseCommand):
         # Create revisions.
         for app, model_classes in app_list.items():
             for model_class in model_classes:
-                self.create_initial_revisions(app, model_class, comment, verbosity)
+                self.create_initial_revisions(app, model_class, comment, batch_size, verbosity)
         
         # Go back to default language
         translation.deactivate()
 
-    def create_initial_revisions(self, app, model_class, comment, verbosity=2, **kwargs):
+    def create_initial_revisions(self, app, model_class, comment, batch_size, verbosity=2, **kwargs):
         """Creates the set of initial revisions for the given model."""
         # Import the relevant admin module.
         try:
@@ -103,13 +111,22 @@ class Command(BaseCommand):
                     pk__in = list(versioned_pk_queryset.values_list("object_id", flat=True).iterator())
                 )
             # Save all the versions.
-            for obj in live_objs:
-                try:
-                    default_revision_manager.save_revision((obj,), comment=comment)
-                except:
-                    print "ERROR: Could not save initial version for %s %s." % (model_class.__name__, obj.pk)
-                    raise
-                created_count += 1
+            ids = list(live_objs.values_list(model_class._meta.pk.name, flat=True))
+            total = len(ids)
+            for i in xrange(0, total, batch_size):
+                chunked_ids = ids[i:i+batch_size]
+                objects = live_objs.in_bulk(chunked_ids)
+                for id, obj in objects.iteritems():
+                    try:
+                        default_revision_manager.save_revision((obj,), comment=comment)
+                    except:
+                        print "ERROR: Could not save initial version for %s %s." % (model_class.__name__, obj.pk)
+                        raise
+                    created_count += 1
+                reset_queries()
+                if verbosity >= 2:
+                    print u"Created %s of %s." % (created_count, total)
+
             # Print out a message, if feeling verbose.
             if verbosity >= 2:
                 print u"Created %s initial revision(s) for model %s." % (created_count, smart_unicode(model_class._meta.verbose_name))
