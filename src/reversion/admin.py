@@ -383,8 +383,8 @@ class VersionAdmin(admin.ModelAdmin):
     def revision_view(self, request, object_id, version_id, extra_context=None):
         """Displays the contents of the given revision."""
         object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
-        obj = get_object_or_404(self.model, pk=object_id)
-        version = get_object_or_404(Version, pk=version_id, object_id=unicode(obj.pk))
+        version = get_object_or_404(Version, pk=version_id, object_id=unicode(object_id))
+        obj = version.object_version.object
         # Generate the context.
         context = {"title": _("Revert %(name)s") % {"name": force_unicode(self.model._meta.verbose_name)},}
         context.update(extra_context or {})
