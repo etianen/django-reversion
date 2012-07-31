@@ -18,6 +18,7 @@ VERSION = __version__
 
 SUPPORTED_DJANGO_VERSIONS = (
     (1, 4, 0),
+    (1, 4, 1),
 )
 
 def check_django_version():
