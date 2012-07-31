@@ -2,6 +2,14 @@ django-reversion changelog
 ==========================
 
 
+1.5.2 - 27/03/2012
+------------------
+
+* Multi-db support.
+* Brazillian Portuguese translation.
+* New manage_manually revision mode.
+
+
 1.5.1 - 20/10/2011
 ------------------
 
