@@ -1,7 +1,14 @@
 django-reversion changelog
 ==========================
 
-1.6.1 - 27/03/2012
+1.6.2 - 31/07/2012
+------------------
+
+* Batch saving option in createinitialrevisions.
+* Suppressing warning for Django 1.4.1.
+
+
+1.6.1 - 20/06/2012
 ------------------
 
 * Swedish translation.
