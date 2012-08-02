@@ -15,6 +15,7 @@ from reversion.admin import VersionAdmin
 VERSION = (1, 5, 3)
 
 SUPPORTED_DJANGO_VERSIONS = (
+    (1, 3, 3),
     (1, 3, 2),
     (1, 3, 1),
     (1, 3, 0),
