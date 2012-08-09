@@ -94,7 +94,7 @@ class Revision(models.Model):
                     old_revision[obj] = version
             # Calculate the set of all objects that are in the revision now.
             from reversion.revisions import RevisionManager
-            current_revision = RevisionManager.get_manager(self.manager_slug)._follow_relationships(old_revision.keys())
+            current_revision = RevisionManager.get_manager(self.manager_slug)._follow_relationships(obj for obj in old_revision.keys() if obj is not None)
             # Delete objects that are no longer in the current revision.
             for item in current_revision:
                 if item in old_revision:
