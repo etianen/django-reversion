@@ -2,3 +2,4 @@ include src/reversion/templates/reversion/*.html
 include src/reversion/locale/*/LC_MESSAGES/django.*
 include LICENSE
 include README.markdown
+include MANIFEST.in
