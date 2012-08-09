@@ -16,7 +16,7 @@ except ImportError:
 
 setup(name="django-reversion",
       version='.'.join(str(x) for x in __version__),
-      license=open("LICENSE").read(),
+      license="BSD",
       description="An extension to the Django web framework that provides comprehensive version control facilities",
       long_description=open("README.markdown").read(),
       author="Dave Hall",
