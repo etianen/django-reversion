@@ -27,7 +27,7 @@
                                         {% if action.revision.user.first_name %} ({{action.revision.user.first_name}} {{action.revision.user.last_name}}){% endif %}
                                     {% endif %}
                                 </td>
-                                <td>{{action.revision.comment|default:""}}</td>
+                                <td>{{action.revision.comment|linebreaksbr|default:""}}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
