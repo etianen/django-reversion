@@ -13,6 +13,7 @@ from django.core.urlresolvers import reverse
 from django.forms.formsets import all_valid
 from django.forms.models import model_to_dict
 from django.http import HttpResponseRedirect
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, render_to_response
 from django.utils.html import mark_safe
 from django.utils.text import capfirst
@@ -172,6 +173,9 @@ class VersionAdmin(admin.ModelAdmin):
     
     def recoverlist_view(self, request, extra_context=None):
         """Displays a deleted model to allow recovery."""
+        # check if user has change or add permissions for model
+        if not self.has_change_permission(request) and not self.has_add_permission(request):
+            raise PermissionDenied
         model = self.model
         opts = model._meta
         deleted = self._order_version_queryset(self.revision_manager.get_deleted(self.model))
@@ -373,6 +377,9 @@ class VersionAdmin(admin.ModelAdmin):
     @transaction.commit_on_success
     def recover_view(self, request, version_id, extra_context=None):
         """Displays a form that can recover a deleted model."""
+        # check if user has change or add permissions for model
+        if not self.has_change_permission(request) and not self.has_add_permission(request):
+            raise PermissionDenied
         version = get_object_or_404(Version, pk=version_id)
         obj = version.object_version.object
         context = {"title": _("Recover %(name)s") % {"name": version.object_repr},}
@@ -382,6 +389,9 @@ class VersionAdmin(admin.ModelAdmin):
     @transaction.commit_on_success
     def revision_view(self, request, object_id, version_id, extra_context=None):
         """Displays the contents of the given revision."""
+        # check if user has change or add permissions for model
+        if not self.has_change_permission(request):
+            raise PermissionDenied
         object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
         version = get_object_or_404(Version, pk=version_id, object_id=unicode(object_id))
         obj = version.object_version.object
@@ -400,6 +410,9 @@ class VersionAdmin(admin.ModelAdmin):
     
     def history_view(self, request, object_id, extra_context=None):
         """Renders the history view."""
+        # check if user has change or add permissions for model
+        if not self.has_change_permission(request):
+            raise PermissionDenied
         object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
         opts = self.model._meta
         action_list = [
