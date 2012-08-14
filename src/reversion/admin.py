@@ -390,7 +390,7 @@ class VersionAdmin(admin.ModelAdmin):
     def revision_view(self, request, object_id, version_id, extra_context=None):
         """Displays the contents of the given revision."""
         # check if user has change or add permissions for model
-        if not self.has_change_permission(request) and not self.has_add_permission(request):
+        if not self.has_change_permission(request):
             raise PermissionDenied
         object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
         version = get_object_or_404(Version, pk=version_id, object_id=unicode(object_id))
@@ -411,7 +411,7 @@ class VersionAdmin(admin.ModelAdmin):
     def history_view(self, request, object_id, extra_context=None):
         """Renders the history view."""
         # check if user has change or add permissions for model
-        if not self.has_change_permission(request) and not self.has_add_permission(request):
+        if not self.has_change_permission(request):
             raise PermissionDenied
         object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
         opts = self.model._meta
