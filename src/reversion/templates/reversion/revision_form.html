@@ -1,11 +1,12 @@
 {% extends "admin/change_form.html" %}
+{% load url from future %}
 {% load i18n %}
 
 
 {% block breadcrumbs %}
     <div class="breadcrumbs">
-        <a href="{% url admin:index %}">{% trans "Home" %}</a> &rsaquo;
-        <a href="{% url admin:app_list app_label %}">{{app_label|capfirst|escape}}</a> &rsaquo; 
+        <a href="{% url 'admin:index' %}">{% trans "Home" %}</a> &rsaquo;
+        <a href="{% url 'admin:app_list' app_label %}">{{app_label|capfirst|escape}}</a> &rsaquo; 
         <a href="{{changelist_url}}">{{opts.verbose_name_plural|capfirst}}</a> &rsaquo;
         <a href="{{change_url}}">{{original|truncatewords:"18"}}</a> &rsaquo;
         <a href="../">{% trans "History" %}</a> &rsaquo;
