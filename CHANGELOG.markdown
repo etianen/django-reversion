@@ -1,6 +1,14 @@
 django-reversion changelog
 ==========================
 
+
+1.6.3 - 05/09/2012
+------------------
+
+* Fixing issue with reverting models with unique constraints in the admin.
+* Enforcing permissions in admin views.
+
+
 1.6.2 - 31/07/2012
 ------------------
 
