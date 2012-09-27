@@ -1,5 +1,5 @@
 import sys
-sys.path.append('src/reversion')
+sys.path.insert(0, 'src/reversion')
 from distutils.core import setup
 from version import __version__
 
