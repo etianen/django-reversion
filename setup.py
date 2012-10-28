@@ -13,12 +13,12 @@ except ImportError:
 
 
 setup(name="django-reversion",
-      version="1.5.4",
+      version="1.5.5",
       description="An extension to the Django web framework that provides comprehensive version control facilities",
       author="Dave Hall",
       author_email="dave@etianen.com",
       url="http://github.com/etianen/django-reversion",
-      download_url="http://github.com/downloads/etianen/django-reversion/django-reversion-1.5.4.tar.gz",
+      download_url="http://github.com/downloads/etianen/django-reversion/django-reversion-1.5.5.tar.gz",
       zip_safe=False,
       packages=["reversion", "reversion.management", "reversion.management.commands", "reversion.migrations"],
       package_dir={"": "src"},
