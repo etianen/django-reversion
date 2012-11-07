@@ -12,7 +12,7 @@ class Migration(DataMigration):
 
     def forwards(self, orm):
         "Write your forwards methods here."
-        for version in orm.Version.objects.all().iterator():
+        for version in orm.Version.objects.filter(object_id_int__isnull=True).iterator():
             try:
                 content_type = ContentType.objects.get_for_id(version.content_type_id)
             except AttributeError:
