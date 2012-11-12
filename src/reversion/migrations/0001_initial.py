@@ -4,6 +4,9 @@ from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
 
+from django.contrib.auth import get_user_model
+
+
 
 class Migration(SchemaMigration):
 
@@ -13,7 +16,7 @@ class Migration(SchemaMigration):
         db.create_table('reversion_revision', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('date_created', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
-            ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'], null=True, blank=True)),
+            ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['.'.join([ get_user_model().__module__.split('.')[0], get_user_model().__name__ ])], null=True, blank=True)),
             ('comment', self.gf('django.db.models.fields.TextField')(blank=True)),
         ))
         db.send_create_signal('reversion', ['Revision'])
@@ -52,8 +55,8 @@ class Migration(SchemaMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '50'})
         },
-        'auth.user': {
-            'Meta': {'object_name': 'User'},
+        '.'.join([ get_user_model().__module__.split('.')[0], get_user_model().__name__ ]).lower(): {
+            'Meta': {'object_name': get_user_model().__name__ },
             'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
@@ -80,7 +83,7 @@ class Migration(SchemaMigration):
             'comment': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
             'date_created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'})
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['"+'.'.join([ get_user_model().__module__.split('.')[0], get_user_model().__name__ ])+"']", 'null': 'True', 'blank': 'True'})
         },
         'reversion.version': {
             'Meta': {'object_name': 'Version'},
