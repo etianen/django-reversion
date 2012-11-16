@@ -20,7 +20,7 @@ class Migration(SchemaMigration):
         db.create_table('reversion_revision', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('date_created', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
-            ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['.'.join([ User.__module__.split('.')[-2], User.__name__ ])], null=True, blank=True)),
+            ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm["%s.%s" % (User._meta.app_label, User._meta.object_name)], null=True, blank=True)),
             ('comment', self.gf('django.db.models.fields.TextField')(blank=True)),
         ))
         db.send_create_signal('reversion', ['Revision'])
@@ -59,7 +59,7 @@ class Migration(SchemaMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '50'})
         },
-        '.'.join([ User.__module__.split('.')[-2], User.__name__ ]).lower(): {
+        "%s.%s" % (User._meta.app_label, User._meta.module_name): {
             'Meta': {'object_name': User.__name__ },
             'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
@@ -87,7 +87,7 @@ class Migration(SchemaMigration):
             'comment': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
             'date_created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['"+'.'.join([ User.__module__.split('.')[-2], User.__name__ ])+"']", 'null': 'True', 'blank': 'True'})
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['%s.%s']"% (User._meta.app_label, User._meta.object_name), 'null': 'True', 'blank': 'True'})
         },
         'reversion.version': {
             'Meta': {'object_name': 'Version'},

@@ -74,7 +74,7 @@ class Revision(models.Model):
                                         verbose_name=_("date created"),
                                         help_text="The date and time this revision was created.")
     
-    user = models.ForeignKey(get_user_model(),
+    user = models.ForeignKey(User,
                              blank=True,
                              null=True,
                              verbose_name=_("user"),
