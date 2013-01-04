@@ -3,7 +3,7 @@ from functools import partial
 
 from django import template
 from django.db import models, transaction, connection
-from django.conf.urls.defaults import patterns, url
+from django.conf.urls import patterns, url
 from django.contrib import admin
 from django.contrib.admin import helpers, options
 from django.contrib.admin.util import unquote, quote
