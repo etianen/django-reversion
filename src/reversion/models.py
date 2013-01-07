@@ -64,8 +64,7 @@ class Revision(models.Model):
         default = "default",
     )
     
-    date_created = models.DateTimeField(auto_now_add=True,
-                                        verbose_name=_("date created"),
+    date_created = models.DateTimeField(verbose_name=_("date created"),
                                         help_text="The date and time this revision was created.")
     
     user = models.ForeignKey(User,

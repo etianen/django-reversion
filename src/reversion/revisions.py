@@ -18,6 +18,7 @@ from django.db import models, DEFAULT_DB_ALIAS, connection
 from django.db.models import Q, Max
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
+from django.utils import timezone
 
 from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE, has_int_pk, deprecated, pre_revision_commit, post_revision_commit
 
@@ -128,6 +129,7 @@ class RevisionContextManager(local):
     def clear(self):
         """Puts the revision manager back into its default state."""
         self._objects = {}
+        self._date_created = None
         self._user = None
         self._comment = ""
         self._stack = []
@@ -175,6 +177,7 @@ class RevisionContextManager(local):
                                 for obj, data
                                 in manager_context.iteritems()
                             ),
+                            date_created = self._date_created,
                             user = self._user,
                             comment = self._comment,
                             meta = self._meta,
@@ -210,6 +213,10 @@ class RevisionContextManager(local):
     def set_db(self, db):
         """Sets the DB alias to use."""
         self._db = db
+
+    def get_date_created(self):
+        self._assert_active()
+        return self._date_created
 
     def set_user(self, user):
         """Sets the current user for the revision."""
@@ -265,6 +272,7 @@ class RevisionContextManager(local):
         
         The returned context manager can also be used as a decorator.
         """
+        self._date_created = timezone.now()
         return RevisionContext(self, manage_manually)
 
 
@@ -417,7 +425,7 @@ class RevisionManager(object):
             revision__manager_slug = self._manager_slug,
         ).select_related("revision")
         
-    def save_revision(self, objects, ignore_duplicates=False, user=None, comment="", meta=(), db=None):
+    def save_revision(self, objects, ignore_duplicates=False, date_created=None, user=None, comment="", meta=(), db=None):
         """Saves a new revision."""
         # Get the db alias.
         db = db or DEFAULT_DB_ALIAS
@@ -456,6 +464,7 @@ class RevisionManager(object):
                 # Save a new revision.
                 revision = Revision(
                     manager_slug = self._manager_slug,
+                    date_created = date_created or timezone.now(),
                     user = user,
                     comment = comment,
                 )
