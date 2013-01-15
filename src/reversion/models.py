@@ -3,7 +3,6 @@
 import warnings
 from functools import partial
 
-from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.core import serializers
@@ -68,7 +67,7 @@ class Revision(models.Model):
                                         verbose_name=_("date created"),
                                         help_text="The date and time this revision was created.")
     
-    user = models.ForeignKey(User,
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
                              blank=True,
                              null=True,
                              verbose_name=_("user"),
