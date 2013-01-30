@@ -2,6 +2,7 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # Alexander Schoemaker <alexander.schoemaker@gmail.com>, 2012.
+# Bouke Haarsma <bouke@webatoom.nl>, 2013.
 #
 msgid ""
 msgstr ""
@@ -36,7 +37,7 @@ msgstr "Herstel verwijderde %(name)s"
 #: admin.py:297
 #, python-format
 msgid "Reverted to previous version, saved on %(datetime)s"
-msgstr "Vorige versie is terug geplaatst, opgeslagen op %(datetime)s"
+msgstr "Vorige versie van %(datetime)s is teruggeplaatst"
 
 #: admin.py:299
 #, python-format
@@ -44,8 +45,8 @@ msgid ""
 "The %(model)s \"%(name)s\" was reverted successfully. You may edit it again "
 "below."
 msgstr ""
-"%(model)s \"%(name)s\" is succesvol terug geplaatst. Je kunt het nu opnieuw "
-"wijzigen"
+"%(model)s \"%(name)s\" is succesvol teruggeplaatst. Je kunt het nu opnieuw "
+"wijzigen."
 
 #: admin.py:385
 #, python-format
@@ -74,7 +75,7 @@ msgid ""
 "Choose a date from the list below to revert to a previous version of this "
 "object."
 msgstr ""
-"Selecteer een datum uit de lijst om een vorige versie te herstellen."
+"Selecteer een datum uit de lijst om een vorige versie terug te plaatsen."
 
 #: templates/reversion/object_history.html:15
 #: templates/reversion/recover_list.html:24
@@ -95,7 +96,7 @@ msgid ""
 "admin site."
 msgstr ""
 "Dit object bevat geen wijzigingshistorie. Vermoedelijk is het niet "
-"vanuit deze admin toegevoegd."
+"vanuit sitebeheer toegevoegd."
 
 #: templates/reversion/recover_form.html:8
 #: templates/reversion/recover_list.html:8
@@ -106,14 +107,14 @@ msgstr ""
 #: templates/reversion/recover_form.html:18
 msgid "Press the save button below to recover this version of the object."
 msgstr ""
-"Klikt op onderstaande button om deze versie van het object te herstellen."
+"Klik op onderstaande knop om deze versie van het object te herstellen."
 
 #: templates/reversion/recover_list.html:18
 msgid ""
 "Choose a date from the list below to recover a deleted version of an object."
 msgstr ""
-"Selecteer een datum uit de lijst om een verwijderde versie van het object"
-"te herstellen"
+"Selecteer een datum uit de lijst om een verwijderde versie van het object "
+"te herstellen."
 
 #: templates/reversion/recover_list.html:38
 msgid "There are no deleted objects to recover."
@@ -131,4 +132,4 @@ msgstr "%(verbose_name)s terugplaatsen"
 #: templates/reversion/revision_form.html:26
 msgid "Press the save button below to revert to this version of the object."
 msgstr ""
-"Klik op onderstaande button om deze versie van het object terug te plaatsen"
+"Klik op onderstaande knop om deze versie van het object terug te plaatsen."
