@@ -2,6 +2,12 @@ django-reversion changelog
 ==========================
 
 
+1.5.7 - 20/02/2013
+------------------
+
+* Removing version checking code. More trouble than it's worth.
+
+
 1.5.6 - 28/10/2012
 ------------------
 
