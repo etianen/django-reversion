@@ -10,7 +10,7 @@ from reversion.revisions import default_revision_manager, revision_context_manag
 from reversion.admin import VersionAdmin
 
 
-VERSION = (1, 5, 6)
+VERSION = (1, 5, 7)
 
 
 # Legacy revision reference.
