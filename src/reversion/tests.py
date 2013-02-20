@@ -12,7 +12,7 @@ from django.db import models
 from django.test import TestCase
 from django.core.management import call_command
 from django.conf import settings
-from django.conf.urls.defaults import *
+from django.conf.urls import *
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.utils.decorators import decorator_from_middleware
