@@ -2,6 +2,13 @@ django-reversion changelog
 ==========================
 
 
+1.6.6 - 120/02/2013
+-------------------
+
+* Removing version checking code. It's more trouble than it's worth.
+* Dutch translation improvements.
+
+
 1.6.5 - 12/12/2012
 ------------------
 
