@@ -1,5 +1,6 @@
 """Revision management for django-reversion."""
 
+from __future__ import unicode_literals
 
 try:
     from functools import wraps
@@ -18,6 +19,7 @@ from django.db import models, DEFAULT_DB_ALIAS, connection
 from django.db.models import Q, Max
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
+from django.utils.encoding import force_text
 
 from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE, has_int_pk, deprecated, pre_revision_commit, post_revision_commit
 
@@ -92,7 +94,7 @@ class VersionAdapter(object):
         
     def get_version_data(self, obj, type_flag, db=None):
         """Creates the version data to be saved to the version model."""
-        object_id = unicode(obj.pk)
+        object_id = force_text(obj.pk)
         db = db or DEFAULT_DB_ALIAS
         content_type = ContentType.objects.db_manager(db).get_for_model(obj)
         if has_int_pk(obj.__class__):
@@ -105,7 +107,7 @@ class VersionAdapter(object):
             "content_type": content_type,
             "format": self.get_serialization_format(),
             "serialized_data": self.get_serialized_data(obj),
-            "object_repr": unicode(obj),
+            "object_repr": force_text(obj),
             "type": type_flag
         }
 
@@ -532,7 +534,7 @@ class RevisionManager(object):
             versions = versions.filter(object_id_int=object_id_int)
         else:
             # We can't do this using an index. Never mind.
-            object_id = unicode(object_id)
+            object_id = force_text(object_id)
             versions = versions.filter(object_id=object_id)
         versions = versions.order_by("-pk")
         return versions

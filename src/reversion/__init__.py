@@ -6,6 +6,8 @@ Developed by Dave Hall.
 <http://www.etianen.com/>
 """
 
+from __future__ import unicode_literals
+
 from reversion.revisions import default_revision_manager, revision_context_manager, VersionAdapter
 from reversion.admin import VersionAdmin
 from reversion.models import pre_revision_commit, post_revision_commit

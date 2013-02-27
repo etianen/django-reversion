@@ -1,5 +1,6 @@
 """Tests for the deprecated version of the django-reversion API."""
 
+from __future__ import unicode_literals
 from __future__ import with_statement
 
 import datetime
@@ -7,6 +8,7 @@ import datetime
 from django.db import models, transaction
 from django.test import TestCase
 from django.core.management import call_command
+from django.utils.encoding import force_text
 
 import reversion
 from reversion.models import Version, Revision, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE
@@ -28,7 +30,7 @@ str_pk_gen = 0;
 def get_str_pk():
     global str_pk_gen
     str_pk_gen += 1;
-    return str(str_pk_gen)
+    return force_text(str_pk_gen)
         
         
 class ReversionTestModelStrPrimary(models.Model):

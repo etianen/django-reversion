@@ -1,8 +1,10 @@
 """A number of useful helper functions to automate common tasks."""
 
 from __future__ import unicode_literals
+
 from django.contrib import admin
 from django.contrib.admin.sites import NotRegistered
+from django.utils.encoding import force_text
 
 from reversion.admin import VersionAdmin
 
@@ -47,7 +49,7 @@ else:
         old_text = old_version.field_dict[field_name] or ""
         new_text = new_version.field_dict[field_name] or ""
         # Generate the patch.
-        diffs = dmp.diff_main(unicode(old_text), unicode(new_text))
+        diffs = dmp.diff_main(force_text(old_text), force_text(new_text))
         if cleanup == "semantic":
             dmp.diff_cleanupSemantic(diffs)
         elif cleanup == "efficiency":

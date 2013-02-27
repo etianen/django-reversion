@@ -1,6 +1,7 @@
 """Database models used by django-reversion."""
 
 from __future__ import unicode_literals
+
 import warnings
 from functools import partial
 
@@ -13,6 +14,7 @@ from django.db import models, IntegrityError
 from django.db.models.signals import pre_save, post_save
 from django.dispatch.dispatcher import Signal, _make_id
 from django.utils.translation import ugettext_lazy as _
+from django.utils.encoding import force_text
 
 
 def deprecated(original, replacement):
@@ -108,7 +110,7 @@ class Revision(models.Model):
         
     def __unicode__(self):
         """Returns a unicode representation."""
-        return ", ".join(unicode(version) for version in self.version_set.all())
+        return ", ".join(force_text(version) for version in self.version_set.all())
 
 
 # Version types.
@@ -284,7 +286,7 @@ class Version(models.Model):
             for parent_class, field in obj._meta.parents.items():
                 content_type = ContentType.objects.get_for_model(parent_class)
                 if field:
-                    parent_id = unicode(getattr(obj, field.attname))
+                    parent_id = force_text(getattr(obj, field.attname))
                 else:
                     parent_id = obj.pk
                 try:

@@ -9,7 +9,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models, reset_queries
 from django.utils.importlib import import_module
 from django.utils.datastructures import SortedDict
-from django.utils.encoding import smart_unicode
+from django.utils.encoding import force_text
 
 from reversion import default_revision_manager
 from reversion.models import Version, has_int_pk
@@ -131,7 +131,7 @@ class Command(BaseCommand):
 
             # Print out a message, if feeling verbose.
             if verbosity >= 2:
-                print "Created %s initial revision(s) for model %s." % (created_count, smart_unicode(model_class._meta.verbose_name))
+                print "Created %s initial revision(s) for model %s." % (created_count, force_text(model_class._meta.verbose_name))
         else:
             if verbosity >= 2:
-                print "Model %s is not registered."  % (smart_unicode(model_class._meta.verbose_name))
+                print "Model %s is not registered."  % (force_text(model_class._meta.verbose_name))

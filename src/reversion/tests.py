@@ -4,6 +4,7 @@ Tests for the django-reversion API.
 These tests require Python 2.5 to run.
 """
 
+from __future__ import unicode_literals
 from __future__ import with_statement
 
 import datetime, os
@@ -18,6 +19,7 @@ from django.contrib.auth.models import User
 from django.utils.decorators import decorator_from_middleware
 from django.http import HttpResponse
 from django.utils.unittest import skipUnless
+from django.utils.encoding import force_text
 
 import reversion
 from reversion.revisions import RegistrationError, RevisionManager
@@ -64,7 +66,7 @@ str_pk_gen = 0;
 def get_str_pk():
     global str_pk_gen
     str_pk_gen += 1;
-    return str(str_pk_gen)
+    return force_text(str_pk_gen)
     
     
 class ReversionTestModel2(ReversionTestModelBase):
