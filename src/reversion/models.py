@@ -9,7 +9,6 @@ from django.contrib.contenttypes import generic
 from django.conf import settings
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
-from django.conf import settings
 from django.db import models, IntegrityError
 from django.db.models.signals import pre_save, post_save
 from django.dispatch.dispatcher import Signal, _make_id
