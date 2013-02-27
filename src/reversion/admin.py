@@ -242,7 +242,7 @@ class VersionAdmin(admin.ModelAdmin):
             initial.append(initial_row)
         # Reconstruct the forms with the new revision data.
         formset.initial = initial
-        formset.forms = [formset._construct_form(n) for n in xrange(len(initial))]
+        formset.forms = [formset._construct_form(n) for n in range(len(initial))]
         # Hack the formset to force a save of everything.
         def get_changed_data(form):
             return [field.name for field in form.fields]
