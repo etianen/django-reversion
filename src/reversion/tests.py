@@ -18,7 +18,7 @@ from django.contrib.auth.models import User
 from django.utils.decorators import decorator_from_middleware
 from django.http import HttpResponse
 from django.utils.unittest import skipUnless
-from django.utils.encoding import force_text
+from django.utils.encoding import force_text, python_2_unicode_compatible
 
 import reversion
 from reversion.revisions import RegistrationError, RevisionManager
@@ -41,13 +41,14 @@ class UTC(datetime.tzinfo):
     def dst(self, dt):
         return ZERO
 
+@python_2_unicode_compatible
 class ReversionTestModelBase(models.Model):
 
     name = models.CharField(
         max_length = 100,
     )
     
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
     class Meta:
@@ -647,13 +648,14 @@ class ParentTestAdminModel(models.Model):
         app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
 
 
+@python_2_unicode_compatible
 class ChildTestAdminModel(ParentTestAdminModel):
 
     child_name = models.CharField(
         max_length = 200,
     )
     
-    def __unicode__(self):
+    def __str__(self):
         return self.child_name
     
     class Meta:

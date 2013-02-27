@@ -14,7 +14,7 @@ from django.db import models, IntegrityError
 from django.db.models.signals import pre_save, post_save
 from django.dispatch.dispatcher import Signal, _make_id
 from django.utils.translation import ugettext_lazy as _
-from django.utils.encoding import force_text
+from django.utils.encoding import force_text, python_2_unicode_compatible
 
 
 def deprecated(original, replacement):
@@ -57,6 +57,9 @@ class RevertError(Exception):
 
 
 UserModel = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
+
+
+@python_2_unicode_compatible
 class Revision(models.Model):
     
     """A group of related object versions."""
@@ -108,7 +111,7 @@ class Revision(models.Model):
         # Attempt to revert all revisions.
         safe_revert([version for version in version_set if version.type != VERSION_DELETE])
         
-    def __unicode__(self):
+    def __str__(self):
         """Returns a unicode representation."""
         return ", ".join(force_text(version) for version in self.version_set.all())
 
@@ -226,6 +229,7 @@ class VersionManager(models.Manager):
         return list(default_revision_manager.get_deleted(model_class).order_by("pk"))
             
 
+@python_2_unicode_compatible
 class Version(models.Model):
     
     """A saved version of a database model."""
@@ -304,7 +308,7 @@ class Version(models.Model):
         """Recovers the model in this version."""
         self.object_version.save()
     
-    def __unicode__(self):
+    def __str__(self):
         """Returns a unicode representation."""
         return self.object_repr
 
