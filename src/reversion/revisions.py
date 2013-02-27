@@ -17,7 +17,7 @@ from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
 from django.utils.encoding import force_text
 
-from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE, has_int_pk, deprecated, pre_revision_commit, post_revision_commit
+from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE, has_int_pk, pre_revision_commit, post_revision_commit
 
 
 class VersionAdapter(object):
@@ -346,8 +346,6 @@ class RevisionManager(object):
         self._revision_context_manager = revision_context_manager
         # Proxies to common context methods.
         self._revision_context = revision_context_manager.create_revision()
-        self.create_on_success = deprecated("@revision.create_on_success", "@reversion.create_revision")(self._revision_context)
-        self.add_meta = deprecated("revision.add_meta()", "reversion.add_meta()")(revision_context_manager.add_meta)
 
     # Registration methods.
 
@@ -480,36 +478,6 @@ class RevisionManager(object):
                 )
                 # Return the revision.
                 return revision
-                
-    
-    # Context management.
-    
-    @deprecated("reversion.revision", "reversion.create_revision()")
-    def __enter__(self, *args, **kwargs):
-        """Enters a revision management block."""
-        return self._revision_context.__enter__(*args, **kwargs)
-        
-    @deprecated("reversion.revision", "reversion.create_revision()")
-    def __exit__(self, *args, **kwargs):
-        """Leaves a block of revision management."""
-        return self._revision_context.__exit__(*args, **kwargs)
-    
-    # Revision meta data.
-    
-    user = property(
-        deprecated("revision.user", "reversion.get_user()")(lambda self: self._revision_context_manager.get_user()),
-        deprecated("revision.user", "reversion.set_user()")(lambda self, user: self._revision_context_manager.set_user(user)),
-    )
-    
-    comment = property(
-        deprecated("revision.comment", "reversion.get_comment()")(lambda self: self._revision_context_manager.get_comment()),
-        deprecated("revision.comment", "reversion.set_comment()")(lambda self, comment: self._revision_context_manager.set_comment(comment)),
-    )
-    
-    ignore_duplicates = property(
-        deprecated("revision.ignore_duplicates", "reversion.get_ignore_duplicates()")(lambda self: self._revision_context_manager.get_ignore_duplicates()),
-        deprecated("revision.ignore_duplicates", "reversion.set_ignore_duplicates()")(lambda self, ignore_duplicates: self._revision_context_manager.set_ignore_duplicates(ignore_duplicates))
-    )
     
     # Revision management API.
     

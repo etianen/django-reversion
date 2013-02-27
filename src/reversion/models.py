@@ -17,21 +17,6 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text, python_2_unicode_compatible
 
 
-def deprecated(original, replacement):
-    """Decorator that defines a deprecated method."""
-    def decorator(func):
-        if not settings.DEBUG:
-            return func
-        def do_pending_deprication(*args, **kwargs):
-            warnings.warn(
-                "%s is deprecated, and will be removed in django-reversion 1.7. Use %s instead" % (original, replacement),
-                PendingDeprecationWarning,
-            )
-            return func(*args, **kwargs)
-        return do_pending_deprication
-    return decorator
-
-
 def safe_revert(versions):
     """
     Attempts to revert the given models contained in the give versions.
@@ -139,102 +124,12 @@ def has_int_pk(model):
             isinstance(pk, models.ForeignKey) and has_int_pk(pk.rel.to)
         )
     )
-
-
-class VersionManager(models.Manager):
-    
-    """Manager for Version models."""
-    
-    @deprecated("Version.objects.get_for_object_reference()", "reversion.get_for_object_reference()")
-    def get_for_object_reference(self, model, object_id):
-        """
-        Returns all versions for the given object reference.
-        
-        This method was deprecated in django-reversion 1.5, and will be removed in django-reversion 1.7.
-        
-        New applications should use reversion.get_for_object_reference(). The new version of this method
-        returns results ordered with the most recent versions first. This legacy version of the method
-        continues to return the results ordered with the oldest versions first.
-        """
-        from reversion.revisions import default_revision_manager
-        return default_revision_manager.get_for_object_reference(model, object_id).order_by("pk")
-    
-    @deprecated("Version.objects.get_for_object()", "reversion.get_for_object()")
-    def get_for_object(self, object):
-        """
-        Returns all the versions of the given object, ordered by date created.
-        
-        This method was deprecated in django-reversion 1.5, and will be removed in django-reversion 1.7.
-        
-        New applications should use reversion.get_for_object(). The new version of this method
-        returns results ordered with the most recent versions first. This legacy version of the method
-        continues to return the results ordered with the oldest versions first.
-        """
-        from reversion.revisions import default_revision_manager
-        return default_revision_manager.get_for_object(object).order_by("pk")
-    
-    @deprecated("Version.objects.get_unique_for_object()", "reversion.get_unique_for_object()")
-    def get_unique_for_object(self, obj):
-        """
-        Returns unique versions associated with the object.
-        
-        This method was deprecated in django-reversion 1.5, and will be removed in django-reversion 1.7.
-        
-        New applications should use reversion.get_unique_for_object(). The new version of this method
-        returns results ordered with the most recent versions first. This legacy version of the method
-        continues to return the results ordered with the oldest versions first.
-        """
-        from reversion.revisions import default_revision_manager
-        versions = default_revision_manager.get_unique_for_object(obj)
-        versions.reverse()
-        return versions
-    
-    @deprecated("Version.objects.get_for_date()", "reversion.get_for_date()")
-    def get_for_date(self, object, date):
-        """
-        Returns the latest version of an object for the given date.
-        
-        This method was deprecated in django-reversion 1.5, and will be removed in django-reversion 1.7.
-        
-        New applications should use reversion.get_for_date().
-        """
-        from reversion.revisions import default_revision_manager
-        return default_revision_manager.get_for_date(object, date)
-    
-    @deprecated("Version.objects.get_deleted_object()", "reversion.get_for_object_reference()[0]")
-    def get_deleted_object(self, model_class, object_id, select_related=None):
-        """
-        Returns the version corresponding to the deletion of the object with
-        the given id.
-        
-        This method was deprecated in django-reversion 1.5, and will be removed in django-reversion 1.7.
-        
-        New applications should use reversion.get_for_date()[0].
-        """
-        from reversion.revisions import default_revision_manager
-        return default_revision_manager.get_for_object_reference(model_class, object_id)[0]
-    
-    @deprecated("Version.objects.get_deleted()", "reversion.get_deleted()")
-    def get_deleted(self, model_class, select_related=None):
-        """
-        Returns all the deleted versions for the given model class.
-        
-        This method was deprecated in django-reversion 1.5, and will be removed in django-reversion 1.7.
-        
-        New applications should use reversion.get_deleted(). The new version of this method
-        returns results ordered with the most recent versions first. This legacy version of the method
-        continues to return the results ordered with the oldest versions first.
-        """
-        from reversion.revisions import default_revision_manager
-        return list(default_revision_manager.get_deleted(model_class).order_by("pk"))
             
 
 @python_2_unicode_compatible
 class Version(models.Model):
     
     """A saved version of a database model."""
-    
-    objects = VersionManager()
     
     revision = models.ForeignKey(Revision,
                                  help_text="The revision that contains this version.")
