@@ -3,7 +3,7 @@
 from __future__ import unicode_literals
 
 import operator, sys
-from functools import wraps
+from functools import wraps, reduce
 from threading import local
 from weakref import WeakValueDictionary
 
@@ -74,7 +74,10 @@ class VersionAdapter(object):
                 for related_obj in related.all():
                     yield related_obj
             elif related is not None:
-                raise TypeError, "Cannot follow the relationship %r. Expected a model or QuerySet, found %r" % (relationship, related)
+                raise TypeError("Cannot follow the relationship {relationship}. Expected a model or QuerySet, found {related}".format(
+                    relationship = relationship,
+                    related = related,
+                ))
     
     def get_serialization_format(self):
         """Returns the serialization format to use."""
@@ -364,7 +367,9 @@ class RevisionManager(object):
         """Registers a model with this revision manager."""
         # Prevent multiple registration.
         if self.is_registered(model):
-            raise RegistrationError, "%r has already been registered with django-reversion" % model
+            raise RegistrationError("{model} has already been registered with django-reversion".format(
+                model = model,
+            ))
         # Prevent proxy models being registered.
         if model._meta.proxy:
             raise RegistrationError("Proxy models cannot be used with django-reversion, register the parent class instead")
@@ -382,12 +387,16 @@ class RevisionManager(object):
         """Returns the registration information for the given model class."""
         if self.is_registered(model):
             return self._registered_models[model]
-        raise RegistrationError, "%r has not been registered with django-reversion" % model
+        raise RegistrationError("{model} has not been registered with django-reversion".format(
+            model = model,
+        ))
         
     def unregister(self, model):
         """Removes a model from version control."""
         if not self.is_registered(model):
-            raise RegistrationError, "%r has not been registered with django-reversion" % model
+            raise RegistrationError("{model} has not been registered with django-reversion".format(
+                model = model,
+            ))
         del self._registered_models[model]
         post_save.disconnect(self._post_save_receiver, model)
         pre_delete.disconnect(self._pre_delete_receiver, model)
@@ -426,12 +435,12 @@ class RevisionManager(object):
         # Create the revision.
         if objects:
             # Follow relationships.
-            for obj in self._follow_relationships(objects.iterkeys()):
+            for obj in self._follow_relationships(objects.keys()):
                 if not obj in objects:
                     adapter = self.get_adapter(obj.__class__)
                     objects[obj] = adapter.get_version_data(obj, VERSION_CHANGE)
             # Create all the versions without saving them
-            ordered_objects = list(objects.iterkeys())
+            ordered_objects = list(objects.keys())
             new_versions = [Version(**objects[obj]) for obj in ordered_objects]
             # Check if there's some change in all the revision's objects.
             save_revision = True

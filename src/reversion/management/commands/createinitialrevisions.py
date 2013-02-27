@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+from __future__ import unicode_literals, print_function
 
 from optparse import make_option
 
@@ -122,16 +122,16 @@ class Command(BaseCommand):
                     try:
                         default_revision_manager.save_revision((obj,), comment=comment)
                     except:
-                        print "ERROR: Could not save initial version for %s %s." % (model_class.__name__, obj.pk)
+                        print("ERROR: Could not save initial version for %s %s." % (model_class.__name__, obj.pk))
                         raise
                     created_count += 1
                 reset_queries()
                 if verbosity >= 2:
-                    print "Created %s of %s." % (created_count, total)
+                    print("Created %s of %s." % (created_count, total))
 
             # Print out a message, if feeling verbose.
             if verbosity >= 2:
-                print "Created %s initial revision(s) for model %s." % (created_count, force_text(model_class._meta.verbose_name))
+                print("Created %s initial revision(s) for model %s." % (created_count, force_text(model_class._meta.verbose_name)))
         else:
             if verbosity >= 2:
-                print "Model %s is not registered."  % (force_text(model_class._meta.verbose_name))
+                print("Model %s is not registered."  % (force_text(model_class._meta.verbose_name)))

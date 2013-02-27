@@ -21,7 +21,9 @@ def patch_admin(model, admin_site=None):
     try:
         ModelAdmin = admin_site._registry[model].__class__
     except KeyError:
-        raise NotRegistered, "The model %r has not been registered with the admin site." % model
+        raise NotRegistered("The model {model} has not been registered with the admin site.".format(
+            model = model,
+        ))
     # Unregister existing admin class.
     admin_site.unregister(model)
     # Register patched admin class.
