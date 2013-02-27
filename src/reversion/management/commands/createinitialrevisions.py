@@ -47,7 +47,7 @@ class Command(BaseCommand):
         # if no apps given, use all installed.
         if len(app_labels) == 0:
             for app in models.get_apps ():
-                if not app in app_list.keys():
+                if not app in app_list:
                     app_list[app] = []
                 for model_class in models.get_models(app):
                     if not model_class in app_list[app]:
@@ -64,7 +64,7 @@ class Command(BaseCommand):
                     model_class = models.get_model(app_label, model_label)
                     if model_class is None:
                         raise CommandError("Unknown model: %s.%s" % (app_label, model_label))
-                    if app in app_list.keys():
+                    if app in app_list:
                         if app_list[app] and model_class not in app_list[app]:
                             app_list[app].append(model_class)
                     else:
@@ -74,7 +74,7 @@ class Command(BaseCommand):
                     app_label = label
                     try:
                         app = models.get_app(app_label)
-                        if not app in app_list.keys():
+                        if not app in app_list:
                             app_list[app] = []
                         for model_class in models.get_models(app):
                             if not model_class in app_list[app]:
@@ -118,7 +118,7 @@ class Command(BaseCommand):
             for i in xrange(0, total, batch_size):
                 chunked_ids = ids[i:i+batch_size]
                 objects = live_objs.in_bulk(chunked_ids)
-                for id, obj in objects.iteritems():
+                for id, obj in objects.items():
                     try:
                         default_revision_manager.save_revision((obj,), comment=comment)
                     except:

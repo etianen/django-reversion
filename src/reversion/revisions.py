@@ -166,12 +166,12 @@ class RevisionContextManager(local):
             try:
                 if not self.is_invalid():
                     # Save the revision data.
-                    for manager, manager_context in self._objects.iteritems():
+                    for manager, manager_context in self._objects.items():
                         manager.save_revision(
                             dict(
                                 (obj, callable(data) and data() or data)
                                 for obj, data
-                                in manager_context.iteritems()
+                                in manager_context.items()
                             ),
                             user = self._user,
                             comment = self._comment,
@@ -360,7 +360,7 @@ class RevisionManager(object):
     
     def get_registered_models(self):
         """Returns an iterable of all registered models."""
-        return self._registered_models.keys()
+        return list(self._registered_models.keys())
         
     def register(self, model, adapter_cls=VersionAdapter, **field_overrides):
         """Registers a model with this revision manager."""

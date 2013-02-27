@@ -841,7 +841,7 @@ class PatchTest(RevisionTestBase):
 # Import the deprecated tests.
 from reversion import tests_deprecated
 
-for name, value in vars(tests_deprecated).iteritems():
+for name, value in vars(tests_deprecated).items():
     if isinstance(value, type) and issubclass(value, TestCase):
         globals()[name] = value
 del name
