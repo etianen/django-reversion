@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from optparse import make_option
 
 from django.core.exceptions import ImproperlyConfigured
@@ -20,7 +22,7 @@ class Command(BaseCommand):
         make_option("--comment",
             action="store",
             dest="comment",
-            default=u"Initial version.",
+            default="Initial version.",
             help='Specify the comment to add to the revisions. Defaults to "Initial version.".'),
         make_option("--batch-size",
             action="store",
@@ -125,11 +127,11 @@ class Command(BaseCommand):
                     created_count += 1
                 reset_queries()
                 if verbosity >= 2:
-                    print u"Created %s of %s." % (created_count, total)
+                    print "Created %s of %s." % (created_count, total)
 
             # Print out a message, if feeling verbose.
             if verbosity >= 2:
-                print u"Created %s initial revision(s) for model %s." % (created_count, smart_unicode(model_class._meta.verbose_name))
+                print "Created %s initial revision(s) for model %s." % (created_count, smart_unicode(model_class._meta.verbose_name))
         else:
             if verbosity >= 2:
-                print u"Model %s is not registered."  % (smart_unicode(model_class._meta.verbose_name))
+                print "Model %s is not registered."  % (smart_unicode(model_class._meta.verbose_name))

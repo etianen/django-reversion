@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.generic import GenericForeignKey, GenericRelation
 from django.db import models
@@ -22,7 +24,7 @@ class ChildModel(ParentModel):
     genericrelatedmodel_set = GenericRelation("test_app.GenericRelatedModel")
     
     def __unicode__(self):
-        return u"%s > %s" % (self.parent_name, self.child_name)
+        return "%s > %s" % (self.parent_name, self.child_name)
     
     class Meta:
         verbose_name = _("child model")

@@ -1,5 +1,6 @@
 """Database models used by django-reversion."""
 
+from __future__ import unicode_literals
 import warnings
 from functools import partial
 
@@ -108,7 +109,7 @@ class Revision(models.Model):
         
     def __unicode__(self):
         """Returns a unicode representation."""
-        return u", ".join(unicode(version) for version in self.version_set.all())
+        return ", ".join(unicode(version) for version in self.version_set.all())
 
 
 # Version types.

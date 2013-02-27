@@ -1,6 +1,6 @@
 """A number of useful helper functions to automate common tasks."""
 
-
+from __future__ import unicode_literals
 from django.contrib import admin
 from django.contrib.admin.sites import NotRegistered
 
@@ -44,8 +44,8 @@ else:
     def generate_diffs(old_version, new_version, field_name, cleanup):
         """Generates a diff array for the named field between the two versions."""
         # Extract the text from the versions.
-        old_text = old_version.field_dict[field_name] or u""
-        new_text = new_version.field_dict[field_name] or u""
+        old_text = old_version.field_dict[field_name] or ""
+        new_text = new_version.field_dict[field_name] or ""
         # Generate the patch.
         diffs = dmp.diff_main(unicode(old_text), unicode(new_text))
         if cleanup == "semantic":

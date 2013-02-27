@@ -1,4 +1,5 @@
 """Admin extensions for django-reversion."""
+from __future__ import unicode_literals
 from functools import partial
 
 from django import template
@@ -141,7 +142,7 @@ class VersionAdmin(admin.ModelAdmin):
         self.revision_manager.save_revision(
             self.get_revision_data(request, object, VERSION_ADD),
             user = request.user,
-            comment = _(u"Initial version."),
+            comment = _("Initial version."),
             ignore_duplicates = self.ignore_duplicate_revisions,
             db = self.revision_context_manager.get_db(),
         )
@@ -163,7 +164,7 @@ class VersionAdmin(admin.ModelAdmin):
         self.revision_manager.save_revision(
             self.get_revision_data(request, object, VERSION_DELETE),
             user = request.user,
-            comment = _(u"Deleted %(verbose_name)s.") % {"verbose_name": self.model._meta.verbose_name},
+            comment = _("Deleted %(verbose_name)s.") % {"verbose_name": self.model._meta.verbose_name},
             ignore_duplicates = self.ignore_duplicate_revisions,
             db = self.revision_context_manager.get_db(),
         )
@@ -297,7 +298,7 @@ class VersionAdmin(admin.ModelAdmin):
                                 setattr(related_obj, field.name, None)
                         related_obj.save()
                     formset.save_m2m()
-                change_message = _(u"Reverted to previous version, saved on %(datetime)s") % {"datetime": localize(version.revision.date_created)}
+                change_message = _("Reverted to previous version, saved on %(datetime)s") % {"datetime": localize(version.revision.date_created)}
                 self.log_change(request, new_object, change_message)
                 self.message_user(request, _(u'The %(model)s "%(name)s" was reverted successfully. You may edit it again below.') % {"model": force_unicode(opts.verbose_name), "name": unicode(obj)})
                 # Redirect to the model change form.
