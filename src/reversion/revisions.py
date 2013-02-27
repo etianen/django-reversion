@@ -2,12 +2,8 @@
 
 from __future__ import unicode_literals
 
-try:
-    from functools import wraps
-except ImportError:
-    from django.utils.functional import wraps  # Python 2.4 fallback.
-
 import operator, sys
+from functools import wraps
 from threading import local
 from weakref import WeakValueDictionary
 

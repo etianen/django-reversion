@@ -1,7 +1,6 @@
 """Tests for the deprecated version of the django-reversion API."""
 
 from __future__ import unicode_literals
-from __future__ import with_statement
 
 import datetime
 
