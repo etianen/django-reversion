@@ -2,8 +2,15 @@ django-reversion changelog
 ==========================
 
 
-1.6.6 - 120/02/2013
--------------------
+1.7 - 27/02/2013
+----------------
+
+* Django 1.5 compatibility.
+* Experimantal Python 3.3 compatibility!
+
+
+1.6.6 - 12/02/2013
+------------------
 
 * Removing version checking code. It's more trouble than it's worth.
 * Dutch translation improvements.
