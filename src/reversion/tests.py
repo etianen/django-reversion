@@ -12,7 +12,11 @@ from django.db import models
 from django.test import TestCase
 from django.core.management import call_command
 from django.conf import settings
-from django.conf.urls import url, patterns, include
+try:
+    from django.conf.urls import patterns, url, include
+except ImportError:
+    # for Django version less then 1.4
+    from django.conf.urls.defaults import patterns, url, include
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.utils.decorators import decorator_from_middleware
