@@ -26,6 +26,7 @@ from django.utils.formats import localize
 
 from reversion.models import Revision, Version, has_int_pk, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE
 from reversion.revisions import default_revision_manager, RegistrationError
+import reversion
 
 
 class VersionAdmin(admin.ModelAdmin):
@@ -221,6 +222,12 @@ class VersionAdmin(admin.ModelAdmin):
     
     def _hack_inline_formset_initial(self, FormSet, formset, obj, version, revert, recover):
         """Hacks the given formset to contain the correct initial data."""
+
+        # if the FK this inline formset represents is not being followed, don't process data for it.
+        # see https://github.com/etianen/django-reversion/issues/222
+        if formset.rel_name not in reversion.get_adapter(self.model).follow:
+            return
+
         # Now we hack it to push in the data from the revision!
         initial = []
         related_versions = self.get_related_versions(obj, version, FormSet)

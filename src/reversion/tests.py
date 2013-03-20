@@ -82,8 +82,8 @@ class ReversionTestModel1Proxy(ReversionTestModel1):
 
     class Meta:
         proxy = True
-        
-        
+
+
 class RevisionMeta(models.Model):
 
     revision = models.OneToOneField(Revision)
@@ -665,9 +665,43 @@ class ChildTestAdminModel(ParentTestAdminModel):
 class ChildTestAdminModelAdmin(reversion.VersionAdmin):
 
     pass
-    
-    
+
+
 site.register(ChildTestAdminModel, ChildTestAdminModelAdmin)
+
+
+class InlineTestParentModel(models.Model):
+    name = models.CharField(max_length=100,)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
+
+
+class InlineTestChildModel(models.Model):
+    parent = models.ForeignKey(InlineTestParentModel, related_name='children')
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
+
+
+class InlineTestChildModelInline(admin.TabularInline):
+    model = InlineTestChildModel
+    fk_name = 'parent'
+    extra = 0
+    verbose_name = 'Child'
+    verbose_name_plural = 'Children'
+
+
+class InlineTestParentModelAdmin(reversion.VersionAdmin):
+    inlines = (InlineTestChildModelInline, )
+site.register(InlineTestParentModel, InlineTestParentModelAdmin)
 
 
 urlpatterns = patterns("",
@@ -790,7 +824,73 @@ class VersionAdminTest(TestCase):
             "child_name": "child instance1 version4",
         })
         obj = ChildTestAdminModel.objects.get(id=obj_pk)
-        
+
+
+    def createInlineObjects(self, should_delete):
+        # Create an instance via the admin without a child.
+        response = self.client.post("/admin/auth/inlinetestparentmodel/add/", {
+            "name": "parent version1",
+            "children-TOTAL_FORMS": "0",
+            "children-INITIAL_FORMS": "0",
+            # "children-0-name": "child version 1",
+            "_continue": 1,
+            })
+        self.assertEqual(response.status_code, 302)
+        parent_pk = response["Location"].split("/")[-2]
+        parent = InlineTestParentModel.objects.get(id=parent_pk)
+
+        # Update  instance via the admin to add a child
+        response = self.client.post("/admin/auth/inlinetestparentmodel/%s/" % parent_pk, {
+            "name": "parent version1",
+            "children-TOTAL_FORMS": "1",
+            "children-INITIAL_FORMS": "0",
+            "children-0-name": "child version 1",
+            "_continue": 1,
+            })
+        self.assertEqual(response.status_code, 302)
+        children = InlineTestChildModel.objects.filter(parent=parent_pk)
+        self.assertEqual(children.count(), 1)
+
+        # get list of versions
+        version_list = reversion.get_for_object(parent)
+        self.assertEqual(len(version_list), 2)
+
+        # check if reversion page has the checkbox for the inline checked
+        response = self.client.get("/admin/auth/inlinetestparentmodel/%s/history/%s/" %
+                                   (parent_pk, version_list[1].id))
+        self.assertEqual(response.status_code, 200)
+        if should_delete:
+            self.assertContains(response, '<input checked="checked" id="id_children-0-DELETE" name="children-0-DELETE" type="checkbox" />') # this is crude
+        else:
+            self.assertNotContains(response, '<input checked="checked" id="id_children-0-DELETE" name="children-0-DELETE" type="checkbox" />') # this is crude
+
+        # don't actually submit a post since the values we submit would be from the test, not what the admin defaults
+
+
+    @skipUnless('django.contrib.admin' in settings.INSTALLED_APPS,
+                "django.contrib.admin not activated")
+    def testInlineAdmin(self):
+        self.assertTrue(reversion.is_registered(InlineTestParentModel))
+
+        # make sure model is following the child FK
+        self.assertTrue('children' in reversion.get_adapter(InlineTestParentModel).follow)
+
+        self.createInlineObjects(True)
+
+        # unregister model
+        reversion.unregister(InlineTestParentModel)
+        self.assertFalse(reversion.is_registered(InlineTestParentModel))
+
+        # re-register without following
+        reversion.register(InlineTestParentModel)
+        self.assertTrue(reversion.is_registered(InlineTestParentModel))
+
+        # make sure model is NOT following the child FK
+        self.assertFalse('children' in reversion.get_adapter(InlineTestParentModel).follow)
+
+        self.createInlineObjects(False)
+
+
     def tearDown(self):
         self.client.logout()
         self.user.delete()
