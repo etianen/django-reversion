@@ -14,7 +14,12 @@ from django.core.management import call_command
 from django.conf import settings
 from django.conf.urls import url, patterns, include
 from django.contrib import admin
-from django.contrib.auth.models import User
+try:
+    from django.contrib.auth import get_user_model
+except ImportError: # django < 1.5
+    from django.contrib.auth.models import User
+else:
+    User = get_user_model()
 from django.utils.decorators import decorator_from_middleware
 from django.http import HttpResponse
 from django.utils.unittest import skipUnless
