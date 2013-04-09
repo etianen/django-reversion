@@ -161,7 +161,7 @@ class Version(models.Model):
         """The stored version of the model."""
         data = self.serialized_data
         data = force_text(data.encode("utf8"))
-        return list(serializers.deserialize(self.format, data))[0]
+        return list(serializers.deserialize(self.format, data, ignorenonexistent=True))[0]
     
     type = models.PositiveSmallIntegerField(choices=VERSION_TYPE_CHOICES, db_index=True)
     
