@@ -12,7 +12,11 @@ from django.db import models
 from django.test import TestCase
 from django.core.management import call_command
 from django.conf import settings
-from django.conf.urls import url, patterns, include
+try:
+    from django.conf.urls import patterns, url, include
+except ImportError:
+    # for Django version less then 1.4
+    from django.conf.urls.defaults import patterns, url, include
 from django.contrib import admin
 try:
     from django.contrib.auth import get_user_model
