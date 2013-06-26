@@ -2,6 +2,13 @@ django-reversion changelog
 ==========================
 
 
+1.7.1 - 26/06/2013
+------------------
+
+* Bugfixes when using a custom User model.
+* Minor bugfixes.
+
+
 1.7 - 27/02/2013
 ----------------
 
