@@ -50,7 +50,7 @@ how to upgrade. If you're using South to manage database migrations in your proj
 then upgrading is as easy as running a few django management commands.
 
 It's always worth checking the [CHANGELOG][] before upgrading too, just in case you
-get caught off-guard my a minor upgrade to the library.
+get caught off-guard by a minor upgrade to the library.
 
 [Schema Migrations]: https://github.com/etianen/django-reversion/wiki/Schema-migrations
     "Schema Migrations for django-reversion"
