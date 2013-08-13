@@ -16,8 +16,6 @@ class RevisionMiddleware(object):
         """Starts a new revision."""
         request.META[(REVISION_MIDDLEWARE_FLAG, self)] = True
         revision_context_manager.start()
-        if hasattr(request, "user") and request.user.is_authenticated():
-            revision_context_manager.set_user(request.user)
     
     def _close_revision(self, request):
         """Closes the revision."""
@@ -27,6 +25,10 @@ class RevisionMiddleware(object):
     
     def process_response(self, request, response):
         """Closes the revision."""
+        # look to see if the session has been accessed before looking for user to stop Vary: Cookie
+        if hasattr(request, 'session') and request.session.accessed \
+                and hasattr(request, "user") and request.user.is_authenticated():
+            revision_context_manager.set_user(request.user)
         self._close_revision(request)
         return response
         
