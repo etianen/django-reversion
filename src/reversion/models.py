@@ -12,7 +12,7 @@ from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, IntegrityError
 from django.db.models.signals import pre_save, post_save
-from django.dispatch.dispatcher import Signal, _make_id
+from django.dispatch.dispatcher import Signal
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text, python_2_unicode_compatible
 
@@ -214,7 +214,7 @@ post_revision_commit = Signal(providing_args=["instances", "revision", "versions
 
 def check_for_receivers(sender, sending_signal, **kwargs):
     """Checks that no other signal receivers have been connected."""
-    if len(sending_signal._live_receivers(_make_id(sender))) > 1:
+    if len(sending_signal._live_receivers(sender)) > 1:
         warnings.warn("pre_save and post_save signals will not longer be sent for Revision and Version models in django-reversion 1.8. Please use the pre_revision_commit and post_revision_commit signals instead.")
 
 check_for_pre_save_receivers = partial(check_for_receivers, sending_signal=pre_save)
