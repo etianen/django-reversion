@@ -1,6 +1,6 @@
 :orphan:
 
-.. _deprecated-low-level-api:
+.. _deprecated-api:
 
 Deprecated Low Level API
 ========================

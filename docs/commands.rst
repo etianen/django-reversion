@@ -1,4 +1,4 @@
-.. _management-commands:
+.. _commands:
 
 Management commands
 ===================

@@ -1,4 +1,4 @@
-.. _installation-methods:
+.. _installation:
 
 Installation methods
 ====================

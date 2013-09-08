@@ -1,4 +1,4 @@
-.. _schema-migrations:
+.. _migrations:
 
 Schema migrations
 =================

@@ -1,4 +1,4 @@
-.. _compatible-django-versions:
+.. _django-versions:
 
 Compatible Django Versions
 ==========================

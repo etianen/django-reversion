@@ -25,7 +25,7 @@ Documentation
 
 Please read the [Getting Started][] guide for more information.
 
-[Getting Started]: https://github.com/etianen/django-reversion/wiki
+[Getting Started]: http://django-reversion.readthedocs.org/en/latest/
     "Getting started with django-reversion"
     
 Download instructions, bug reporting and links to full documentation can be
@@ -45,14 +45,14 @@ Upgrading
 ---------
 
 If you're upgrading your existing installation of django-reversion, please check
-the [Schema Migrations][] wiki page for information on any database changes and
+the [Schema Migrations][] documentation for information on any database changes and
 how to upgrade. If you're using South to manage database migrations in your project,
 then upgrading is as easy as running a few django management commands.
 
 It's always worth checking the [CHANGELOG][] before upgrading too, just in case you
 get caught off-guard by a minor upgrade to the library.
 
-[Schema Migrations]: https://github.com/etianen/django-reversion/wiki/Schema-migrations
+[Schema Migrations]: http://django-reversion.readthedocs.org/en/latest/migrations.html
     "Schema Migrations for django-reversion"
 [CHANGELOG]: https://github.com/etianen/django-reversion/blob/master/CHANGELOG.markdown
     "CHANGELOG for django-reversion"

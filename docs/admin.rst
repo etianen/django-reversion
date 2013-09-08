@@ -1,4 +1,4 @@
-.. _admin-integration:
+.. _admin:
 
 Admin integration
 =================

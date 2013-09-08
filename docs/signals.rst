@@ -1,4 +1,4 @@
-.. _signals-sent-dy-django-reversion:
+.. _signals:
 
 Signals sent by django-reversion
 ================================
