@@ -40,8 +40,12 @@ Low Level API
 
 You can use django-reversion's API to build powerful version-controlled views outside of the built-in admin site. For more information, please read the :ref:`low level API <api>` documentation.
 
+
+More information
+----------------
+
 Installation
-------------
+^^^^^^^^^^^^
 
 .. toctree::
    :maxdepth: 1
@@ -52,7 +56,7 @@ Installation
    admin
 
 Further reading
----------------
+^^^^^^^^^^^^^^^
 
 .. toctree::
    :maxdepth: 1
