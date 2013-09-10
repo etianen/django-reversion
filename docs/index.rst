@@ -8,11 +8,11 @@ Getting started with django-reversion
 
 To install django-reversion, follow these steps:
 
-1.  Checkout the latest django-reversion release and copy or symlink the ``src/reversion`` directory into your ``PYTHONPATH``.
-2.  Add ``'reversion'`` to your ``INSTALLED_APPS`` setting.
-3.  Run the command ``manage.py syncdb``.
+1.  Install with pip: ``pip install django-reversion``.
+2.  Add ``'reversion'`` to ``INSTALLED_APPS``.
+3.  Run ``manage.py syncdb``.
 
-The latest release (1.7.1) of django-reversion is designed to work with Django 1.5. If you have installed anything other than the latest version of Django, please check the :ref:`compatible Django versions <django-versions>` page before downloading django-reversion.
+The latest release (1.7.1) of django-reversion is designed to work with Django 1.5. If you have installed anything other than the latest version of Django, please check the :ref:`compatible Django versions <django-versions>` page before installing django-reversion.
 
 There are a number of alternative methods you can use when installing django-reversion. Please check the :ref:`installation methods <installation>` page for more information.
 
@@ -35,10 +35,24 @@ Whenever you register a model with the ``VersionAdmin`` class, be sure to run th
 For more information about admin integration, please read the :ref:`admin integration <admin>` documentation.
 
 
+Automatic versioning
+--------------------
+
+To store a new revision for every save() in your views, the simplest way is to add those two classes to `MIDDLEWARE_CLASSES`::
+
+    MIDDLEWARE_CLASSES = (
+        # Your middlewares...
+        'django.middleware.transaction.TransactionMiddleware',
+        'reversion.middleware.RevisionMiddleware'
+    )
+
+The first one makes sure data is only saved if the request completed succesfully, ensuring data integrity. The second one automatically commits a new revision. Order is important.
+
+
 Low Level API
 -------------
 
-You can use django-reversion's API to build powerful version-controlled views outside of the built-in admin site. For more information, please read the :ref:`low level API <api>` documentation.
+You can use django-reversion's API to build powerful version-controlled views. For more information, please read the :ref:`low level API <api>` documentation.
 
 
 More information
