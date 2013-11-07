@@ -6,6 +6,7 @@ django-reversion changelog
 -----
 
 - Django 1.6 compatibility (@niwibe & @meshy).
+- Removing type flag from Version model.
 - Using bulk_create to speed up revision creation.
 - Including docs in source distribution (@pquentin & @fladi).
 - Spanish translation (@alexander-ae).
