@@ -5,3 +5,4 @@ include README.rst
 include CHANGELOG.rst
 include MANIFEST.in
 recursive-include docs *
+prune docs/_build
