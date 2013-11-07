@@ -17,7 +17,7 @@ from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
 from django.utils.encoding import force_text
 
-from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE, has_int_pk, pre_revision_commit, post_revision_commit
+from reversion.models import Revision, Version, has_int_pk, pre_revision_commit, post_revision_commit
 
 
 class VersionAdapter(object):
@@ -91,7 +91,7 @@ class VersionAdapter(object):
             fields = list(self.get_fields_to_serialize()),
         )
         
-    def get_version_data(self, obj, type_flag, db=None):
+    def get_version_data(self, obj, db=None):
         """Creates the version data to be saved to the version model."""
         object_id = force_text(obj.pk)
         db = db or DEFAULT_DB_ALIAS
@@ -107,7 +107,6 @@ class VersionAdapter(object):
             "format": self.get_serialization_format(),
             "serialized_data": self.get_serialized_data(obj),
             "object_repr": force_text(obj),
-            "type": type_flag
         }
 
 
@@ -381,7 +380,6 @@ class RevisionManager(object):
         self._registered_models[model] = adapter_obj
         # Connect to the post save signal of the model.
         post_save.connect(self._post_save_receiver, model)
-        pre_delete.connect(self._pre_delete_receiver, model)
     
     def get_adapter(self, model):
         """Returns the registration information for the given model class."""
@@ -399,7 +397,6 @@ class RevisionManager(object):
             ))
         del self._registered_models[model]
         post_save.disconnect(self._post_save_receiver, model)
-        pre_delete.disconnect(self._pre_delete_receiver, model)
     
     def _follow_relationships(self, objects):
         """Follows all relationships in the given set of objects."""
@@ -429,7 +426,7 @@ class RevisionManager(object):
         # Adapt the objects to a dict.
         if isinstance(objects, (list, tuple)):
             objects = dict(
-                (obj, self.get_adapter(obj.__class__).get_version_data(obj, VERSION_CHANGE, db))
+                (obj, self.get_adapter(obj.__class__).get_version_data(obj, db))
                 for obj in objects
             )
         # Create the revision.
@@ -438,7 +435,7 @@ class RevisionManager(object):
             for obj in self._follow_relationships(objects.keys()):
                 if not obj in objects:
                     adapter = self.get_adapter(obj.__class__)
-                    objects[obj] = adapter.get_version_data(obj, VERSION_CHANGE)
+                    objects[obj] = adapter.get_version_data(obj)
             # Create all the versions without saving them
             ordered_objects = list(objects.keys())
             new_versions = [Version(**objects[obj]) for obj in ordered_objects]
@@ -572,9 +569,7 @@ class RevisionManager(object):
             deleted_version_pks = versioned_objs.exclude(
                 object_id__in = list(live_pk_queryset.iterator())
             ).values_list("object_id")
-        deleted_version_pks = deleted_version_pks.exclude(
-            type = VERSION_DELETE,
-        ).annotate(
+        deleted_version_pks = deleted_version_pks.annotate(
             latest_pk = Max("pk")
         ).values_list("latest_pk", flat=True)
         # HACK: MySQL deals extremely badly with this as a subquery, and can hang infinitely.
@@ -586,21 +581,11 @@ class RevisionManager(object):
         
     # Signal receivers.
         
-    def _post_save_receiver(self, instance, created, **kwargs):
+    def _post_save_receiver(self, instance, **kwargs):
         """Adds registered models to the current revision, if any."""
         if self._revision_context_manager.is_active() and not self._revision_context_manager.is_managing_manually():
             adapter = self.get_adapter(instance.__class__)
-            if created:
-                version_data = lambda: adapter.get_version_data(instance, VERSION_ADD, self._revision_context_manager._db)
-            else:
-                version_data = lambda: adapter.get_version_data(instance, VERSION_CHANGE, self._revision_context_manager._db)
-            self._revision_context_manager.add_to_context(self, instance, version_data)
-            
-    def _pre_delete_receiver(self, instance, **kwargs):
-        """Adds registered models to the current revision, if any."""
-        if self._revision_context_manager.is_active() and not self._revision_context_manager.is_managing_manually():
-            adapter = self.get_adapter(instance.__class__)
-            version_data = adapter.get_version_data(instance, VERSION_DELETE, self._revision_context_manager._db)
+            version_data = lambda: adapter.get_version_data(instance, self._revision_context_manager._db)
             self._revision_context_manager.add_to_context(self, instance, version_data)
 
         

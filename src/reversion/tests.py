@@ -28,7 +28,7 @@ from django.utils.encoding import force_text, python_2_unicode_compatible
 
 import reversion
 from reversion.revisions import RegistrationError, RevisionManager
-from reversion.models import Revision, Version, VERSION_ADD, VERSION_CHANGE, VERSION_DELETE
+from reversion.models import Revision, Version
 from reversion.middleware import RevisionMiddleware
 
 
@@ -235,21 +235,6 @@ class InternalsTest(RevisionTestBase):
             pass
         self.assertEqual(Revision.objects.count(), 1)
         self.assertEqual(Version.objects.count(), 4)
-        
-    def testCorrectVersionFlags(self):
-        self.assertEqual(Version.objects.filter(type=VERSION_ADD).count(), 4)
-        self.assertEqual(Version.objects.filter(type=VERSION_CHANGE).count(), 0)
-        self.assertEqual(Version.objects.filter(type=VERSION_DELETE).count(), 0)
-        with reversion.create_revision():
-            self.test11.save()
-        self.assertEqual(Version.objects.filter(type=VERSION_ADD).count(), 4)
-        self.assertEqual(Version.objects.filter(type=VERSION_CHANGE).count(), 1)
-        self.assertEqual(Version.objects.filter(type=VERSION_DELETE).count(), 0)
-        with reversion.create_revision():
-            self.test11.delete()
-        self.assertEqual(Version.objects.filter(type=VERSION_ADD).count(), 4)
-        self.assertEqual(Version.objects.filter(type=VERSION_CHANGE).count(), 1)
-        self.assertEqual(Version.objects.filter(type=VERSION_DELETE).count(), 1)
 
 
 class ApiTest(RevisionTestBase):

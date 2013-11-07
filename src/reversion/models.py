@@ -84,30 +84,15 @@ class Revision(models.Model):
             current_revision = RevisionManager.get_manager(self.manager_slug)._follow_relationships(obj for obj in old_revision.keys() if obj is not None)
             # Delete objects that are no longer in the current revision.
             for item in current_revision:
-                if item in old_revision:
-                    if old_revision[item].type == VERSION_DELETE:
-                        item.delete()
-                else:
+                if item not in old_revision:
                     item.delete()
         # Attempt to revert all revisions.
-        safe_revert([version for version in version_set if version.type != VERSION_DELETE])
+        safe_revert(version_set)
         
     def __str__(self):
         """Returns a unicode representation."""
         return ", ".join(force_text(version) for version in self.version_set.all())
 
-
-# Version types.
-
-VERSION_ADD = 0
-VERSION_CHANGE = 1
-VERSION_DELETE = 2
-
-VERSION_TYPE_CHOICES = (
-    (VERSION_ADD, "Addition"),
-    (VERSION_CHANGE, "Change"),
-    (VERSION_DELETE, "Deletion"),
-)
 
 def has_int_pk(model):
     """Tests whether the given model has an integer primary key."""
@@ -158,8 +143,6 @@ class Version(models.Model):
         data = self.serialized_data
         data = force_text(data.encode("utf8"))
         return list(serializers.deserialize(self.format, data, ignorenonexistent=True))[0]
-    
-    type = models.PositiveSmallIntegerField(choices=VERSION_TYPE_CHOICES, db_index=True)
     
     @property   
     def field_dict(self):
