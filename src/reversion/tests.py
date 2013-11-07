@@ -11,6 +11,7 @@ import datetime, os
 from django.db import models
 from django.test import TestCase
 from django.core.management import call_command
+from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 from django.conf.urls import url, patterns, include
 from django.contrib import admin
@@ -640,6 +641,13 @@ def error_revision_view(request):
     raise Exception("Foo")
 
 
+# A dumb view that has two revision middlewares.
+@revision_middleware_decorator
+@revision_middleware_decorator
+def double_middleware_revision_view(request):
+    raise Exception("Foo")
+
+
 site = admin.AdminSite()
 
 
@@ -714,6 +722,8 @@ urlpatterns = patterns("",
     url("^success/$", save_revision_view),
     
     url("^error/$", error_revision_view),
+
+    url("^double/$", double_middleware_revision_view),
     
     url("^admin/", include(site.get_urls(), namespace="admin")),
 
@@ -737,6 +747,9 @@ class RevisionMiddlewareTest(ReversionTestBase):
         self.assertRaises(Exception, lambda: self.client.get("/error/"))
         self.assertEqual(Revision.objects.count(), 0)
         self.assertEqual(Version.objects.count(), 0)
+
+    def testRevisionMiddlewareErrorOnDoubleMiddleware(self):
+        self.assertRaises(ImproperlyConfigured, lambda: self.client.get("/double/"))
 
 
 class VersionAdminTest(TestCase):

@@ -2,6 +2,8 @@
 
 from __future__ import unicode_literals
 
+from django.core.exceptions import ImproperlyConfigured
+
 from reversion.revisions import revision_context_manager
 
 
@@ -14,13 +16,15 @@ class RevisionMiddleware(object):
     
     def process_request(self, request):
         """Starts a new revision."""
-        request.META[(REVISION_MIDDLEWARE_FLAG, self)] = True
+        if request.META.get(REVISION_MIDDLEWARE_FLAG, False):
+            raise ImproperlyConfigured("RevisionMiddleware can only be included in MIDDLEWARE_CLASSES once.")
+        request.META[REVISION_MIDDLEWARE_FLAG] = True
         revision_context_manager.start()
     
     def _close_revision(self, request):
         """Closes the revision."""
-        if request.META.get((REVISION_MIDDLEWARE_FLAG, self), False):
-            del request.META[(REVISION_MIDDLEWARE_FLAG, self)]
+        if request.META.get(REVISION_MIDDLEWARE_FLAG, False):
+            del request.META[REVISION_MIDDLEWARE_FLAG]
             revision_context_manager.end()
     
     def process_response(self, request, response):
