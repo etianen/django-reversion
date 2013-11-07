@@ -10,6 +10,7 @@ If you are using anything other than the latest release of Django, it is importa
 ==============  =================
 Django version  Reversion release
 ==============  =================
+1.6             1.8
 1.5.1           1.7.1
 1.5             1.7  
 1.4.5           1.6.6
