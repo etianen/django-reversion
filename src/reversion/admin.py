@@ -223,7 +223,8 @@ class VersionAdmin(admin.ModelAdmin):
         """Hacks the given formset to contain the correct initial data."""
         # if the FK this inline formset represents is not being followed, don't process data for it.
         # see https://github.com/etianen/django-reversion/issues/222
-        if formset.rel_name not in self.revision_manager.get_adapter(self.model).follow:
+        rel_name = formset.fk.related.get_accessor_name()
+        if rel_name not in self.revision_manager.get_adapter(self.model).follow:
             return
         # Now we hack it to push in the data from the revision!
         initial = []
