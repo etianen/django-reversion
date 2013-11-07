@@ -99,7 +99,6 @@ class VersionAdmin(admin.ModelAdmin):
         # Wrap own methods in manual revision management.
         self.add_view = self.revision_context_manager.create_revision(manage_manually=True)(self.add_view)
         self.change_view = self.revision_context_manager.create_revision(manage_manually=True)(self.change_view)
-        self.delete_view = self.revision_context_manager.create_revision(manage_manually=True)(self.delete_view)
         self.recover_view = self.revision_context_manager.create_revision(manage_manually=True)(self.recover_view)
         self.revision_view = self.revision_context_manager.create_revision(manage_manually=True)(self.revision_view)
         self.changelist_view = self.revision_context_manager.create_revision(manage_manually=True)(self.changelist_view)
