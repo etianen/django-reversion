@@ -2,6 +2,16 @@ django-reversion changelog
 ==========================
 
 
+1.8.0
+-----
+
+- Django 1.6 compatibility (@niwibe & @meshy).
+- Using bulk_create to speed up revision creation.
+- Including docs in source distribution (@pquentin & @fladi).
+- Spanish translation (@alexander-ae).
+- Fixing edge-case bugs in revision middleware (@pricem & @oppianmatt).
+
+
 1.7.1 - 26/06/2013
 ------------------
 
