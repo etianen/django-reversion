@@ -7,10 +7,20 @@ Schema migrations
 This page describes the schema migrations that have taken place over the lifetime of django-reversion, along with a how-to guide for updating your schema using `South <http://south.aeracode.org/>`_.
 
 
+django-reversion 1.8
+--------------------
+
+The current working version removes ``type`` column from ``reversion_version`` table.
+
+In order to apply this migration using south, simply run::
+
+    ./manage.py migrate reversion
+    
+
 django-reversion 1.5
 --------------------
 
-The current working version adds in significant speedups for models with integer primary keys.
+This version adds in significant speedups for models with integer primary keys.
 
 In order to apply this migration using south, simply run::
 
