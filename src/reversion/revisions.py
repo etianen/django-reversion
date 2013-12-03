@@ -14,7 +14,7 @@ from django.core.signals import request_finished
 from django.db import models, DEFAULT_DB_ALIAS, connection
 from django.db.models import Q, Max
 from django.db.models.query import QuerySet
-from django.db.models.signals import post_save, pre_delete
+from django.db.models.signals import post_save
 from django.utils.encoding import force_text
 
 from reversion.models import Revision, Version, has_int_pk, pre_revision_commit, post_revision_commit
