@@ -1,10 +1,11 @@
 language: python
 python:
+  - 2.6
   - 2.7
+  - 3.2
   - 3.3
 env:
-  - DJANGO=django==1.5.2
-  - DJANGO=https://github.com/django/django/tarball/stable/1.6.x
+  - DJANGO=django==1.6
 install:
   - pip install $DJANGO
   - python setup.py -q install
