@@ -932,7 +932,7 @@ class PatchTest(RevisionTestBase):
     def testCanGeneratePathHtml(self):
         self.assertEqual(
             generate_patch_html(self.version1, self.version2, "name"),
-            u'<span>model1 instance1 version</span><del style="background:#ffe6e6;">1</del><ins style="background:#e6ffe6;">2</ins>',
+            '<span>model1 instance1 version</span><del style="background:#ffe6e6;">1</del><ins style="background:#e6ffe6;">2</ins>',
         )
                          
     def tearDown(self):
