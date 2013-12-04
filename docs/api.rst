@@ -5,8 +5,6 @@ Low-level API
 
 You can use django-reversion's API to build powerful version-controlled views outside of the built-in admin site.
 
-**Please note:** The django-reversion API underwent a number of changes for the 1.5 release. The old API is now deprecated, and was removed in django-reversion 1.7. Documentation for the old API can be found on the :ref:`deprecated low-level API <api>` page.
-
 
 Registering models with django-reversion
 ----------------------------------------
