@@ -156,7 +156,7 @@ class RevisionContextManager(local):
         
         This MUST be balanced by a call to `end`.  It is recommended that you
         leave these methods alone and instead use the revision context manager
-        or the `create_on_success` decorator.
+        or the `create_revision` decorator.
         """
         self._stack.append(manage_manually)
     
@@ -293,18 +293,8 @@ class RevisionContext(object):
         """Allows this revision context to be used as a decorator."""
         @wraps(func)
         def do_revision_context(*args, **kwargs):
-            self.__enter__()
-            exception = False
-            try:
-                try:
-                    return func(*args, **kwargs)
-                except:
-                    exception = True
-                    if not self.__exit__(*sys.exc_info()):
-                        raise
-            finally:
-                if not exception:
-                    self.__exit__(None, None, None)
+            with self:
+                return func(*args, **kwargs)
         return do_revision_context
 
 
