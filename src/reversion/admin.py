@@ -290,20 +290,19 @@ class VersionAdmin(admin.ModelAdmin):
                 # Add this hacked formset to the form.
                 formsets.append(formset)
             if all_valid(formsets) and form_validated:
-                with transaction.atomic():
-                    self.save_model(request, new_object, form, change=True)
-                    form.save_m2m()
-                    for formset in formsets:
-                        # HACK: If the value of a file field is None, remove the file from the model.
-                        related_objects = formset.save(commit=False)
-                        for related_obj, related_form in zip(related_objects, formset.saved_forms):
-                            for field in related_obj._meta.fields:
-                                if isinstance(field, models.FileField) and field.name in related_form.cleaned_data and related_form.cleaned_data[field.name] is None:
-                                    setattr(related_obj, field.name, None)
-                            related_obj.save()
-                        formset.save_m2m()
-                    change_message = _("Reverted to previous version, saved on %(datetime)s") % {"datetime": localize(version.revision.date_created)}
-                    self.log_change(request, new_object, change_message)
+                self.save_model(request, new_object, form, change=True)
+                form.save_m2m()
+                for formset in formsets:
+                    # HACK: If the value of a file field is None, remove the file from the model.
+                    related_objects = formset.save(commit=False)
+                    for related_obj, related_form in zip(related_objects, formset.saved_forms):
+                        for field in related_obj._meta.fields:
+                            if isinstance(field, models.FileField) and field.name in related_form.cleaned_data and related_form.cleaned_data[field.name] is None:
+                                setattr(related_obj, field.name, None)
+                        related_obj.save()
+                    formset.save_m2m()
+                change_message = _("Reverted to previous version, saved on %(datetime)s") % {"datetime": localize(version.revision.date_created)}
+                self.log_change(request, new_object, change_message)
                 self.message_user(request, _('The %(model)s "%(name)s" was reverted successfully. You may edit it again below.') % {"model": force_text(opts.verbose_name), "name": force_text(obj)})
                 # Redirect to the model change form.
                 if revert:
@@ -381,6 +380,7 @@ class VersionAdmin(admin.ModelAdmin):
             assert False
         return render_to_response(form_template, context, template.RequestContext(request))
     
+    @transaction.atomic
     def recover_view(self, request, version_id, extra_context=None):
         """Displays a form that can recover a deleted model."""
         # check if user has change or add permissions for model
@@ -392,6 +392,7 @@ class VersionAdmin(admin.ModelAdmin):
         context.update(extra_context or {})
         return self.render_revision_form(request, obj, version, context, recover=True)
         
+    @transaction.atomic
     def revision_view(self, request, object_id, version_id, extra_context=None):
         """Displays the contents of the given revision."""
         # check if user has change or add permissions for model

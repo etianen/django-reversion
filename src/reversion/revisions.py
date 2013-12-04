@@ -469,7 +469,7 @@ class RevisionManager(object):
                     versions = new_versions,
                 )
                 # Save the revision.
-                with transaction.atomic():
+                with transaction.atomic(using=db):
                     revision.save(using=db)
                     # Save version models.
                     for version in new_versions:
