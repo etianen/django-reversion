@@ -11,7 +11,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.signals import request_finished
-from django.db import models, DEFAULT_DB_ALIAS, connection
+from django.db import models, DEFAULT_DB_ALIAS, connection, transaction
 from django.db.models import Q, Max, get_model
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save
@@ -465,7 +465,7 @@ class RevisionManager(object):
                         if sorted(previous_versions) == sorted(all_serialized_data):
                             save_revision = False
             # Only save if we're always saving, or have changes.
-            if save_revision:                
+            if save_revision:
                 # Save a new revision.
                 revision = Revision(
                     manager_slug = self._manager_slug,
@@ -479,14 +479,15 @@ class RevisionManager(object):
                     versions = new_versions,
                 )
                 # Save the revision.
-                revision.save(using=db)
-                # Save version models.
-                for version in new_versions:
-                    version.revision = revision
-                Version.objects.using(db).bulk_create(new_versions)
-                # Save the meta information.
-                for cls, kwargs in meta:
-                    cls._default_manager.db_manager(db).create(revision=revision, **kwargs)
+                with transaction.atomic():
+                    revision.save(using=db)
+                    # Save version models.
+                    for version in new_versions:
+                        version.revision = revision
+                    Version.objects.using(db).bulk_create(new_versions)
+                    # Save the meta information.
+                    for cls, kwargs in meta:
+                        cls._default_manager.db_manager(db).create(revision=revision, **kwargs)
                 # Send the pre_revision_commit signal.
                 post_revision_commit.send(self,
                     instances = ordered_objects,
