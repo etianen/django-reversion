@@ -18,21 +18,21 @@ Any models that use subclasses of ``VersionAdmin`` in the admin interface will b
 
 Whenever you save changes to a model, it is serialized using the Django serialization framework into a JSON string. This is saved to the database as a ``reversion.models.Version`` model. Each ``Version`` model is linked to a model instance using a ``GenericForeignKey``.
 
-Foreign keys and many-to-many relationships are normally saved as their primary keys only. However, the ``reversion.register`` method takes an optional follow clause allowing these relationships to be automatically added to revisions. Please see :ref:`Low Level API <low-level-api>` for more information.
+Foreign keys and many-to-many relationships are normally saved as their primary keys only. However, the ``reversion.register`` method takes an optional follow clause allowing these relationships to be automatically added to revisions. Please see :ref:`Low Level API <api>` for more information.
 
 Reverting Versions
 ------------------
 
 Reverting a version is simply a matter of loading the appropriate ``Version`` model from the database, deserializing the model data, and re-saving the old data.
 
-There are a number of utility methods present on the ``Version`` object manager to assist this process. Please see :ref:`Low Level API <low-level-api>` for more information.
+There are a number of utility methods present on the ``Version`` object manager to assist this process. Please see :ref:`Low Level API <api>` for more information.
 
 Revision Management
 -------------------
 
 Related changes to models are grouped together in revisions. This allows for atomic rollback from one revision to another. You can automate revision management using either ``reversion.middleware.RevisionMiddleware``, or the ``reversion.revision.create_on_success decorator``.
 
-For more information on creating revisions, please see :ref:`Low Level API <low-level-api>`.
+For more information on creating revisions, please see :ref:`Low Level API <api>`.
 
 Admin Integration
 -----------------

@@ -43,4 +43,4 @@ Getting the code
 
 All django-reversion releases are available from the `project downloads area <http://github.com/etianen/django-reversion/downloads>`_.  You can also use Git to checkout tags from the `public git repository <http://github.com/etianen/django-reversion>`_.
 
-There are a number of alternative methods you can use when installing django-reversion. Please check the :ref:`installation methods <installation-methods>` page for more information.
+There are a number of alternative methods you can use when installing django-reversion. Please check the :ref:`installation methods <installation>` page for more information.

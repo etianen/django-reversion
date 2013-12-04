@@ -35,20 +35,6 @@ Whenever you register a model with the ``VersionAdmin`` class, be sure to run th
 For more information about admin integration, please read the :ref:`admin integration <admin>` documentation.
 
 
-Automatic versioning
---------------------
-
-To store a new revision for every save() in your views, the simplest way is to add those two classes to `MIDDLEWARE_CLASSES`::
-
-    MIDDLEWARE_CLASSES = (
-        # Your middlewares...
-        'django.middleware.transaction.TransactionMiddleware',
-        'reversion.middleware.RevisionMiddleware'
-    )
-
-The first one makes sure data is only saved if the request completed succesfully, ensuring data integrity. The second one automatically commits a new revision. Order is important.
-
-
 Low Level API
 -------------
 

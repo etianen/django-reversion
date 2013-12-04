@@ -34,31 +34,14 @@ A revision represents one or more changes made to your models, grouped together 
 There are several ways to create revisions, as explained below. Although there is nothing stopping you from mixing and matching these approaches, it is recommended that you pick one of the methods and stick with it throughout your project.
 
 
-RevisionMiddleware
-^^^^^^^^^^^^^^^^^^
-
-The simplest way to create revisions is to use ``reversion.middleware.RevisionMiddleware``. This will automatically wrap every request in a revision, ensuring that all changes to your models will be added to their version history.
-
-To enable the revision middleware, simply add it to your ``MIDDLEWARE_CLASSES`` setting as follows::
-
-    MIDDLEWARE_CLASSES = (
-        'django.contrib.sessions.middleware.SessionMiddleware',
-        'django.contrib.auth.middleware.AuthenticationMiddleware', 
-        'django.middleware.transaction.TransactionMiddleware',
-        'reversion.middleware.RevisionMiddleware',
-        # Other middleware goes here...
-    )
-
-Please note that ``RevisionMiddleware`` should go after ``TransactionMiddleware``. It is highly recommended that you use ``TransactionMiddleware`` in conjunction with ``RevisionMiddleware`` to ensure data integrity.
-
-
 reversion.create_revision() decorator
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you need more control over revision management, you can decorate any function with the ``reversion.create_revision()`` decorator. Any changes to your models that occur during this function will be grouped together into a revision.
+You can decorate any function with the ``reversion.create_revision()`` decorator. Any changes to your models that occur during this function will be grouped together into a revision.
 
 ::
 
+    @transaction.atomic()
     @reversion.create_revision()
     def you_view_func(request):
         your_model.save()
@@ -67,12 +50,27 @@ If you need more control over revision management, you can decorate any function
 reversion.create_revision() context manager
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For Python 2.5 and above, you can also use a context manager to mark up a block of code. Once the block terminates, any changes made to your models will be grouped together into a revision.
+You can use a context manager to mark up a block of code. Once the block terminates, any changes made to your models will be grouped together into a revision.
 
 ::
 
-    with reversion.create_revision():
+    with transaction.atomic(), reversion.create_revision():
         your_model.save()
+
+
+RevisionMiddleware
+^^^^^^^^^^^^^^^^^^
+
+The simplest way to create revisions is to use ``reversion.middleware.RevisionMiddleware``. This will automatically wrap every request in a revision, ensuring that all changes to your models will be added to their version history.
+
+To enable the revision middleware, simply add it to your ``MIDDLEWARE_CLASSES`` setting as follows::
+
+    MIDDLEWARE_CLASSES = (
+        'reversion.middleware.RevisionMiddleware',
+        # Other middleware goes here...
+    )
+
+**Warning**: Due to changes in the Django 1.6 transaction handling, revision data will be saved in a separate database transaction to the one used to save your models, even if you set ``ATOMIC_REQUESTS = True``. If you need to ensure that your models and revisions are saved in the save transaction, please use the ``reversion.create_revision()`` context manager or decorator in combination with ``transaction.atomic()``.
 
 
 Version meta data
@@ -80,7 +78,7 @@ Version meta data
 
 It is possible to attach a comment and a user reference to an active revision using the following method::
 
-    with reversion.create_revision():
+    with transaction.atomic(), reversion.create_revision():
         your_model.save()
         reversion.set_user(user)
         reversion.set_comment("Comment text...")
@@ -148,16 +146,6 @@ To recover a deleted object, use the following method::
 
     # Just recover this object, leaving the rest of the revision unchanged:
     deleted_version.revert()
-
-
-Transaction Management
-----------------------
-
-django-reversion does not manage database transactions for you, as this is something that needs to be configured separately for the entire application. However, it is important that any revisions you create are themselves wrapped in a database transaction.
-
-The easiest (and recommended) way to do this is by using the ``TransactionMiddleware`` supplied by Django. As noted above, this should go before the ``RevisionMiddleware``, if used.
-
-If you want finer-grained control, then you should use the ``transaction.create_on_success`` decorator to wrap any functions where you will be creating revisions.
 
 
 Advanced model registration
