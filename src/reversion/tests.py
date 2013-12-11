@@ -117,13 +117,8 @@ class RegistrationTest(TestCase):
         self.assertRaises(RegistrationError, lambda: isinstance(reversion.get_adapter(ReversionTestModel1)))
         
     def testProxyRegistration(self):
-        # Repeat tests with proxy model
-        # Register the model and test.
-        reversion.register(ReversionTestModel1Proxy)
-        self.assertTrue(reversion.is_registered(ReversionTestModel1Proxy))
-        # Unregister the model and text.
-        reversion.unregister(ReversionTestModel1Proxy)
-        self.assertFalse(reversion.is_registered(ReversionTestModel1Proxy))
+        # Test error if registering proxy models.
+        self.assertRaises(RegistrationError, lambda: reversion.register(ReversionTestModel1Proxy))
 
 
 class ReversionTestBase(TestCase):
@@ -137,7 +132,6 @@ class ReversionTestBase(TestCase):
         # Register the test models.
         reversion.register(ReversionTestModel1)
         reversion.register(ReversionTestModel2)
-        reversion.register(ReversionTestModel1Proxy)
         # Create some test data.
         self.test11 = ReversionTestModel1.objects.create(
             name = "model1 instance1 version1",
@@ -150,12 +144,6 @@ class ReversionTestBase(TestCase):
         )
         self.test22 = ReversionTestModel2.objects.create(
             name = "model2 instance2 version1",
-        )
-        self.testproxy1 = ReversionTestModel1Proxy.objects.create(
-            name = "model1proxy instance3 version1",
-        )
-        self.testproxy2 = ReversionTestModel1Proxy.objects.create(
-            name = "model1proxy instance4 version1",
         )
         self.user = User.objects.create(
             username = "user1",
@@ -173,8 +161,6 @@ class ReversionTestBase(TestCase):
         del self.test12
         del self.test21
         del self.test22
-        del self.testproxy1
-        del self.textproxy2
         del self.user
         # Delete the revisions index.
         Revision.objects.all().delete()

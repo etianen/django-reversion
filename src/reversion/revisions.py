@@ -42,7 +42,7 @@ class VersionAdapter(object):
         
     def get_fields_to_serialize(self):
         """Returns an iterable of field names to serialize in the version data."""
-        opts = self.model._meta
+        opts = self.model._meta.concrete_model._meta
         fields = self.fields or (field.name for field in opts.local_fields + opts.local_many_to_many)
         fields = (opts.get_field(field) for field in fields if not field in self.exclude)
         for field in fields:
@@ -369,9 +369,6 @@ class RevisionManager(object):
             raise RegistrationError("{model} has already been registered with django-reversion".format(
                 model = model,
             ))
-        # Prevent proxy models being registered.
-#         if model._meta.proxy:
-#             raise RegistrationError("Proxy models cannot be used with django-reversion, register the parent class instead")
         # Perform any customization.
         if field_overrides:
             adapter_cls = type(adapter_cls.__name__, (adapter_cls,), field_overrides)
@@ -401,15 +398,18 @@ class RevisionManager(object):
     def _follow_relationships(self, objects):
         """Follows all relationships in the given set of objects."""
         followed = set()
-        def _follow(obj):
-            if obj in followed or obj.pk is None:
+        def _follow(obj, exclude_concrete):
+            if obj in followed or obj.pk is None or (obj.__class__, obj.pk) == exclude_concrete:
                 return
             followed.add(obj)
             adapter = self.get_adapter(obj.__class__)
             for related in adapter.get_followed_relations(obj):
-                _follow(related)
+                _follow(related, exclude_concrete)
         for obj in objects:
-            _follow(obj)
+            exclude_concrete = None
+            if obj._meta.proxy:
+                exclude_concrete = (obj._meta.concrete_model, obj.pk)
+            _follow(obj, exclude_concrete)
         return followed
     
     def _get_versions(self, db=None):
