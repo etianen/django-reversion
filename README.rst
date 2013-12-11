@@ -1,4 +1,4 @@
-This fork og django-reversion was created to add support for proxy models.
+This fork of django-reversion was created to add support for proxy models.
 
 Proxy model support has been added, but received very limited testing.
 
