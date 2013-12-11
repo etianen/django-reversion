@@ -14,7 +14,7 @@ try:
 except ImportError:
     cmdclass = {}
 
-setup(name="django-reversion",
+setup(name="django-reversion-proxymodel",
       version='.'.join(str(x) for x in __version__),
       license="BSD",
       description="An extension to the Django web framework that provides comprehensive version control facilities",
