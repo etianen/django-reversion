@@ -471,8 +471,6 @@ class VersionMetaAdmin(VersionAdmin):
             select_params = (content_type.id,),
         )
     
-    queryset = get_queryset
-    
     def get_date_modified(self, obj):
         """Displays the last modified date of the given object, typically for use in a change list."""
         return localize(obj.date_modified)
