@@ -445,7 +445,7 @@ class VersionMetaAdmin(VersionAdmin):
     the last version that was saved.
     """
         
-    def queryset(self, request):
+    def get_queryset(self, request):
         """Returns the annotated queryset."""
         content_type = ContentType.objects.get_for_model(self.model)
         pk = self.model._meta.pk
@@ -453,7 +453,7 @@ class VersionMetaAdmin(VersionAdmin):
             version_table_field = "object_id_int"
         else:
             version_table_field = "object_id"
-        return super(VersionMetaAdmin, self).queryset(request).extra(
+        return super(VersionMetaAdmin, self).get_queryset(request).extra(
             select = {
                 "date_modified": """
                     SELECT MAX(%(revision_table)s.date_created)
@@ -470,7 +470,9 @@ class VersionMetaAdmin(VersionAdmin):
             },
             select_params = (content_type.id,),
         )
-        
+    
+    queryset = get_queryset
+    
     def get_date_modified(self, obj):
         """Displays the last modified date of the given object, typically for use in a change list."""
         return localize(obj.date_modified)
