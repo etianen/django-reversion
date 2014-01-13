@@ -1,0 +1,14 @@
+language: python
+python:
+  - 2.6
+  - 2.7
+  - 3.2
+  - 3.3
+env:
+  - DJANGO=django==1.5.5
+install:
+  - pip install $DJANGO
+  - python setup.py -q install
+script: python src/test_project/manage.py test reversion
+notifications:
+  email: false
