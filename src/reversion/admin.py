@@ -81,6 +81,7 @@ class VersionAdmin(admin.ModelAdmin):
             for field in self.model._meta.virtual_fields:
                 if isinstance(field, GenericRelation) and field.rel.to == inline_model and field.object_id_field_name == ct_fk_field and field.content_type_field_name == ct_field:
                     follow_field = field.name
+                    break
         elif issubclass(inline, options.InlineModelAdmin):
             inline_model = inline.model
             fk_name = inline.fk_name
@@ -88,6 +89,7 @@ class VersionAdmin(admin.ModelAdmin):
                 for field in inline_model._meta.fields:
                     if isinstance(field, (models.ForeignKey, models.OneToOneField)) and issubclass(self.model, field.rel.to):
                         fk_name = field.name
+                        break
             if not inline_model._meta.get_field(fk_name).rel.is_hidden():
                 accessor = inline_model._meta.get_field(fk_name).related.get_accessor_name()
                 follow_field = accessor
