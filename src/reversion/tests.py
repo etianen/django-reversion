@@ -702,6 +702,22 @@ class InlineTestParentModelAdmin(reversion.VersionAdmin):
 site.register(InlineTestParentModel, InlineTestParentModelAdmin)
 
 
+# Test that reversion handles unrelated inlines.
+# Issue https://github.com/etianen/django-reversion/issues/277
+class InlineTestUnrelatedParentModel(models.Model):
+    pass
+
+class InlineTestUnrelatedChildModel(models.Model):
+    pass
+
+class InlineTestUnrelatedChildModelInline(admin.TabularInline):
+    model = InlineTestUnrelatedChildModel
+
+class InlineTestUnrelatedParentModelAdmin(reversion.VersionAdmin):
+    inlines = (InlineTestUnrelatedChildModelInline, )
+site.register(InlineTestUnrelatedParentModel, InlineTestUnrelatedParentModelAdmin)
+
+
 urlpatterns = patterns("",
 
     url("^success/$", save_revision_view),

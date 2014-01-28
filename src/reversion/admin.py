@@ -90,7 +90,7 @@ class VersionAdmin(admin.ModelAdmin):
                     if isinstance(field, (models.ForeignKey, models.OneToOneField)) and issubclass(self.model, field.rel.to):
                         fk_name = field.name
                         break
-            if not inline_model._meta.get_field(fk_name).rel.is_hidden():
+            if fk_name and not inline_model._meta.get_field(fk_name).rel.is_hidden():
                 accessor = inline_model._meta.get_field(fk_name).related.get_accessor_name()
                 follow_field = accessor
         return inline_model, follow_field
