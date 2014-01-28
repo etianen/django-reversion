@@ -118,7 +118,10 @@ class RegistrationTest(TestCase):
         
     def testProxyRegistration(self):
         # Test error if registering proxy models.
-        self.assertRaises(RegistrationError, lambda: reversion.register(ReversionTestModel1Proxy))
+        with self.assertRaises(RegistrationError) as cm:
+            reversion.register(ReversionTestModel1Proxy)
+        self.assertEqual(str(cm.exception),
+                         "Proxy models cannot be used with django-reversion, register the parent class instead: ReversionTestModel1Proxy")
 
 
 class ReversionTestBase(TestCase):
