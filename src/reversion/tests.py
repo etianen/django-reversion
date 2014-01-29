@@ -121,7 +121,7 @@ class RegistrationTest(TestCase):
         with self.assertRaises(RegistrationError) as cm:
             reversion.register(ReversionTestModel1Proxy)
         self.assertEqual(str(cm.exception),
-                         "Proxy models cannot be used with django-reversion, register the parent class instead: ReversionTestModel1Proxy")
+                         "ReversionTestModel1Proxy is a proxy model, and cannot be used with django-reversion, register the parent class (ReversionTestModel1) instead.")  # noqa
 
 
 class ReversionTestBase(TestCase):

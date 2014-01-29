@@ -373,8 +373,10 @@ class RevisionManager(object):
         # Prevent proxy models being registered.
         if model._meta.proxy:
             raise RegistrationError(
-                "Proxy models cannot be used with django-reversion, register the parent class instead: {model}".format(
+                "{model} is a proxy model, and cannot be used with django-reversion, register the parent class ({model_parent}) instead.".format(  # noqa
                     model=model.__name__,
+                    model_parent=', '.join(
+                        [x.__name__ for x in model._meta.parents.keys()])
                 ))
         # Perform any customization.
         if field_overrides:
