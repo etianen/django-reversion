@@ -16,7 +16,7 @@ from django.utils.encoding import force_text, python_2_unicode_compatible
 def safe_revert(versions):
     """
     Attempts to revert the given models contained in the give versions.
-    
+
     This method will attempt to resolve dependencies between the versions to revert
     them in the correct order to avoid database integrity errors.
     """
@@ -33,7 +33,7 @@ def safe_revert(versions):
 
 
 class RevertError(Exception):
-    
+
     """Exception thrown when something goes wrong with reverting a model."""
 
 
@@ -42,29 +42,30 @@ UserModel = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
 
 @python_2_unicode_compatible
 class Revision(models.Model):
-    
+
     """A group of related object versions."""
-    
+
     manager_slug = models.CharField(
         max_length = 200,
         db_index = True,
         default = "default",
     )
-    
+
     date_created = models.DateTimeField(auto_now_add=True,
                                         verbose_name=_("date created"),
                                         help_text="The date and time this revision was created.")
-    
+
     user = models.ForeignKey(UserModel,
                              blank=True,
                              null=True,
+                             on_delete=models.SET_NULL,
                              verbose_name=_("user"),
                              help_text="The user who created this revision.")
-    
+
     comment = models.TextField(blank=True,
                                verbose_name=_("comment"),
                                help_text="A text comment on this revision.")
-    
+
     def revert(self, delete=False):
         """Reverts all objects in this revision."""
         version_set = self.version_set.all()
@@ -88,7 +89,7 @@ class Revision(models.Model):
                     item.delete()
         # Attempt to revert all revisions.
         safe_revert(version_set)
-        
+
     def __str__(self):
         """Returns a unicode representation."""
         return ", ".join(force_text(version) for version in self.version_set.all())
@@ -105,51 +106,51 @@ def has_int_pk(model):
             isinstance(pk, models.ForeignKey) and has_int_pk(pk.rel.to)
         )
     )
-            
+
 
 @python_2_unicode_compatible
 class Version(models.Model):
-    
+
     """A saved version of a database model."""
-    
+
     revision = models.ForeignKey(Revision,
                                  help_text="The revision that contains this version.")
-    
+
     object_id = models.TextField(help_text="Primary key of the model under version control.")
-    
+
     object_id_int = models.IntegerField(
         blank = True,
         null = True,
         db_index = True,
         help_text = "An indexed, integer version of the stored model's primary key, used for faster lookups.",
     )
-    
+
     content_type = models.ForeignKey(ContentType,
                                      help_text="Content type of the model under version control.")
-    
+
     # A link to the current instance, not the version stored in this Version!
     object = generic.GenericForeignKey()
-    
+
     format = models.CharField(max_length=255,
                               help_text="The serialization format used by this model.")
-    
+
     serialized_data = models.TextField(help_text="The serialized form of this version of the model.")
-    
+
     object_repr = models.TextField(help_text="A string representation of the object.")
-    
+
     @property
     def object_version(self):
         """The stored version of the model."""
         data = self.serialized_data
         data = force_text(data.encode("utf8"))
         return list(serializers.deserialize(self.format, data, ignorenonexistent=True))[0]
-    
-    @property   
+
+    @property
     def field_dict(self):
         """
         A dictionary mapping field names to field values in this version
         of the model.
-        
+
         This method will follow parent links, if present.
         """
         if not hasattr(self, "_field_dict_cache"):
@@ -176,11 +177,11 @@ class Version(models.Model):
                     result.update(parent_version.field_dict)
             setattr(self, "_field_dict_cache", result)
         return getattr(self, "_field_dict_cache")
-       
+
     def revert(self):
         """Recovers the model in this version."""
         self.object_version.save()
-    
+
     def __str__(self):
         """Returns a unicode representation."""
         return self.object_repr
