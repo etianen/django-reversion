@@ -26,7 +26,7 @@
                                         {{action.revision.user.get_username}}
                                         {% if action.revision.user.get_full_name %} ({{action.revision.user.get_full_name}}){% endif %}
                                     {% else %}
-                                        {% trans "Not Available" %}
+                                        &mdash;
                                     {% endif %}
                                 </td>
                                 <td>{{action.revision.comment|linebreaksbr|default:""}}</td>
