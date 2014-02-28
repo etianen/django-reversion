@@ -26,16 +26,13 @@
                                         {{action.revision.user.get_username}}
                                         {% if action.revision.user.get_full_name %} ({{action.revision.user.get_full_name}}){% endif %}
                                     {% else %}
-                                        {% trans "Not Available*" %}
+                                        {% trans "Not Available" %}
                                     {% endif %}
                                 </td>
                                 <td>{{action.revision.comment|linebreaksbr|default:""}}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
-                    <tfoot>
-                        <tr><td colspan="3">{% trans "*User no longer exists or revision not initiated by a user." %}</td></tr>
-                    </tfoot>
                 </table>
             {% else %}
                 <p>{% trans "This object doesn't have a change history. It probably wasn't added via this admin site." %}</p>
