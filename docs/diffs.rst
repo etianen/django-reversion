@@ -22,7 +22,7 @@ First of all, you need to use the :ref:`low level API <api>` to retrieve the ver
     page = Page.objects.all()[0]
 
     # Get the two versions to compare.
-    available_versions = Version.objects.get_for_object(page)
+    available_versions = reversion.get_for_object(page)
 
     old_version = available_versions[0]
     new_version = available_versions[1]
