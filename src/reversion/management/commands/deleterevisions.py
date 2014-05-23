@@ -181,7 +181,7 @@ Examples:
                     print("%s revision(s)%s%swill be deleted%s.\n%s model version(s) will be deleted." % (revision_count, date_msg, models_msg, keep_msg, version_query.count()))
                 else:
                     print("No revision%s%sto delete%s.\nDone" % (date_msg, models_msg, keep_msg))
-                    sys.exit()
+                    return
 
 
         # Ask confirmation
@@ -189,7 +189,7 @@ Examples:
             choice = raw_input("Are you sure you want to delete theses revisions? [y|N] ")
             if choice.lower() != "y":
                 print("Aborting revision deletion.")
-                sys.exit()
+                return
 
 
         # Delete versions and revisions
