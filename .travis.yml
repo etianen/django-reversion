@@ -7,6 +7,10 @@ python:
 env:
   - DJANGO=django==1.6
   - DJANGO=django==1.6.1
+  - DJANGO=django==1.6.2
+  - DJANGO=django==1.6.3
+  - DJANGO=django==1.6.4
+  - DJANGO=django==1.6.5
 install:
   - pip install $DJANGO
   - python setup.py -q install
