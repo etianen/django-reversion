@@ -91,7 +91,7 @@ You can attach custom meta data to a revision by creating a separate django mode
     from reversion.models import Revision
 
     class VersionRating(models.Model):
-        revision = models.OneToOneField(Revision)  # This is required
+        revision = models.ForeignKey(Revision)  # There must be a relationship with Revision
         rating = models.PositiveIntegerField()
 
 You can then attach this meta class to a revision using the following method::
