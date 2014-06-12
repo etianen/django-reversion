@@ -67,55 +67,55 @@ msgstr "评论"
 msgid ""
 "Choose a date from the list below to revert to a previous version of this "
 "object."
-msgstr ""
+msgstr "单击下方的日期以恢复当前对象到之前的版本。"
 
 #: templates/reversion/object_history.html:15
 #: templates/reversion/recover_list.html:24
 msgid "Date/time"
-msgstr ""
+msgstr "时间"
 
 #: templates/reversion/object_history.html:16
 msgid "User"
-msgstr ""
+msgstr "用户"
 
 #: templates/reversion/object_history.html:17
 msgid "Comment"
-msgstr ""
+msgstr "评论"
 
 #: templates/reversion/object_history.html:38
 msgid ""
 "This object doesn't have a change history. It probably wasn't added via this "
 "admin site."
-msgstr ""
+msgstr "此对象不存在任何变更历史，它可能不是通过管理站点添加的。"
 
 #: templates/reversion/recover_form.html:8
 #: templates/reversion/recover_list.html:8
 #: templates/reversion/revision_form.html:8
 msgid "Home"
-msgstr ""
+msgstr "首页"
 
 #: templates/reversion/recover_form.html:18
 msgid "Press the save button below to recover this version of the object."
-msgstr ""
+msgstr "单击保存按钮以恢复为此版本。"
 
 #: templates/reversion/recover_list.html:18
 msgid ""
 "Choose a date from the list below to recover a deleted version of an object."
-msgstr ""
+msgstr "单击下方的日期以恢复一个已删除的对象。"
 
 #: templates/reversion/recover_list.html:38
 msgid "There are no deleted objects to recover."
-msgstr ""
+msgstr "没有可供恢复的已删除对象。"
 
 #: templates/reversion/revision_form.html:12
 msgid "History"
-msgstr ""
+msgstr "历史"
 
 #: templates/reversion/revision_form.html:13
 #, python-format
 msgid "Revert %(verbose_name)s"
-msgstr ""
+msgstr "恢复 %(verbose_name)s"
 
 #: templates/reversion/revision_form.html:26
 msgid "Press the save button below to revert to this version of the object."
-msgstr ""
+msgstr "单击保存按钮将此对象恢复到此版本。"
