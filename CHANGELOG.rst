@@ -2,7 +2,7 @@ django-reversion changelog
 ==========================
 
 
-1.8.1 - 29/05/2013
+1.8.1 - 29/05/2014
 ------------------
 
 - Slovak translation (@jbub).
