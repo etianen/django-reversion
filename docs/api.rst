@@ -17,6 +17,20 @@ If you're already using the :ref:`admin integration <admin>` for a model, then t
 
     reversion.register(YourModel)
 
+``reversion.register`` can also be used as a class decorator, with or without arguments.
+
+::
+
+    import reversion
+
+    @reversion.register
+    class YourModel(models.Model):
+        ...
+
+    @reversion.register(format='yaml')
+    class YourOtherModel(models.Model):
+        ...
+
 **Warning:** If you’re using django-reversion in an management command, and are using the automatic ``VersionAdmin`` registration method, then you’ll need to import the relevant ``admin.py`` file at the top of your management command file.
 
 **Warning:** When Django starts up, some python scripts get loaded twice, which can cause 'already registered' errors to be thrown. If you place your calls to ``reversion.register()`` in the ``models.py`` file, immediately after the model definition, this problem will go away.

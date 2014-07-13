@@ -3,7 +3,7 @@
 from __future__ import unicode_literals
 
 import operator, sys
-from functools import wraps, reduce
+from functools import wraps, reduce, partial
 from threading import local
 from weakref import WeakValueDictionary
 
@@ -363,8 +363,11 @@ class RevisionManager(object):
             in self._registered_models.keys()
         ]
 
-    def register(self, model, adapter_cls=VersionAdapter, **field_overrides):
+    def register(self, model=None, adapter_cls=VersionAdapter, **field_overrides):
         """Registers a model with this revision manager."""
+        # Return a class decorator if model is not given
+        if model is None:
+            return partial(self.register, adapter_cls=adapter_cls, **field_overrides)
         # Prevent multiple registration.
         if self.is_registered(model):
             raise RegistrationError("{model} has already been registered with django-reversion".format(
@@ -386,6 +389,7 @@ class RevisionManager(object):
         self._registered_models[self._registration_key_for_model(model)] = adapter_obj
         # Connect to the post save signal of the model.
         post_save.connect(self._post_save_receiver, model)
+        return model
 
     def get_adapter(self, model):
         """Returns the registration information for the given model class."""
