@@ -123,6 +123,20 @@ class RegistrationTest(TestCase):
         self.assertEqual(str(cm.exception),
                          "ReversionTestModel1Proxy is a proxy model, and cannot be used with django-reversion, register the parent class (ReversionTestModel1) instead.")  # noqa
 
+    def testDecorator(self):
+        # Test the use of register as a decorator
+        @reversion.register
+        class DecoratorModel(models.Model):
+            pass
+        self.assertTrue(reversion.is_registered(DecoratorModel))
+
+    def testDecoratorArgs(self):
+        # Test a decorator with arguments
+        @reversion.register(format='yaml')
+        class DecoratorArgsModel(models.Model):
+            pass
+        self.assertTrue(reversion.is_registered(DecoratorArgsModel))
+
 
 class ReversionTestBase(TestCase):
 
