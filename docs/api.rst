@@ -112,6 +112,7 @@ You can then attach this meta class to a revision using the following method::
 
     reversion.add_meta(VersionRating, rating=5)
 
+Be sure to only call ``add_meta`` once per meta class per revision context, otherwise you'll get a duplicate key error.
 
 Reverting to previous revisions
 -------------------------------
