@@ -11,7 +11,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.signals import request_finished
-from django.db import models, DEFAULT_DB_ALIAS, connection, transaction
+from django.db import models, connection, transaction
 from django.db.models import Q, Max, get_model
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save
@@ -94,7 +94,6 @@ class VersionAdapter(object):
     def get_version_data(self, obj, db=None):
         """Creates the version data to be saved to the version model."""
         object_id = force_text(obj.pk)
-        db = db or DEFAULT_DB_ALIAS
         content_type = ContentType.objects.db_manager(db).get_for_model(obj)
         if has_int_pk(obj.__class__):
             object_id_int = int(obj.pk)
@@ -425,15 +424,12 @@ class RevisionManager(object):
 
     def _get_versions(self, db=None):
         """Returns all versions that apply to this manager."""
-        db = db or DEFAULT_DB_ALIAS
         return Version.objects.using(db).filter(
             revision__manager_slug = self._manager_slug,
         ).select_related("revision")
 
     def save_revision(self, objects, ignore_duplicates=False, user=None, comment="", meta=(), db=None):
         """Saves a new revision."""
-        # Get the db alias.
-        db = db or DEFAULT_DB_ALIAS
         # Adapt the objects to a dict.
         if isinstance(objects, (list, tuple)):
             objects = dict(
@@ -505,7 +501,6 @@ class RevisionManager(object):
 
         The results are returned with the most recent versions first.
         """
-        db = db or DEFAULT_DB_ALIAS
         content_type = ContentType.objects.db_manager(db).get_for_model(model)
         versions = self._get_versions(db).filter(
             content_type = content_type,
@@ -561,7 +556,6 @@ class RevisionManager(object):
 
         The results are returned with the most recent versions first.
         """
-        db = db or DEFAULT_DB_ALIAS
         model_db = model_db or db
         content_type = ContentType.objects.db_manager(db).get_for_model(model_class)
         live_pk_queryset = model_class._default_manager.db_manager(model_db).all().values_list("pk", flat=True)
