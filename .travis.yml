@@ -18,6 +18,7 @@ matrix:
       env: DJANGO=https://www.djangoproject.com/download/1.7c2/tarball/
   allow_failures:
     - env: DJANGO=https://www.djangoproject.com/download/1.7c2/tarball/
+  fast_finish: true
 install:
   - pip install $DJANGO
   - python setup.py -q install
