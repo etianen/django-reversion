@@ -11,6 +11,13 @@ env:
   - DJANGO=django==1.6.3
   - DJANGO=django==1.6.4
   - DJANGO=django==1.6.5
+  - DJANGO=https://www.djangoproject.com/download/1.7c2/tarball/
+matrix:
+  exclude:
+    - python: 2.6
+      env: DJANGO=https://www.djangoproject.com/download/1.7c2/tarball/
+  allow_failures:
+    - env: DJANGO=https://www.djangoproject.com/download/1.7c2/tarball/
 install:
   - pip install $DJANGO
   - python setup.py -q install
