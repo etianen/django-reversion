@@ -20,7 +20,7 @@ matrix:
     - env: DJANGO=https://www.djangoproject.com/download/1.7c2/tarball/
   fast_finish: true
 install:
-  - pip install $DJANGO
+  - travis_retry pip install $DJANGO
   - python setup.py -q install
 script: python src/test_project/manage.py test reversion
 notifications:
