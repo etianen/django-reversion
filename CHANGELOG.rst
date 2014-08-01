@@ -2,6 +2,16 @@ django-reversion changelog
 ==========================
 
 
+1.8.2 - 01/08/2014
+------------------
+
+- reversion.register() can now be used as a class decorator (@aquavitae).
+- Danish translation (@Vandborg).
+- Improvements to Travis CI integration (@thedrow).
+- Simplified Chinese translation (@QuantumGhost).
+- Minor bugfixes and documentation improvements (@marekmalek, @dhoffman34, @mauricioabreu, @mark0978).
+
+
 1.8.1 - 29/05/2014
 ------------------
 
