@@ -254,6 +254,12 @@ class VersionAdmin(admin.ModelAdmin):
             return lambda: count
         formset.total_form_count = total_form_count_hack(len(initial))
     
+    def _patch_object(self, obj, version_values):
+        for key, value in version_values.items():
+            field = obj._meta.get_field(key)
+            setattr(obj, field.attname, value)
+        return obj
+
     def render_revision_form(self, request, obj, version, context, revert=False, recover=False):
         """Renders the object revision form."""
         model = self.model
@@ -317,7 +323,10 @@ class VersionAdmin(admin.ModelAdmin):
             # change_view.  Once again, a hook for this kind of functionality
             # would be nice.  Unfortunately, it results in doubling the number
             # of queries required to construct the formets.
-            form = ModelForm(instance=obj, initial=self.get_revision_form_data(request, obj, version))
+            initial = self.get_revision_form_data(request, obj, version)
+            self._patch_object(obj, initial)
+
+            form = ModelForm(instance=obj)
             prefixes = {}
             for FormSet, inline in zip(self.get_formsets(request, obj), self.get_inline_instances(request)):
                 # This code is standard for creating the formset.
