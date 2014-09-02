@@ -30,7 +30,7 @@ There are a number of utility methods present on the ``Version`` object manager 
 Revision Management
 -------------------
 
-Related changes to models are grouped together in revisions. This allows for atomic rollback from one revision to another. You can automate revision management using either ``reversion.middleware.RevisionMiddleware``, or the ``reversion.revision.create_on_success decorator``.
+Related changes to models are grouped together in revisions. This allows for atomic rollback from one revision to another. You can automate revision management using either ``reversion.middleware.RevisionMiddleware``, or the ``reversion.create_revision`` decorator.
 
 For more information on creating revisions, please see :ref:`Low Level API <api>`.
 
