@@ -6,7 +6,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 from django.contrib.contenttypes.models import ContentType
-from django.db import models, reset_queries
+from django.db import models, reset_queries, DEFAULT_DB_ALIAS
 from django.utils.importlib import import_module
 from django.utils.datastructures import SortedDict
 from django.utils.encoding import force_text
@@ -30,6 +30,9 @@ class Command(BaseCommand):
             type=int,
             default=500,
             help="For large sets of data, revisions will be populated in batches. Defaults to 500"),
+        make_option('--database', action='store', dest='database',
+            default=DEFAULT_DB_ALIAS, help='Nominates a database to create revisions in. '
+                'Defaults to the "default" database.'),
         )
     args = '[appname, appname.ModelName, ...] [--comment="Initial version."]'
     help = "Creates initial revisions for a given app [and model]."
@@ -41,6 +44,7 @@ class Command(BaseCommand):
         
         comment = options["comment"]
         batch_size = options["batch_size"]
+        database = options.get('database')
 
         verbosity = int(options.get("verbosity", 1))
         app_list = SortedDict()
@@ -84,12 +88,12 @@ class Command(BaseCommand):
         # Create revisions.
         for app, model_classes in app_list.items():
             for model_class in model_classes:
-                self.create_initial_revisions(app, model_class, comment, batch_size, verbosity)
+                self.create_initial_revisions(app, model_class, comment, batch_size, verbosity, database=database)
         
         # Go back to default language
         translation.deactivate()
 
-    def create_initial_revisions(self, app, model_class, comment, batch_size, verbosity=2, **kwargs):
+    def create_initial_revisions(self, app, model_class, comment, batch_size, verbosity=2, database=None, **kwargs):
         """Creates the set of initial revisions for the given model."""
         # Import the relevant admin module.
         try:
@@ -99,9 +103,9 @@ class Command(BaseCommand):
         # Check all models for empty revisions.
         if default_revision_manager.is_registered(model_class):
             created_count = 0
-            content_type = ContentType.objects.get_for_model(model_class)
-            versioned_pk_queryset = Version.objects.filter(content_type=content_type).all()
-            live_objs = model_class._default_manager.all()
+            content_type = ContentType.objects.db_manager(database).get_for_model(model_class)
+            versioned_pk_queryset = Version.objects.using(database).filter(content_type=content_type).all()
+            live_objs = model_class._default_manager.using(database).all()
             if has_int_pk(model_class):
                 # We can do this as a fast database join!
                 live_objs = live_objs.exclude(
@@ -120,7 +124,7 @@ class Command(BaseCommand):
                 objects = live_objs.in_bulk(chunked_ids)
                 for id, obj in objects.items():
                     try:
-                        default_revision_manager.save_revision((obj,), comment=comment)
+                        default_revision_manager.save_revision((obj,), comment=comment, db=database)
                     except:
                         print("ERROR: Could not save initial version for %s %s." % (model_class.__name__, obj.pk))
                         raise
