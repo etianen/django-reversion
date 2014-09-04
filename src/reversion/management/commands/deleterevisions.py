@@ -38,6 +38,8 @@ class Command(BaseCommand):
             dest="confirmation",
             default=True,
             help="Disable the confirmation before deleting revisions"),
+        make_option('--manager', '-m', dest='manager',
+            help='Delete revisions only from specified manager. Defaults from all managers.'),
         make_option('--database', action='store', dest='database',
             default=DEFAULT_DB_ALIAS, help='Nominates a database to delete revisions from. '
                 'Defaults to the "default" database.'),
@@ -73,6 +75,7 @@ Examples:
         keep = options["keep"]
         force = options["force"]
         confirmation = options["confirmation"]
+        manager = options.get('manager')
         database = options.get('database')
         # I don't know why verbosity is not already an int in Django?
         try:
@@ -98,6 +101,9 @@ Examples:
 
         # Build the queries
         revision_query = Revision.objects.using(database).all()
+        
+        if manager:
+            revision_query = revision_query.filter(manager_slug=manager)
 
         if date:
             revision_query = revision_query.filter(date_created__lt=date)
