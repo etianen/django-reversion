@@ -6,7 +6,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 from django.contrib.contenttypes.models import ContentType
-from django.db import models, reset_queries, DEFAULT_DB_ALIAS
+from django.db import models, reset_queries
 from django.utils.importlib import import_module
 from django.utils.datastructures import SortedDict
 from django.utils.encoding import force_text
@@ -31,8 +31,7 @@ class Command(BaseCommand):
             default=500,
             help="For large sets of data, revisions will be populated in batches. Defaults to 500"),
         make_option('--database', action='store', dest='database',
-            default=DEFAULT_DB_ALIAS, help='Nominates a database to create revisions in. '
-                'Defaults to the "default" database.'),
+            help='Nominates a database to create revisions in.'),
         )
     args = '[appname, appname.ModelName, ...] [--comment="Initial version."]'
     help = "Creates initial revisions for a given app [and model]."

@@ -5,7 +5,6 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
-from django.db import DEFAULT_DB_ALIAS
 from django.db.models import Q, Count
 from django.contrib.contenttypes.models import ContentType
 
@@ -41,8 +40,7 @@ class Command(BaseCommand):
         make_option('--manager', '-m', dest='manager',
             help='Delete revisions only from specified manager. Defaults from all managers.'),
         make_option('--database', action='store', dest='database',
-            default=DEFAULT_DB_ALIAS, help='Nominates a database to delete revisions from. '
-                'Defaults to the "default" database.'),
+            help='Nominates a database to delete revisions from.'),
         )
     args = "[appname, appname.ModelName, ...] [--date=YYYY-MM-DD | days=0] [--keep=0] [--force] [--no-confirmation]"
     help = """Deletes revisions for a given app [and model] and/or before a specified delay or date.
