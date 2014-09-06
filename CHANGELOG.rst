@@ -2,6 +2,15 @@ django-reversion changelog
 ==========================
 
 
+1.8.3 - 06/08/2014
+------------------
+
+- Provisional Django 1.7 support (@etianen).
+- Multi-db and multi-manager support to management commands (@marekmalek).
+- Added index on reversion.date_created (@rkojedzinszky).
+- Minor bugfixes and documentation improvements (@coagulant).
+
+
 1.8.2 - 01/08/2014
 ------------------
 
