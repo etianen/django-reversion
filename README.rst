@@ -53,17 +53,19 @@ Bug reports, bug fixes, and new features are always welcome. Please raise issues
 `django-reversion project site <http://github.com/etianen/django-reversion>`_, and submit
 pull requests for any new code.
 
-The django-reversion project is built on every push with `Travis CI <https://travis-ci.org/etianen/django-reversion>`_.
-
-.. image:: https://travis-ci.org/etianen/django-reversion.svg?branch=master
-    :target: https://travis-ci.org/etianen/django-reversion
-
 You can run the test suite yourself from within a virtual environment with the following
 commands:
+
+::
 
     $ pip install django
     $ pip install -e .
     $ python src/test_project/manage.py test reversion
+
+The django-reversion project is built on every push with `Travis CI <https://travis-ci.org/etianen/django-reversion>`_.
+
+.. image:: https://travis-ci.org/etianen/django-reversion.svg?branch=master
+    :target: https://travis-ci.org/etianen/django-reversion
 
     
 More information
