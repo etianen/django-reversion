@@ -20,7 +20,7 @@ matrix:
   fast_finish: true
 install:
   - travis_retry pip install $DJANGO
-  - python setup.py -q install
+  - pip install -e .
 script: python src/test_project/manage.py test reversion
 notifications:
   email: false
