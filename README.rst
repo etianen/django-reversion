@@ -45,6 +45,26 @@ a few django management commands.
 It's always worth checking the `CHANGELOG <https://github.com/etianen/django-reversion/blob/master/CHANGELOG.rst>`_
 before upgrading too, just in case you get caught off-guard by a minor upgrade to the library.
 
+
+Contributing
+------------
+
+Bug reports, bug fixes, and new features are always welcome. Please raise issues on the
+`django-reversion project site <http://github.com/etianen/django-reversion>`_, and submit
+pull requests for any new code.
+
+The django-reversion project is built on every push with `Travis CI <https://travis-ci.org/etianen/django-reversion>`_.
+
+.. image:: https://travis-ci.org/etianen/django-reversion.svg?branch=master
+    :target: https://travis-ci.org/etianen/django-reversion
+
+You can run the test suite yourself from within a virtual environment with the following
+commands:
+
+    $ pip install django
+    $ pip install -e .
+    $ python src/test_project/manage.py test reversion
+
     
 More information
 ----------------
