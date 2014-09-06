@@ -1,104 +1,46 @@
-# encoding: utf-8
-import datetime
-from south.db import db
-from south.v2 import SchemaMigration
-from django.db import models
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
-try:
-    from django.contrib.auth import get_user_model
-except ImportError: # django < 1.5
-    from django.contrib.auth.models import User
-else:
-    User = get_user_model()
+from django.db import models, migrations
+import django.db.models.deletion
+from django.conf import settings
 
 
-class Migration(SchemaMigration):
+class Migration(migrations.Migration):
 
-    def forwards(self, orm):
-        
-        # Adding model 'Revision'
-        db.create_table('reversion_revision', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('date_created', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
-            ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm["%s.%s" % (User._meta.app_label, User._meta.object_name)], null=True, blank=True)),
-            ('comment', self.gf('django.db.models.fields.TextField')(blank=True)),
-        ))
-        db.send_create_signal('reversion', ['Revision'])
+    dependencies = [
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ('contenttypes', '0001_initial'),
+    ]
 
-        # Adding model 'Version'
-        db.create_table('reversion_version', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('revision', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['reversion.Revision'])),
-            ('object_id', self.gf('django.db.models.fields.TextField')()),
-            ('content_type', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['contenttypes.ContentType'])),
-            ('format', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('serialized_data', self.gf('django.db.models.fields.TextField')()),
-            ('object_repr', self.gf('django.db.models.fields.TextField')()),
-        ))
-        db.send_create_signal('reversion', ['Version'])
-
-    def backwards(self, orm):
-        
-        # Deleting model 'Revision'
-        db.delete_table('reversion_revision')
-
-        # Deleting model 'Version'
-        db.delete_table('reversion_version')
-
-    models = {
-        'auth.group': {
-            'Meta': {'object_name': 'Group'},
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '80'}),
-            'permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'})
-        },
-        'auth.permission': {
-            'Meta': {'ordering': "('content_type__app_label', 'content_type__model', 'codename')", 'unique_together': "(('content_type', 'codename'),)", 'object_name': 'Permission'},
-            'codename': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            'content_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['contenttypes.ContentType']"}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '50'})
-        },
-        "%s.%s" % (User._meta.app_label, User._meta.module_name): {
-            'Meta': {'object_name': User.__name__, "db_table": "'%s'" % User._meta.db_table},
-            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
-            'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
-            'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
-            'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
-            User._meta.pk.column: ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
-            'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
-            'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
-            'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
-            'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),
-            'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
-        },
-        'contenttypes.contenttype': {
-            'Meta': {'ordering': "('name',)", 'unique_together': "(('app_label', 'model'),)", 'object_name': 'ContentType', 'db_table': "'django_content_type'"},
-            'app_label': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'model': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '100'})
-        },
-        'reversion.revision': {
-            'Meta': {'object_name': 'Revision'},
-            'comment': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
-            'date_created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['%s.%s']"% (User._meta.app_label, User._meta.object_name), 'null': 'True', 'blank': 'True'})
-        },
-        'reversion.version': {
-            'Meta': {'object_name': 'Version'},
-            'content_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['contenttypes.ContentType']"}),
-            'format': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'object_id': ('django.db.models.fields.TextField', [], {}),
-            'object_repr': ('django.db.models.fields.TextField', [], {}),
-            'revision': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['reversion.Revision']"}),
-            'serialized_data': ('django.db.models.fields.TextField', [], {})
-        }
-    }
-
-    complete_apps = ['reversion']
+    operations = [
+        migrations.CreateModel(
+            name='Revision',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('manager_slug', models.CharField(default='default', max_length=200, db_index=True)),
+                ('date_created', models.DateTimeField(auto_now_add=True, help_text='The date and time this revision was created.', verbose_name='date created', db_index=True)),
+                ('comment', models.TextField(help_text='A text comment on this revision.', verbose_name='comment', blank=True)),
+                ('user', models.ForeignKey(on_delete=django.db.models.deletion.SET_NULL, blank=True, to=settings.AUTH_USER_MODEL, help_text='The user who created this revision.', null=True, verbose_name='user')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Version',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('object_id', models.TextField(help_text='Primary key of the model under version control.')),
+                ('object_id_int', models.IntegerField(help_text="An indexed, integer version of the stored model's primary key, used for faster lookups.", null=True, db_index=True, blank=True)),
+                ('format', models.CharField(help_text='The serialization format used by this model.', max_length=255)),
+                ('serialized_data', models.TextField(help_text='The serialized form of this version of the model.')),
+                ('object_repr', models.TextField(help_text='A string representation of the object.')),
+                ('content_type', models.ForeignKey(help_text='Content type of the model under version control.', to='contenttypes.ContentType')),
+                ('revision', models.ForeignKey(help_text='The revision that contains this version.', to='reversion.Revision')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+    ]
