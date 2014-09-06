@@ -37,6 +37,10 @@ class Command(BaseCommand):
             dest="confirmation",
             default=True,
             help="Disable the confirmation before deleting revisions"),
+        make_option('--manager', '-m', dest='manager',
+            help='Delete revisions only from specified manager. Defaults from all managers.'),
+        make_option('--database', action='store', dest='database',
+            help='Nominates a database to delete revisions from.'),
         )
     args = "[appname, appname.ModelName, ...] [--date=YYYY-MM-DD | days=0] [--keep=0] [--force] [--no-confirmation]"
     help = """Deletes revisions for a given app [and model] and/or before a specified delay or date.
@@ -69,6 +73,8 @@ Examples:
         keep = options["keep"]
         force = options["force"]
         confirmation = options["confirmation"]
+        manager = options.get('manager')
+        database = options.get('database')
         # I don't know why verbosity is not already an int in Django?
         try:
             verbosity = int(options["verbosity"])
@@ -92,7 +98,10 @@ Examples:
             date = datetime.datetime.now() - datetime.timedelta(days)
 
         # Build the queries
-        revision_query = Revision.objects.all()
+        revision_query = Revision.objects.using(database).all()
+        
+        if manager:
+            revision_query = revision_query.filter(manager_slug=manager)
 
         if date:
             revision_query = revision_query.filter(date_created__lt=date)
@@ -122,14 +131,14 @@ Examples:
             subqueries = reduce(operator.or_, subqueries)
 
             if force:
-                models = ContentType.objects.filter(subqueries)
+                models = ContentType.objects.using(database).filter(subqueries)
                 revision_query = revision_query.filter(version__content_type__in=models)
             else:
-                models = ContentType.objects.exclude(subqueries)
+                models = ContentType.objects.using(database).exclude(subqueries)
                 revision_query = revision_query.exclude(version__content_type__in=models)
 
         if keep:
-            objs = Version.objects.all()
+            objs = Version.objects.using(database).all()
 
             # If app is specified, to speed up the loop on theses objects,
             # get only the specified subset.
@@ -148,7 +157,7 @@ Examples:
             # revisions for all objects.
             # Was not able to avoid this loop...
             for obj in objs:
-                revisions_not_keeped.update(list(Version.objects.filter(content_type__id=obj["content_type_id"], object_id=obj["object_id"]).order_by("-revision__date_created").values_list("revision_id", flat=True)[keep:]))
+                revisions_not_keeped.update(list(Version.objects.using(database).filter(content_type__id=obj["content_type_id"], object_id=obj["object_id"]).order_by("-revision__date_created").values_list("revision_id", flat=True)[keep:]))
 
             revision_query = revision_query.filter(pk__in=revisions_not_keeped)
 
@@ -175,7 +184,7 @@ Examples:
 
                 revision_count = revision_query.count()
                 if revision_count:
-                    version_query = Version.objects.all()
+                    version_query = Version.objects.using(database).all()
                     if date or app_labels or keep:
                         version_query = version_query.filter(revision__in=revision_query)
                     print("%s revision(s)%s%swill be deleted%s.\n%s model version(s) will be deleted." % (revision_count, date_msg, models_msg, keep_msg, version_query.count()))
