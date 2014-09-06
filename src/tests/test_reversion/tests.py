@@ -13,7 +13,6 @@ from django.test import TestCase
 from django.core.management import call_command
 from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
-from django.conf.urls import url, patterns, include
 from django.contrib import admin
 try:
     from django.contrib.auth import get_user_model
@@ -21,15 +20,24 @@ except ImportError: # django < 1.5
     from django.contrib.auth.models import User
 else:
     User = get_user_model()
-from django.utils.decorators import decorator_from_middleware as django_decorator_from_middleware
-from django.http import HttpResponse
 from django.utils.unittest import skipUnless
-from django.utils.encoding import force_text, python_2_unicode_compatible
 
 import reversion
 from reversion.revisions import RegistrationError, RevisionManager
 from reversion.models import Revision, Version
-from reversion.middleware import RevisionMiddleware
+
+from test_reversion.models import (
+    ReversionTestModel1,
+    ReversionTestModel2,
+    TestFollowModel,
+    ReversionTestModel1Proxy,
+    RevisionMeta,
+    ParentTestAdminModel,
+    ChildTestAdminModel,
+    InlineTestParentModel,
+    InlineTestChildModel,
+)
+from test_reversion import admin  # Force early registration of all admin models.
 
 
 ZERO = datetime.timedelta(0)
@@ -46,58 +54,6 @@ class UTC(datetime.tzinfo):
 
     def dst(self, dt):
         return ZERO
-
-@python_2_unicode_compatible
-class ReversionTestModelBase(models.Model):
-
-    name = models.CharField(
-        max_length = 100,
-    )
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        abstract = True
-        app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
-
-
-class ReversionTestModel1(ReversionTestModelBase):
-
-    pass
-
-
-str_pk_gen = 0;
-
-def get_str_pk():
-    global str_pk_gen
-    str_pk_gen += 1;
-    return force_text(str_pk_gen)
-
-
-class ReversionTestModel2(ReversionTestModelBase):
-
-    id = models.CharField(
-        primary_key = True,
-        max_length = 100,
-        default = get_str_pk
-    )
-
-
-class ReversionTestModel1Proxy(ReversionTestModel1):
-
-    class Meta:
-        proxy = True
-
-
-class RevisionMeta(models.Model):
-
-    revision = models.OneToOneField(Revision)
-
-    age = models.IntegerField()
-
-    class Meta:
-        app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
 
 
 class RegistrationTest(TestCase):
@@ -447,17 +403,6 @@ class MultiTableInheritanceApiTest(RevisionTestBase):
         del self.testchild1
 
 
-class TestFollowModel(ReversionTestModelBase):
-
-    test_model_1 = models.ForeignKey(
-        ReversionTestModel1,
-    )
-
-    test_model_2s = models.ManyToManyField(
-        ReversionTestModel2,
-    )
-
-
 class FollowModelsTest(ReversionTestBase):
 
     @reversion.create_revision()
@@ -586,15 +531,15 @@ class CreateInitialRevisionsTest(ReversionTestBase):
         self.assertEqual(Version.objects.count(), vercount)
 
     def testCreateInitialRevisionsSpecificApps(self):
-        call_command("createinitialrevisions", "auth")
+        call_command("createinitialrevisions", "test_reversion")
         self.assertEqual(Revision.objects.count(), 4)
         self.assertEqual(Version.objects.count(), 4)
 
     def testCreateInitialRevisionsSpecificModels(self):
-        call_command("createinitialrevisions", "auth.ReversionTestModel1")
+        call_command("createinitialrevisions", "test_reversion.ReversionTestModel1")
         self.assertEqual(Revision.objects.count(), 2)
         self.assertEqual(Version.objects.count(), 2)
-        call_command("createinitialrevisions", "auth.ReversionTestModel2")
+        call_command("createinitialrevisions", "test_reversion.ReversionTestModel2")
         self.assertEqual(Revision.objects.count(), 4)
         self.assertEqual(Version.objects.count(), 4)
 
@@ -605,189 +550,9 @@ class CreateInitialRevisionsTest(ReversionTestBase):
 
 # Tests for reversion functionality that's tied to requests.
 
-# RevisionMiddleware is tested by applying it as a decorator to various view
-# functions. Django's decorator_from_middleware() utility function does the
-# trick of converting a middleware class to a decorator. However, in projects
-# that include the middleware in the MIDDLEWARE_CLASSES setting, the wrapped
-# view function is processed twice by the middleware. When RevisionMiddleware
-# processes a function twice, an ImproperlyConfigured exception is raised.
-# Thus, using Django's definition of decorator_from_middleware() can prevent
-# reversion integration tests from passing in projects that include
-# RevisionMiddleware in MIDDLEWARE_CLASSES.
-#
-# To avoid this problem, we redefine decorator_from_middleware() to return a
-# decorator that does not reapply the middleware if it is in
-# MIDDLEWARE_CLASSES.  @decorator_from_middleware(RevisionMiddleware) is then
-# used to wrap almost all RevisionMiddleware test views. The only exception is
-# double_middleware_revision_view(), which needs to be doubly processed by
-# RevisionMiddleware.  This view is wrapped twice with
-# @django_decorator_from_middleware(RevisionMiddleware), where
-# django_decorator_from_middleware() is imported as Django's definition of
-# decorator_from_middleware().
-
-revision_middleware_django_decorator = django_decorator_from_middleware(RevisionMiddleware)
-
-def decorator_from_middleware(middleware_class):
-    """
-    This is a wrapper around django.utils.decorators.decorator_from_middleware
-    (imported as django_decorator_from_middleware). If the middleware class is
-    not loaded via MIDDLEWARE_CLASSES in the project settings, then the
-    middleware decorator is returned. However, if the middleware is already
-    loaded, then an identity decorator is returned instead, so that the
-    middleware does not process the view function twice.
-    """
-    middleware_path = "%s.%s" % (middleware_class.__module__,
-                                 middleware_class.__name__)
-    if middleware_path in settings.MIDDLEWARE_CLASSES:
-        return lambda view_func: view_func
-    return django_decorator_from_middleware(middleware_class)
-
-revision_middleware_decorator = decorator_from_middleware(RevisionMiddleware)
-
-# A dumb view that saves a revision.
-@revision_middleware_decorator
-def save_revision_view(request):
-    ReversionTestModel1.objects.create(
-        name = "model1 instance3 version1",
-    )
-    ReversionTestModel1.objects.create(
-        name = "model1 instance4 version1",
-    )
-    ReversionTestModel2.objects.create(
-        name = "model2 instance3 version1",
-    )
-    ReversionTestModel2.objects.create(
-        name = "model2 instance4 version1",
-    )
-    return HttpResponse("OK")
-
-
-# A dumb view that borks a revision.
-@revision_middleware_decorator
-def error_revision_view(request):
-    ReversionTestModel1.objects.create(
-        name = "model1 instance3 version1",
-    )
-    ReversionTestModel1.objects.create(
-        name = "model1 instance4 version1",
-    )
-    ReversionTestModel2.objects.create(
-        name = "model2 instance3 version1",
-    )
-    ReversionTestModel2.objects.create(
-        name = "model2 instance4 version1",
-    )
-    raise Exception("Foo")
-
-
-# A dumb view that has two revision middlewares.
-@revision_middleware_django_decorator
-@revision_middleware_django_decorator
-def double_middleware_revision_view(request):
-    raise Exception("Foo")
-
-
-site = admin.AdminSite()
-
-
-class ParentTestAdminModel(models.Model):
-
-    parent_name = models.CharField(
-        max_length = 200,
-    )
-
-    class Meta:
-        app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
-
-
-@python_2_unicode_compatible
-class ChildTestAdminModel(ParentTestAdminModel):
-
-    child_name = models.CharField(
-        max_length = 200,
-    )
-
-    def __str__(self):
-        return self.child_name
-
-    class Meta:
-        app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
-
-
-class ChildTestAdminModelAdmin(reversion.VersionAdmin):
-
-    pass
-
-
-site.register(ChildTestAdminModel, ChildTestAdminModelAdmin)
-
-
-class InlineTestParentModel(models.Model):
-    name = models.CharField(max_length=100,)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
-
-
-class InlineTestChildModel(models.Model):
-    parent = models.ForeignKey(InlineTestParentModel, related_name='children')
-    name = models.CharField(max_length=100)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
-
-
-class InlineTestChildModelInline(admin.TabularInline):
-    model = InlineTestChildModel
-    fk_name = 'parent'
-    extra = 0
-    verbose_name = 'Child'
-    verbose_name_plural = 'Children'
-
-
-class InlineTestParentModelAdmin(reversion.VersionAdmin):
-    inlines = (InlineTestChildModelInline, )
-site.register(InlineTestParentModel, InlineTestParentModelAdmin)
-
-
-# Test that reversion handles unrelated inlines.
-# Issue https://github.com/etianen/django-reversion/issues/277
-class InlineTestUnrelatedParentModel(models.Model):
-    pass
-
-class InlineTestUnrelatedChildModel(models.Model):
-    pass
-
-class InlineTestUnrelatedChildModelInline(admin.TabularInline):
-    model = InlineTestUnrelatedChildModel
-
-class InlineTestUnrelatedParentModelAdmin(reversion.VersionAdmin):
-    inlines = (InlineTestUnrelatedChildModelInline, )
-site.register(InlineTestUnrelatedParentModel, InlineTestUnrelatedParentModelAdmin)
-
-
-urlpatterns = patterns("",
-
-    url("^success/$", save_revision_view),
-
-    url("^error/$", error_revision_view),
-
-    url("^double/$", double_middleware_revision_view),
-
-    url("^admin/", include(site.get_urls(), namespace="admin")),
-
-)
-
-
 class RevisionMiddlewareTest(ReversionTestBase):
 
-    urls = "reversion.tests"
+    urls = "test_reversion.urls"
 
     def testRevisionMiddleware(self):
         self.assertEqual(Revision.objects.count(), 0)
@@ -809,7 +574,7 @@ class RevisionMiddlewareTest(ReversionTestBase):
 
 class VersionAdminTest(TestCase):
 
-    urls = "reversion.tests"
+    urls = "test_reversion.urls"
 
     def setUp(self):
         self.old_TEMPLATE_DIRS = settings.TEMPLATE_DIRS
@@ -847,7 +612,7 @@ class VersionAdminTest(TestCase):
     def testRevisionSavedOnPost(self):
         self.assertEqual(ChildTestAdminModel.objects.count(), 0)
         # Create an instance via the admin.
-        response = self.client.post("/admin/auth/childtestadminmodel/add/", {
+        response = self.client.post("/admin/test_reversion/childtestadminmodel/add/", {
             "parent_name": "parent instance1 version1",
             "child_name": "child instance1 version1",
             "_continue": 1,
@@ -861,7 +626,7 @@ class VersionAdminTest(TestCase):
         self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version1")
         self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version1")
         # Save a new version.
-        response = self.client.post("/admin/auth/childtestadminmodel/%s/" % obj_pk, {
+        response = self.client.post("/admin/test_reversion/childtestadminmodel/%s/" % obj_pk, {
             "parent_name": "parent instance1 version2",
             "child_name": "child instance1 version2",
             "_continue": 1,
@@ -873,11 +638,11 @@ class VersionAdminTest(TestCase):
         self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version2")
         self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version2")
         # Check that the versions can be listed.
-        response = self.client.get("/admin/auth/childtestadminmodel/%s/history/" % obj_pk)
+        response = self.client.get("/admin/test_reversion/childtestadminmodel/%s/history/" % obj_pk)
         self.assertContains(response, "child instance1 version2")
         self.assertContains(response, "child instance1 version1")
         # Check that a version can be rolled back.
-        response = self.client.post("/admin/auth/childtestadminmodel/%s/history/%s/" % (obj_pk, versions[1].pk), {
+        response = self.client.post("/admin/test_reversion/childtestadminmodel/%s/history/%s/" % (obj_pk, versions[1].pk), {
             "parent_name": "parent instance1 version3",
             "child_name": "child instance1 version3",
         })
@@ -889,10 +654,10 @@ class VersionAdminTest(TestCase):
         self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version3")
         # Check that a deleted version can be viewed.
         obj.delete()
-        response = self.client.get("/admin/auth/childtestadminmodel/recover/")
+        response = self.client.get("/admin/test_reversion/childtestadminmodel/recover/")
         self.assertContains(response, "child instance1 version3")
         # Check that a deleted version can be recovered.
-        response = self.client.post("/admin/auth/childtestadminmodel/recover/%s/" % versions[0].pk, {
+        response = self.client.post("/admin/test_reversion/childtestadminmodel/recover/%s/" % versions[0].pk, {
             "parent_name": "parent instance1 version4",
             "child_name": "child instance1 version4",
         })
@@ -901,7 +666,7 @@ class VersionAdminTest(TestCase):
 
     def createInlineObjects(self, should_delete):
         # Create an instance via the admin without a child.
-        response = self.client.post("/admin/auth/inlinetestparentmodel/add/", {
+        response = self.client.post("/admin/test_reversion/inlinetestparentmodel/add/", {
             "name": "parent version1",
             "children-TOTAL_FORMS": "0",
             "children-INITIAL_FORMS": "0",
@@ -913,7 +678,7 @@ class VersionAdminTest(TestCase):
         parent = InlineTestParentModel.objects.get(id=parent_pk)
 
         # Update  instance via the admin to add a child
-        response = self.client.post("/admin/auth/inlinetestparentmodel/%s/" % parent_pk, {
+        response = self.client.post("/admin/test_reversion/inlinetestparentmodel/%s/" % parent_pk, {
             "name": "parent version1",
             "children-TOTAL_FORMS": "1",
             "children-INITIAL_FORMS": "0",
@@ -929,7 +694,7 @@ class VersionAdminTest(TestCase):
         self.assertEqual(len(version_list), 2)
 
         # check if reversion page has the checkbox for the inline checked
-        response = self.client.get("/admin/auth/inlinetestparentmodel/%s/history/%s/" %
+        response = self.client.get("/admin/test_reversion/inlinetestparentmodel/%s/history/%s/" %
                                    (parent_pk, version_list[1].id))
         self.assertEqual(response.status_code, 200)
         if should_delete:
