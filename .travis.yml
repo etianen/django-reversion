@@ -4,6 +4,7 @@ python:
   - 2.7
   - 3.2
   - 3.3
+  - 3.4
 env:
   - DJANGO=django==1.6
   - DJANGO=django==1.6.1
@@ -11,13 +12,11 @@ env:
   - DJANGO=django==1.6.3
   - DJANGO=django==1.6.4
   - DJANGO=django==1.6.5
-  - DJANGO=https://www.djangoproject.com/download/1.7c2/tarball/
+  - DJANGO=django==1.7
 matrix:
   exclude:
     - python: 2.6
-      env: DJANGO=https://www.djangoproject.com/download/1.7c2/tarball/
-  allow_failures:
-    - env: DJANGO=https://www.djangoproject.com/download/1.7c2/tarball/
+      env: DJANGO=django==1.7
   fast_finish: true
 install:
   - travis_retry pip install $DJANGO
