@@ -2,7 +2,13 @@ django-reversion changelog
 ==========================
 
 
-1.8.3 - 06/08/2014
+1.8.4 - 07/09/2014
+------------------
+
+- Fixing including legacy south migrations in PyPi package (@GeyseR).
+
+
+1.8.3 - 06/09/2014
 ------------------
 
 - Provisional Django 1.7 support (@etianen).
