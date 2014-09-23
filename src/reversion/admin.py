@@ -133,7 +133,7 @@ class VersionAdmin(admin.ModelAdmin):
         urls = super(VersionAdmin, self).get_urls()
         admin_site = self.admin_site
         opts = self.model._meta
-        info = opts.app_label, opts.module_name,
+        info = opts.app_label, opts.model_name,
         reversion_urls = patterns("",
                                   url("^recover/$", admin_site.admin_view(self.recoverlist_view), name='%s_%s_recoverlist' % info),
                                   url("^recover/([^/]+)/$", admin_site.admin_view(self.recover_view), name='%s_%s_recover' % info),
