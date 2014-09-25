@@ -6,6 +6,7 @@ import operator, sys
 from functools import wraps, reduce, partial
 from threading import local
 from weakref import WeakValueDictionary
+import copy
 
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
@@ -604,11 +605,11 @@ class RevisionManager(object):
                 # be modified by django right after this.
                 # don't use a lambda, but get the data out now.
                 version_data = adapter.get_version_data(instance, self._revision_context_manager._db)
-                self._revision_context_manager.add_to_context(self, instance, version_data)
+                self._revision_context_manager.add_to_context(self, copy.copy(instance), version_data)
                 for obj in self._follow_relationships([instance]):
                     adapter = self.get_adapter(obj.__class__)
                     version_data = adapter.get_version_data(obj, self._revision_context_manager._db)
-                    self._revision_context_manager.add_to_context(self, obj, version_data)
+                    self._revision_context_manager.add_to_context(self, copy.copy(obj), version_data)
             else:
                 version_data = lambda: adapter.get_version_data(instance, self._revision_context_manager._db)
                 self._revision_context_manager.add_to_context(self, instance, version_data)
