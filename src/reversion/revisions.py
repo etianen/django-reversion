@@ -15,7 +15,7 @@ from django.core.signals import request_finished
 from django.db import models, connection, transaction
 from django.db.models import Q, Max, get_model
 from django.db.models.query import QuerySet
-from django.db.models.signals import post_save, pre_delete
+from django.db.models.signals import post_save
 from django.utils.encoding import force_text
 
 from reversion.models import Revision, Version, has_int_pk, pre_revision_commit, post_revision_commit
@@ -336,6 +336,7 @@ class RevisionManager(object):
         self._manager_slug = manager_slug
         self._registered_models = {}
         self._revision_context_manager = revision_context_manager
+        self._signal_eagerness = {}
         # Proxies to common context methods.
         self._revision_context = revision_context_manager.create_revision()
 
@@ -367,7 +368,12 @@ class RevisionManager(object):
         """Registers a model with this revision manager."""
         # Default to post_save if signals is not given
         if signals is None:
-            signals = [post_save]
+            signals = [
+                {
+                    'signal': post_save,
+                    'eager': False,
+                }
+            ]
         # Return a class decorator if model is not given
         if model is None:
             return partial(self.register, adapter_cls=adapter_cls, **field_overrides)
@@ -392,7 +398,8 @@ class RevisionManager(object):
         self._registered_models[self._registration_key_for_model(model)] = adapter_obj
         # Connect to the selected signals of the model.
         for signal in signals:
-            signal.connect(self._signal_receiver, model)
+            signal['signal'].connect(self._signal_receiver, model)
+            self._signal_eagerness[(signal['signal'], model)] = signal['eager']
         return model
 
     def get_adapter(self, model):
@@ -599,8 +606,9 @@ class RevisionManager(object):
     def _signal_receiver(self, instance, signal, **kwargs):
         """Adds registered models to the current revision, if any."""
         if self._revision_context_manager.is_active() and not self._revision_context_manager.is_managing_manually():
+            eager = self._signal_eagerness[(signal, instance.__class__)]
             adapter = self.get_adapter(instance.__class__)
-            if signal == pre_delete:
+            if eager:
                 # pre_delete is a special case, because the instance will
                 # be modified by django right after this.
                 # don't use a lambda, but get the data out now.
