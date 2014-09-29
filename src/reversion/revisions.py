@@ -336,7 +336,7 @@ class RevisionManager(object):
         self._manager_slug = manager_slug
         self._registered_models = {}
         self._revision_context_manager = revision_context_manager
-        self._signal_eagerness = {}
+        self._eager_signals = {}
         # Proxies to common context methods.
         self._revision_context = revision_context_manager.create_revision()
 
@@ -364,16 +364,13 @@ class RevisionManager(object):
             in self._registered_models.keys()
         ]
 
-    def register(self, model=None, adapter_cls=VersionAdapter, signals=None, **field_overrides):
+    def register(self, model=None, adapter_cls=VersionAdapter, signals=None, eager_signals=None, **field_overrides):
         """Registers a model with this revision manager."""
-        # Default to post_save if signals is not given
-        if signals is None:
-            signals = [
-                {
-                    'signal': post_save,
-                    'eager': False,
-                }
-            ]
+        # Default to post_save if no signals are given
+        if signals is None and eager_signals is None:
+            signals = [post_save]
+        # Store eager signals for usage in the signal receiver
+        self._eager_signals[model] = eager_signals
         # Return a class decorator if model is not given
         if model is None:
             return partial(self.register, adapter_cls=adapter_cls, **field_overrides)
@@ -397,9 +394,9 @@ class RevisionManager(object):
         adapter_obj = adapter_cls(model)
         self._registered_models[self._registration_key_for_model(model)] = adapter_obj
         # Connect to the selected signals of the model.
-        for signal in signals:
-            signal['signal'].connect(self._signal_receiver, model)
-            self._signal_eagerness[(signal['signal'], model)] = signal['eager']
+        all_signals = list(signals or []) + list(eager_signals or [])
+        for signal in all_signals:
+            signal.connect(self._signal_receiver, model)
         return model
 
     def get_adapter(self, model):
@@ -606,7 +603,7 @@ class RevisionManager(object):
     def _signal_receiver(self, instance, signal, **kwargs):
         """Adds registered models to the current revision, if any."""
         if self._revision_context_manager.is_active() and not self._revision_context_manager.is_managing_manually():
-            eager = self._signal_eagerness[(signal, instance.__class__)]
+            eager = signal in self._eager_signals[instance.__class__]
             adapter = self.get_adapter(instance.__class__)
             if eager:
                 # pre_delete is a special case, because the instance will
