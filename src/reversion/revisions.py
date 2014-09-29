@@ -370,7 +370,7 @@ class RevisionManager(object):
         if signals is None and eager_signals is None:
             signals = [post_save]
         # Store eager signals for usage in the signal receiver
-        self._eager_signals[model] = eager_signals
+        self._eager_signals[model] = list(eager_signals or [])
         # Return a class decorator if model is not given
         if model is None:
             return partial(self.register, adapter_cls=adapter_cls, **field_overrides)
