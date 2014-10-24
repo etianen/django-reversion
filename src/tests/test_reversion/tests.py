@@ -79,7 +79,7 @@ class RegistrationTest(TestCase):
         self.check_deregistration(ReversionTestModel1)
 
     def testProxyRegistration(self):
-        # Test ProxyModel registered as usual model
+        # ProxyModel registered as usual model
         self.check_registration(ReversionTestModel1Proxy)
         self.check_deregistration(ReversionTestModel1Proxy)
 
@@ -407,6 +407,68 @@ class MultiTableInheritanceApiTest(RevisionTestBase):
     def tearDown(self):
         super(MultiTableInheritanceApiTest, self).tearDown()
         del self.testchild1
+
+
+class ReversionTestModel1ChildProxy(ReversionTestModel1Child):
+    class Meta:
+        proxy = True
+
+
+class ProxyModelApiTest(RevisionTestBase):
+
+    def setUp(self):
+        super(ProxyModelApiTest, self).setUp()
+        reversion.register(ReversionTestModel1Proxy)
+        self.concrete = self.test11
+        self.proxy = ReversionTestModel1Proxy.objects.get(pk=self.concrete.pk)
+
+        with reversion.create_revision():
+            self.proxy.name = "proxy model"
+            self.proxy.save()
+
+    def testCanGetForObjectReference(self):
+        # Can get version for proxy model
+        proxy_versions = reversion.get_for_object_reference(ReversionTestModel1Proxy, self.proxy.id)
+        self.assertEqual(len(proxy_versions), 2)
+        self.assertEqual(proxy_versions[0].field_dict["name"], self.proxy.name)
+        self.assertEqual(proxy_versions[1].field_dict["name"], self.concrete.name)
+
+        # Can get the same version for concrete model
+        concrete_versions = reversion.get_for_object_reference(ReversionTestModel1, self.concrete.id)
+        self.assertEqual(list(concrete_versions), list(proxy_versions))
+
+    def testCanGetForObject(self):
+        # Can get version for proxy model
+        proxy_versions = reversion.get_for_object(self.proxy)
+        self.assertEqual(len(proxy_versions), 2)
+        self.assertEqual(proxy_versions[0].field_dict["name"], self.proxy.name)
+        self.assertEqual(proxy_versions[1].field_dict["name"], self.concrete.name)
+
+        # Can get the same version for concrete model
+        concrete_versions = reversion.get_for_object(self.concrete)
+        self.assertEqual(list(concrete_versions), list(proxy_versions))
+
+    def testCanRevertVersion(self):
+        self.assertEqual(ReversionTestModel1.objects.get(pk=self.concrete.pk).name, self.proxy.name)
+        reversion.get_for_object(self.proxy)[1].revert()
+        self.assertEqual(ReversionTestModel1.objects.get(pk=self.concrete.pk).name, self.concrete.name)
+
+    def testMultiTableInheritanceProxyModel(self):
+        reversion.register(ReversionTestModel1Child, follow=("reversiontestmodel1_ptr",))
+        reversion.register(ReversionTestModel1ChildProxy, follow=("reversiontestmodel1_ptr",))
+
+        with reversion.create_revision():
+            concrete = ReversionTestModel1Child.objects.create(name="modelchild1 instance1 version 1")
+
+        proxy = ReversionTestModel1ChildProxy.objects.get(pk=concrete.pk)
+        with reversion.create_revision():
+            proxy.name = "proxy model"
+            proxy.save()
+
+        proxy_versions = reversion.get_for_object(proxy)
+
+        self.assertEqual(proxy_versions[0].field_dict["name"], proxy.name)
+        self.assertEqual(proxy_versions[1].field_dict["name"], concrete.name)
 
 
 class FollowModelsTest(ReversionTestBase):
