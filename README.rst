@@ -1,3 +1,11 @@
+This fork of django-reversion was created to add support for proxy models.
+
+Proxy model support has been added, but received very limited testing.
+
+Versions cannot be retreived by proxy models, but if a proxy model is registered it will
+save versions using the associated concrete model.  Proxy models may be registered with 
+a different set of "follows" fields from the concrete model.
+
 django-reversion
 ================
 

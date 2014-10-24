@@ -56,16 +56,10 @@ class VersionAdmin(admin.ModelAdmin):
     
     def _autoregister(self, model, follow=None):
         """Registers a model with reversion, if required."""
-        if model._meta.proxy:
-            raise RegistrationError(
-                "{model} is a proxy model, and cannot be used with django-reversion, register the parent class ({model_parent}) instead.".format(  # noqa
-                    model=model.__name__,
-                    model_parent=', '.join(
-                        [x.__name__ for x in model._meta.parents.keys()])
-                ))
         if not self.revision_manager.is_registered(model):
             follow = follow or []
-            for parent_cls, field in model._meta.parents.items():
+            # Use model_meta.concrete_model to catch proxy models
+            for parent_cls, field in model._meta.concrete_model._meta.parents.items():
                 follow.append(field.name)
                 self._autoregister(parent_cls)
             self.revision_manager.register(model, follow=follow, format=self.reversion_format)
