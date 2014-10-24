@@ -58,26 +58,30 @@ class UTC(datetime.tzinfo):
 
 class RegistrationTest(TestCase):
 
-    def testRegistration(self):
+    def check_registration(self, test_model):
         # Register the model and test.
-        reversion.register(ReversionTestModel1)
-        self.assertTrue(reversion.is_registered(ReversionTestModel1))
-        self.assertRaises(RegistrationError, lambda: reversion.register(ReversionTestModel1))
-        self.assertTrue(ReversionTestModel1 in reversion.get_registered_models())
-        self.assertTrue(isinstance(reversion.get_adapter(ReversionTestModel1), reversion.VersionAdapter))
+        reversion.register(test_model)
+        self.assertTrue(reversion.is_registered(test_model))
+        self.assertRaises(RegistrationError, lambda: reversion.register(test_model))
+        self.assertTrue(test_model in reversion.get_registered_models())
+        self.assertTrue(isinstance(reversion.get_adapter(test_model), reversion.VersionAdapter))
+
+    def check_deregistration(self, test_model):
         # Unregister the model and text.
-        reversion.unregister(ReversionTestModel1)
-        self.assertFalse(reversion.is_registered(ReversionTestModel1))
-        self.assertRaises(RegistrationError, lambda: reversion.unregister(ReversionTestModel1))
-        self.assertTrue(ReversionTestModel1 not in reversion.get_registered_models())
-        self.assertRaises(RegistrationError, lambda: isinstance(reversion.get_adapter(ReversionTestModel1)))
+        reversion.unregister(test_model)
+        self.assertFalse(reversion.is_registered(test_model))
+        self.assertRaises(RegistrationError, lambda: reversion.unregister(test_model))
+        self.assertTrue(test_model not in reversion.get_registered_models())
+        self.assertRaises(RegistrationError, lambda: isinstance(reversion.get_adapter(test_model)))
+
+    def testRegistration(self):
+        self.check_registration(ReversionTestModel1)
+        self.check_deregistration(ReversionTestModel1)
 
     def testProxyRegistration(self):
-        # Test error if registering proxy models.
-        with self.assertRaises(RegistrationError) as cm:
-            reversion.register(ReversionTestModel1Proxy)
-        self.assertEqual(str(cm.exception),
-                         "ReversionTestModel1Proxy is a proxy model, and cannot be used with django-reversion, register the parent class (ReversionTestModel1) instead.")  # noqa
+        # Test ProxyModel registered as usual model
+        self.check_registration(ReversionTestModel1Proxy)
+        self.check_deregistration(ReversionTestModel1Proxy)
 
     def testDecorator(self):
         # Test the use of register as a decorator
@@ -226,12 +230,14 @@ class ApiTest(RevisionTestBase):
 
     def testRevisionSignals(self):
         pre_revision_receiver_called = []
+
         def pre_revision_receiver(**kwargs):
             self.assertEqual(kwargs["instances"], [self.test11])
             self.assertTrue(isinstance(kwargs["revision"], Revision))
             self.assertEqual(len(kwargs["versions"]), 1)
             pre_revision_receiver_called.append(True)
         post_revision_receiver_called = []
+
         def post_revision_receiver(**kwargs):
             self.assertEqual(kwargs["instances"], [self.test11])
             self.assertTrue(isinstance(kwargs["revision"], Revision))
