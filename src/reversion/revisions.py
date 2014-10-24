@@ -403,7 +403,8 @@ class RevisionManager(object):
         """Follows all relationships in the given set of objects."""
         followed = set()
         def _follow(obj, exclude_concrete):
-            if obj in followed or obj.pk is None or (obj.__class__, obj.pk) == exclude_concrete:
+            # Check the pk first because objects without a pk are not hashable
+            if obj.pk is None or obj in followed or (obj.__class__, obj.pk) == exclude_concrete:
                 return
             followed.add(obj)
             adapter = self.get_adapter(obj.__class__)
