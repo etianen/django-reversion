@@ -162,7 +162,9 @@ class Version(models.Model):
                 result[field.name] = field.value_from_object(obj)
             result.update(object_version.m2m_data)
             # Add parent data.
-            for parent_class, field in obj._meta.parents.items():
+            for parent_class, field in obj._meta.concrete_model._meta.parents.items():
+                if obj._meta.proxy and parent_class == obj._meta.concrete_model:
+                    continue
                 content_type = ContentType.objects.get_for_model(parent_class)
                 if field:
                     parent_id = force_text(getattr(obj, field.attname))
