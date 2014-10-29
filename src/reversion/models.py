@@ -95,6 +95,10 @@ class Revision(models.Model):
         """Returns a unicode representation."""
         return ", ".join(force_text(version) for version in self.version_set.all())
 
+    #Meta
+    class Meta:
+        app_label = 'reversion'
+
 
 def has_int_pk(model):
     """Tests whether the given model has an integer primary key."""
@@ -188,6 +192,10 @@ class Version(models.Model):
     def __str__(self):
         """Returns a unicode representation."""
         return self.object_repr
+
+    #Meta
+    class Meta:
+        app_label = 'reversion'
 
 
 # Version management signals.
