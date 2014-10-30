@@ -369,8 +369,9 @@ class RevisionManager(object):
         # Default to post_save if no signals are given
         if signals is None and eager_signals is None:
             signals = [post_save]
-        # Store eager signals for usage in the signal receiver
+        # Store signals for usage in the signal receiver
         self._eager_signals[model] = list(eager_signals or [])
+        self._signals[model] = list(signals or [])
         # Return a class decorator if model is not given
         if model is None:
             return partial(self.register, adapter_cls=adapter_cls, **field_overrides)
@@ -394,7 +395,7 @@ class RevisionManager(object):
         adapter_obj = adapter_cls(model)
         self._registered_models[self._registration_key_for_model(model)] = adapter_obj
         # Connect to the selected signals of the model.
-        all_signals = list(signals or []) + list(eager_signals or [])
+        all_signals = self._signals[model] + self._eager_signals[model]
         for signal in all_signals:
             signal.connect(self._signal_receiver, model)
         return model
@@ -407,17 +408,15 @@ class RevisionManager(object):
             model = model,
         ))
 
-    def unregister(self, model, signals=None):
+    def unregister(self, model):
         """Removes a model from version control."""
-        # Default to post_save if signals is not given
-        if signals is None:
-            signals = [post_save]
         if not self.is_registered(model):
             raise RegistrationError("{model} has not been registered with django-reversion".format(
                 model = model,
             ))
         del self._registered_models[self._registration_key_for_model(model)]
-        for signal in signals:
+        all_signals = self._signals[model] + self._eager_signals[model]
+        for signal in all_signals:
             signal.disconnect(self._signal_receiver, model)
 
     def _follow_relationships(self, objects):
