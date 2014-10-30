@@ -6,6 +6,7 @@ import operator, sys
 from functools import wraps, reduce, partial
 from threading import local
 from weakref import WeakValueDictionary
+import copy
 
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
@@ -335,6 +336,8 @@ class RevisionManager(object):
         self._manager_slug = manager_slug
         self._registered_models = {}
         self._revision_context_manager = revision_context_manager
+        self._eager_signals = {}
+        self._signals = {}
         # Proxies to common context methods.
         self._revision_context = revision_context_manager.create_revision()
 
@@ -362,8 +365,14 @@ class RevisionManager(object):
             in self._registered_models.keys()
         ]
 
-    def register(self, model=None, adapter_cls=VersionAdapter, **field_overrides):
+    def register(self, model=None, adapter_cls=VersionAdapter, signals=None, eager_signals=None, **field_overrides):
         """Registers a model with this revision manager."""
+        # Default to post_save if no signals are given
+        if signals is None and eager_signals is None:
+            signals = [post_save]
+        # Store signals for usage in the signal receiver
+        self._eager_signals[model] = list(eager_signals or [])
+        self._signals[model] = list(signals or [])
         # Return a class decorator if model is not given
         if model is None:
             return partial(self.register, adapter_cls=adapter_cls, **field_overrides)
@@ -378,8 +387,10 @@ class RevisionManager(object):
         # Perform the registration.
         adapter_obj = adapter_cls(model)
         self._registered_models[self._registration_key_for_model(model)] = adapter_obj
-        # Connect to the post save signal of the model.
-        post_save.connect(self._post_save_receiver, model)
+        # Connect to the selected signals of the model.
+        all_signals = self._signals[model] + self._eager_signals[model]
+        for signal in all_signals:
+            signal.connect(self._signal_receiver, model)
         return model
 
     def get_adapter(self, model):
@@ -397,7 +408,11 @@ class RevisionManager(object):
                 model = model,
             ))
         del self._registered_models[self._registration_key_for_model(model)]
-        post_save.disconnect(self._post_save_receiver, model)
+        all_signals = self._signals[model] + self._eager_signals[model]
+        for signal in all_signals:
+            signal.disconnect(self._signal_receiver, model)
+        del self._signals[model]
+        del self._eager_signals[model]
 
     def _follow_relationships(self, objects):
         """Follows all relationships in the given set of objects."""
@@ -582,12 +597,24 @@ class RevisionManager(object):
 
     # Signal receivers.
 
-    def _post_save_receiver(self, instance, **kwargs):
+    def _signal_receiver(self, instance, signal, **kwargs):
         """Adds registered models to the current revision, if any."""
         if self._revision_context_manager.is_active() and not self._revision_context_manager.is_managing_manually():
+            eager = signal in self._eager_signals[instance.__class__]
             adapter = self.get_adapter(instance.__class__)
-            version_data = lambda: adapter.get_version_data(instance, self._revision_context_manager._db)
-            self._revision_context_manager.add_to_context(self, instance, version_data)
+            if eager:
+                # pre_delete is a special case, because the instance will
+                # be modified by django right after this.
+                # don't use a lambda, but get the data out now.
+                version_data = adapter.get_version_data(instance, self._revision_context_manager._db)
+                self._revision_context_manager.add_to_context(self, copy.copy(instance), version_data)
+                for obj in self._follow_relationships([instance]):
+                    adapter = self.get_adapter(obj.__class__)
+                    version_data = adapter.get_version_data(obj, self._revision_context_manager._db)
+                    self._revision_context_manager.add_to_context(self, copy.copy(obj), version_data)
+            else:
+                version_data = lambda: adapter.get_version_data(instance, self._revision_context_manager._db)
+                self._revision_context_manager.add_to_context(self, instance, version_data)
 
 
 # A shared revision manager.

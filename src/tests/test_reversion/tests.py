@@ -21,6 +21,7 @@ except ImportError: # django < 1.5
 else:
     User = get_user_model()
 from django.utils.unittest import skipUnless
+from django.db.models.signals import pre_delete
 
 import reversion
 from reversion.revisions import RegistrationError, RevisionManager
@@ -29,6 +30,7 @@ from reversion.models import Revision, Version
 from test_reversion.models import (
     ReversionTestModel1,
     ReversionTestModel2,
+    ReversionTestModel3,
     TestFollowModel,
     ReversionTestModel1Proxy,
     RevisionMeta,
@@ -97,6 +99,24 @@ class RegistrationTest(TestCase):
             pass
         self.assertTrue(reversion.is_registered(DecoratorArgsModel))
 
+    def testEagerRegistration(self):
+        # Register the model and test.
+        reversion.register(ReversionTestModel3, eager_signals=[pre_delete])
+        self.assertTrue(reversion.is_registered(ReversionTestModel3))
+        self.assertRaises(RegistrationError, lambda: reversion.register(ReversionTestModel3, eager_signals=[pre_delete]))
+        self.assertTrue(ReversionTestModel3 in reversion.get_registered_models())
+        self.assertTrue(isinstance(reversion.get_adapter(ReversionTestModel3), reversion.VersionAdapter))
+        self.assertEquals([], reversion.default_revision_manager._signals[ReversionTestModel3])
+        self.assertEquals([pre_delete], reversion.default_revision_manager._eager_signals[ReversionTestModel3])
+        # Unregister the model and text.
+        reversion.unregister(ReversionTestModel3)
+        self.assertFalse(reversion.is_registered(ReversionTestModel3))
+        self.assertRaises(RegistrationError, lambda: reversion.unregister(ReversionTestModel3))
+        self.assertTrue(ReversionTestModel3 not in reversion.get_registered_models())
+        self.assertRaises(RegistrationError, lambda: isinstance(reversion.get_adapter(ReversionTestModel3)))
+        self.assertFalse(ReversionTestModel3 in reversion.default_revision_manager._signals)
+        self.assertFalse(ReversionTestModel3 in reversion.default_revision_manager._eager_signals)
+
 
 class ReversionTestBase(TestCase):
 
@@ -109,6 +129,7 @@ class ReversionTestBase(TestCase):
         # Register the test models.
         reversion.register(ReversionTestModel1)
         reversion.register(ReversionTestModel2)
+        reversion.register(ReversionTestModel3, eager_signals=[pre_delete])
         # Create some test data.
         self.test11 = ReversionTestModel1.objects.create(
             name = "model1 instance1 version1",
@@ -122,6 +143,12 @@ class ReversionTestBase(TestCase):
         self.test22 = ReversionTestModel2.objects.create(
             name = "model2 instance2 version1",
         )
+        self.test31 = ReversionTestModel3.objects.create(
+            name = "model3 instance1 version1",
+        )
+        self.test32 = ReversionTestModel3.objects.create(
+            name = "model3 instance2 version1",
+        )
         self.user = User.objects.create(
             username = "user1",
         )
@@ -130,14 +157,18 @@ class ReversionTestBase(TestCase):
         # Unregister the test models.
         reversion.unregister(ReversionTestModel1)
         reversion.unregister(ReversionTestModel2)
+        reversion.unregister(ReversionTestModel3)
         # Delete the test models.
         ReversionTestModel1.objects.all().delete()
         ReversionTestModel2.objects.all().delete()
+        ReversionTestModel3.objects.all().delete()
         User.objects.all().delete()
         del self.test11
         del self.test12
         del self.test21
         del self.test22
+        del self.test31
+        del self.test32
         del self.user
         # Delete the revisions index.
         Revision.objects.all().delete()
@@ -212,6 +243,12 @@ class InternalsTest(RevisionTestBase):
             pass
         self.assertEqual(Revision.objects.count(), 1)
         self.assertEqual(Version.objects.count(), 4)
+
+    def testRevisionCreatedOnDelete(self):
+        with reversion.create_revision():
+            self.test31.delete()
+        self.assertEqual(Revision.objects.count(), 2)
+        self.assertEqual(Version.objects.count(), 5)
 
 
 class ApiTest(RevisionTestBase):
@@ -600,8 +637,8 @@ class CreateInitialRevisionsTest(ReversionTestBase):
 
     def testCreateInitialRevisionsSpecificApps(self):
         call_command("createinitialrevisions", "test_reversion")
-        self.assertEqual(Revision.objects.count(), 4)
-        self.assertEqual(Version.objects.count(), 4)
+        self.assertEqual(Revision.objects.count(), 6)
+        self.assertEqual(Version.objects.count(), 6)
 
     def testCreateInitialRevisionsSpecificModels(self):
         call_command("createinitialrevisions", "test_reversion.ReversionTestModel1")

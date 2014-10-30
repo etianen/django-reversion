@@ -40,6 +40,12 @@ class ReversionTestModel2(ReversionTestModelBase):
     )
 
 
+class ReversionTestModel3(ReversionTestModelBase):
+
+    pass
+
+
+
 class TestFollowModel(ReversionTestModelBase):
 
     test_model_1 = models.ForeignKey(
