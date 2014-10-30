@@ -419,6 +419,8 @@ class RevisionManager(object):
         all_signals = self._signals[model] + self._eager_signals[model]
         for signal in all_signals:
             signal.disconnect(self._signal_receiver, model)
+        del self._signals[model]
+        del self._eager_signals[model]
 
     def _follow_relationships(self, objects):
         """Follows all relationships in the given set of objects."""
