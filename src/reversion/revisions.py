@@ -337,6 +337,7 @@ class RevisionManager(object):
         self._registered_models = {}
         self._revision_context_manager = revision_context_manager
         self._eager_signals = {}
+        self._signals = {}
         # Proxies to common context methods.
         self._revision_context = revision_context_manager.create_revision()
 
