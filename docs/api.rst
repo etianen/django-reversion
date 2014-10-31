@@ -229,6 +229,29 @@ By default, django-reversion will serialize model data using the ``'json'`` seri
 **Please note:** The named serializer must serialize model data to a utf-8 encoded character string. Please verify that your serializer is compatible before using it with django-reversion.
 
 
+Registering with custom signals
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+By default, django-reversion saves a new revision whenever a model is saved, using the `post_save` signal. However, sometimes you might need to create a revision on other signals too.
+
+::
+
+    from django.db.models.signals import post_save
+    from your_app.signals import custom_signal
+
+    reversion.register(YourModel, signals=[post_save, custom_signal])
+
+By default, revision data is serialized at the end of the `reversion.create_revision()` block, allowing foreign key references to be updated in the same block before the revision data is prepared. However, in some cases you might want to serialize the revision data immediately, such as times when the model is shortly going to be deleted.
+
+::
+
+    from django.db.models.signals import post_save, pre_delete
+
+    reversion.register(YourModel, signals=[post_save], eager_signals=[pre_delete])
+
+**Important:** Creating revisions using the `pre_delete` signal is not recommended, as it alters the semantics of revision recovery. Only do this if you have a good understanding of the django-reversion internals.
+
+
 Really advanced registration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
