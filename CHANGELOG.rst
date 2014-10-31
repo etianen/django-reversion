@@ -2,6 +2,14 @@ django-reversion changelog
 ==========================
 
 
+1.8.5 - 31/10/2014
+------------------
+
+- Added support for proxy models (@AgDude, @bourivouh).
+- Allowing registration of models with django-reversion using custom signals (@ErwinJunge).
+- Fixing some Django deprecation warnings (@skipp, @narrowfail).
+
+
 1.8.4 - 07/09/2014
 ------------------
 
