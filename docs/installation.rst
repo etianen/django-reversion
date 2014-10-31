@@ -29,5 +29,5 @@ Using Git to install django-reversion provides an easy way of upgrading your ins
 
     $ git clone git://github.com/etianen/django-reversion.git
     $ cd django-reversion.git
-    $ git checkout release-1.8.4
+    $ git checkout release-1.8.5
     $ ln -s src/reversion /your/pythonpath/location/reversion
