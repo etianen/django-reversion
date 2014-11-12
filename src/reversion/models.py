@@ -11,8 +11,10 @@ from django.db import models, IntegrityError
 from django.dispatch.dispatcher import Signal
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text, python_2_unicode_compatible
+from django.db import transaction
 
 
+@transaction.atomic()
 def safe_revert(versions):
     """
     Attempts to revert the given models contained in the give versions.
@@ -187,7 +189,12 @@ class Version(models.Model):
 
     def revert(self):
         """Recovers the model in this version."""
-        self.object_version.save()
+        object_version = self.object_version
+        try:
+            with transaction.atomic():
+                object_version.save()
+        except IntegrityError:
+            object_version.object.save()
 
     def __str__(self):
         """Returns a unicode representation."""
