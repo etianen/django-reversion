@@ -195,6 +195,7 @@ class Version(models.Model):
                 object_version.save()
         except IntegrityError:
             object_version.object.save()
+            object_version.save()
 
     def __str__(self):
         """Returns a unicode representation."""
