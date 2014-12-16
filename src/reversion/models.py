@@ -46,7 +46,7 @@ class Revision(models.Model):
     """A group of related object versions."""
 
     manager_slug = models.CharField(
-        max_length = 200,
+        max_length = 191,
         db_index = True,
         default = "default",
     )
