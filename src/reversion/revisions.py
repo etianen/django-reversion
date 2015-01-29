@@ -490,11 +490,11 @@ class RevisionManager(object):
                     # Save version models.
                     for version in new_versions:
                         version.revision = revision
-                    Version.objects.using(db).bulk_create(new_versions)
+                        version.save()
                     # Save the meta information.
                     for cls, kwargs in meta:
                         cls._default_manager.db_manager(db).create(revision=revision, **kwargs)
-                # Send the pre_revision_commit signal.
+                # Send the post_revision_commit signal.
                 post_revision_commit.send(self,
                     instances = ordered_objects,
                     revision = revision,
