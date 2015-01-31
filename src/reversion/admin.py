@@ -286,7 +286,7 @@ class VersionAdmin(admin.ModelAdmin):
                     prefix = "%s-%s" % (prefix, prefixes[prefix])
                 formset = FormSet(request.POST, request.FILES,
                                   instance=new_object, prefix=prefix,
-                                  queryset=inline.queryset(request))
+                                  queryset=inline.get_queryset(request))
                 self._hack_inline_formset_initial(inline, FormSet, formset, obj, version, revert, recover)
                 # Add this hacked formset to the form.
                 formsets.append(formset)
@@ -326,7 +326,7 @@ class VersionAdmin(admin.ModelAdmin):
                 if prefixes[prefix] != 1:
                     prefix = "%s-%s" % (prefix, prefixes[prefix])
                 formset = FormSet(instance=obj, prefix=prefix,
-                                  queryset=inline.queryset(request))
+                                  queryset=inline.get_queryset(request))
                 self._hack_inline_formset_initial(inline, FormSet, formset, obj, version, revert, recover)
                 # Add this hacked formset to the form.
                 formsets.append(formset)
