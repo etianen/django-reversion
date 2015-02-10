@@ -3,7 +3,7 @@
 from __future__ import unicode_literals
 
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.conf import settings
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
@@ -134,7 +134,7 @@ class Version(models.Model):
                                      help_text="Content type of the model under version control.")
 
     # A link to the current instance, not the version stored in this Version!
-    object = generic.GenericForeignKey()
+    object = GenericForeignKey()
 
     format = models.CharField(max_length=255,
                               help_text="The serialization format used by this model.")
