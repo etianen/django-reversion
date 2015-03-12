@@ -9,7 +9,7 @@ from django.db import models, transaction, connection
 from django.conf.urls import patterns, url
 from django.contrib import admin
 from django.contrib.admin import helpers, options
-from django.contrib.admin.util import unquote, quote
+from django.contrib.admin.utils import unquote, quote
 from django.contrib.contenttypes.generic import GenericInlineModelAdmin, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.urlresolvers import reverse
