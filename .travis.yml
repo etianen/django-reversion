@@ -6,13 +6,8 @@ python:
   - 3.3
   - 3.4
 env:
-  - DJANGO=django==1.6
-  - DJANGO=django==1.6.1
-  - DJANGO=django==1.6.2
-  - DJANGO=django==1.6.3
-  - DJANGO=django==1.6.4
-  - DJANGO=django==1.6.5
-  - DJANGO=django==1.7
+  - DJANGO=django==1.7.7
+  - DJANGO=django==1.8
 matrix:
   exclude:
     - python: 2.6
