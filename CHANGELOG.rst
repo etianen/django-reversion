@@ -2,6 +2,14 @@ django-reversion changelog
 ==========================
 
 
+1.8.6 - 13/04/2015
+------------------
+
+- Support for MySQL utf8mb4 (@alexhayes).
+- Fixing some Django deprecation warnings (Drew Hubl, @khakulov, @adonm).
+- Versions passed through by reversion.post_revision_commit now contain a primary key (@joelarson).
+
+
 1.8.5 - 31/10/2014
 ------------------
 
