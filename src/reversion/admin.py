@@ -13,7 +13,10 @@ try:
     from django.contrib.admin.utils import unquote, quote
 except ImportError:  # Django < 1.7
     from django.contrib.admin.util import unquote, quote
-from django.contrib.contenttypes.generic import GenericInlineModelAdmin, GenericRelation
+try:    
+    from django.contrib.contenttypes.generic import GenericInlineModelAdmin, GenericRelation
+except ImportError:  # Django < 1.9
+    from django.contrib.contenttypes.admin import GenericInlineModelAdmin, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.urlresolvers import reverse
 from django.forms.formsets import all_valid
