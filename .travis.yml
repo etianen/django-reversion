@@ -1,12 +1,25 @@
 language: python
 python:
+  - 2.6
   - 2.7
   - 3.2
   - 3.3
   - 3.4
 env:
+  - DJANGO=django==1.6.11
   - DJANGO=django==1.7.7
-  - DJANGO=django==1.8
+  - DJANGO=django==1.8.1
+exclude:
+    - python: 2.6
+      env: DJANGO=django==1.7.7
+    - python: 2.6
+      env: DJANGO=django==1.8.1
+    - python: 3.2
+      env: DJANGO=django==1.6.11
+    - python: 3.3
+      env: DJANGO=django==1.6.11
+    - python: 3.4
+      env: DJANGO=django==1.6.11
 matrix:
   fast_finish: true
 install:
