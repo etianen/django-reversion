@@ -9,7 +9,8 @@ env:
   - DJANGO=django==1.6.11
   - DJANGO=django==1.7.7
   - DJANGO=django==1.8.1
-exclude:
+matrix:
+  exclude:
     - python: 2.6
       env: DJANGO=django==1.7.7
     - python: 2.6
@@ -20,7 +21,6 @@ exclude:
       env: DJANGO=django==1.6.11
     - python: 3.4
       env: DJANGO=django==1.6.11
-matrix:
   fast_finish: true
 install:
   - travis_retry pip install $DJANGO
