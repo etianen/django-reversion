@@ -195,6 +195,10 @@ Examples:
 
         # Ask confirmation
         if confirmation:
+            try:
+                raw_input = raw_input
+            except NameError:
+                raw_input = input
             choice = raw_input("Are you sure you want to delete theses revisions? [y|N] ")
             if choice.lower() != "y":
                 print("Aborting revision deletion.")
