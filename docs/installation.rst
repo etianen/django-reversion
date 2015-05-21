@@ -5,6 +5,8 @@ Installation methods
 
 **Note:** It is recommended that you always use the latest release of django-reversion with the latest release of Django. If you are using an older version of Django, then please check out the :ref:`Compatible Django Versions <django-versions>` page for more information.
 
+For information on configuring django-reversion, see the :ref:`getting started <index>` guide.
+
 
 pip
 ---
