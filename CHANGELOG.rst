@@ -2,6 +2,15 @@ django-reversion changelog
 ==========================
 
 
+1.8.7 - 21/05/2015
+------------------
+
+- Fixing deleterevisions command on Python 3 (@davidfsmith).
+- Fixing Django 1.6 compatibility (@etianen).
+- Removing some Django 1.9 deprecation warnings (@BATCOH, @niknokseyer).
+- Minor tweaks (@nikolas, @etianen).
+
+
 1.8.6 - 13/04/2015
 ------------------
 
