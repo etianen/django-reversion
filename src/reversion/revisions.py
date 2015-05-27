@@ -8,12 +8,17 @@ from threading import local
 from weakref import WeakValueDictionary
 import copy
 
+try:
+    from django.apps.apps import get_model
+except ImportError:  # For Django < 1.7
+    from django.db.models import get_model
+
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.signals import request_finished
 from django.db import models, connection, transaction
-from django.db.models import Q, Max, get_model
+from django.db.models import Q, Max
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save
 from django.utils.encoding import force_text

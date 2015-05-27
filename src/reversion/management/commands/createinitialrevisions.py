@@ -1,14 +1,22 @@
-from __future__ import unicode_literals, print_function
+from __future__ import unicode_literals
 
 from optparse import make_option
+try:
+    from collections import OrderedDict
+except ImportError:  # For Python 2.6
+    from django.utils.datastructures import SortedDict as OrderedDict
+
+try:
+    from django.apps.apps import get_app, get_apps, get_model, get_models
+except ImportError:  # For Django < 1.7
+    from django.db.models import get_app, get_apps, get_model, get_models
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 from django.contrib.contenttypes.models import ContentType
-from django.db import models, reset_queries
+from django.db import reset_queries
 from django.utils.importlib import import_module
-from django.utils.datastructures import SortedDict
 from django.utils.encoding import force_text
 
 from reversion import default_revision_manager
@@ -46,13 +54,13 @@ class Command(BaseCommand):
         database = options.get('database')
 
         verbosity = int(options.get("verbosity", 1))
-        app_list = SortedDict()
+        app_list = OrderedDict()
         # if no apps given, use all installed.
         if len(app_labels) == 0:
-            for app in models.get_apps ():
+            for app in get_apps():
                 if not app in app_list:
                     app_list[app] = []
-                for model_class in models.get_models(app):
+                for model_class in get_models(app):
                     if not model_class in app_list[app]:
                         app_list[app].append(model_class)
         else:
@@ -60,11 +68,11 @@ class Command(BaseCommand):
                 try:
                     app_label, model_label = label.split(".")
                     try:
-                        app = models.get_app(app_label)
+                        app = get_app(app_label)
                     except ImproperlyConfigured:
                         raise CommandError("Unknown application: %s" % app_label)
 
-                    model_class = models.get_model(app_label, model_label)
+                    model_class = get_model(app_label, model_label)
                     if model_class is None:
                         raise CommandError("Unknown model: %s.%s" % (app_label, model_label))
                     if app in app_list:
@@ -76,10 +84,10 @@ class Command(BaseCommand):
                     # This is just an app - no model qualifier.
                     app_label = label
                     try:
-                        app = models.get_app(app_label)
+                        app = get_app(app_label)
                         if not app in app_list:
                             app_list[app] = []
-                        for model_class in models.get_models(app):
+                        for model_class in get_models(app):
                             if not model_class in app_list[app]:
                                 app_list[app].append(model_class)
                     except ImproperlyConfigured:
