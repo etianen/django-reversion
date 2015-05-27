@@ -174,7 +174,7 @@ class RevisionContextManager(local):
                                 (obj, callable(data) and data() or data)
                                 for obj, data
                                 in manager_context.items()
-                                if obj.pk
+                                if obj.pk is not None
                             ),
                             user = self._user,
                             comment = self._comment,
