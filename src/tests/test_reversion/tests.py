@@ -250,6 +250,14 @@ class InternalsTest(RevisionTestBase):
         self.assertEqual(Revision.objects.count(), 2)
         self.assertEqual(Version.objects.count(), 5)
 
+    def testNoVersionForObjectCreatedAndDeleted(self):
+        with reversion.create_revision():
+            new_object = ReversionTestModel1.objects.create()
+            new_object.delete()
+        # No Revision and no Version should have been created.
+        self.assertEqual(Revision.objects.count(), 1)
+        self.assertEqual(Version.objects.count(), 4)
+
 
 class ApiTest(RevisionTestBase):
 
