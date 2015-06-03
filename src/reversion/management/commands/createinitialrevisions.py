@@ -13,7 +13,7 @@ except ImportError:  # For Django < 1.7
 
 try:
     from importlib import import_module
-else:  # For Django < 1.8
+except ImportError:  # For Django < 1.8
     from django.utils.importlib import import_module
 
 from django.core.exceptions import ImproperlyConfigured
