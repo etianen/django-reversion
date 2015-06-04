@@ -11,12 +11,16 @@ try:
 except ImportError:  # For Django < 1.7
     from django.db.models import get_app, get_apps, get_model, get_models
 
+try:
+    from importlib import import_module
+except ImportError:  # For Django < 1.8
+    from django.utils.importlib import import_module
+
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 from django.contrib.contenttypes.models import ContentType
 from django.db import reset_queries
-from django.utils.importlib import import_module
 from django.utils.encoding import force_text
 
 from reversion import default_revision_manager
