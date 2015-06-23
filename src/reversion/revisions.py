@@ -331,7 +331,8 @@ class RevisionManager(object):
             return cls._created_managers[manager_slug]
         raise RegistrationError("No revision manager exists with the slug %r" % manager_slug)
 
-    def __init__(self, manager_slug, revision_context_manager=revision_context_manager):
+    def __init__(self, manager_slug, adapter_cls=VersionAdapter,
+                 revision_context_manager=revision_context_manager):
         """Initializes the revision manager."""
         # Check the slug is unique for this revision manager.
         if manager_slug in RevisionManager._created_managers:
@@ -341,6 +342,7 @@ class RevisionManager(object):
         # Store config params.
         self._manager_slug = manager_slug
         self._registered_models = {}
+        self._adapter_cls = adapter_cls
         self._revision_context_manager = revision_context_manager
         self._eager_signals = {}
         self._signals = {}
@@ -371,8 +373,11 @@ class RevisionManager(object):
             in self._registered_models.keys()
         ]
 
-    def register(self, model=None, adapter_cls=VersionAdapter, signals=None, eager_signals=None, **field_overrides):
+    def register(self, model=None, adapter_cls=None, signals=None, eager_signals=None, **field_overrides):
         """Registers a model with this revision manager."""
+        # Use default adapter class unless overridden in this method call
+        if adapter_cls is None:
+            adapter_cls = self._adapter_cls
         # Default to post_save if no signals are given
         if signals is None and eager_signals is None:
             signals = [post_save]

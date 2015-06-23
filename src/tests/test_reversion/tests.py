@@ -117,6 +117,35 @@ class RegistrationTest(TestCase):
         self.assertFalse(ReversionTestModel3 in reversion.default_revision_manager._signals)
         self.assertFalse(ReversionTestModel3 in reversion.default_revision_manager._eager_signals)
 
+    def testRevisionManagerDefaultAdapter(self):
+        # Default adapter is used unless overridden
+        class TestModel1(models.Model):
+            pass
+        reversion.register(TestModel1)
+        self.assertTrue(reversion.is_registered(TestModel1))
+        self.assertEqual(reversion.VersionAdapter,
+                         reversion.get_adapter(TestModel1).__class__)
+        # Can specify default adapter for a revision manager class
+        class CustomVersionAdapter1(reversion.VersionAdapter):
+            pass
+        class TestModel2(models.Model):
+            pass
+        rev_manager = RevisionManager("test-manager-1",
+                                      adapter_cls=CustomVersionAdapter1)
+        rev_manager.register(TestModel2)
+        self.assertTrue(rev_manager.is_registered(TestModel2))
+        self.assertEqual(CustomVersionAdapter1,
+                         rev_manager.get_adapter(TestModel2).__class__)
+        # Can override revision manager's default adapter on `register` call
+        class CustomVersionAdapter2(reversion.VersionAdapter):
+            pass
+        class TestModel3(models.Model):
+            pass
+        rev_manager.register(TestModel3, adapter_cls=CustomVersionAdapter2)
+        self.assertTrue(rev_manager.is_registered(TestModel3))
+        self.assertEqual(CustomVersionAdapter2,
+                         rev_manager.get_adapter(TestModel3).__class__)
+
 
 class ReversionTestBase(TestCase):
 
