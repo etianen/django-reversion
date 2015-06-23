@@ -24,7 +24,11 @@ from django.utils.unittest import skipUnless
 from django.db.models.signals import pre_delete
 
 import reversion
-from reversion.revisions import RegistrationError, RevisionManager
+from reversion.revisions import (
+    RegistrationError,
+    RevisionManager,
+    AutoRegisterRevisionManager,
+)
 from reversion.models import Revision, Version
 
 from test_reversion.models import (
@@ -32,6 +36,8 @@ from test_reversion.models import (
     ReversionTestModel2,
     ReversionTestModel3,
     TestFollowModel,
+    TestAutoRegisterChild,
+    TestAutoRegisterParent,
     ReversionTestModel1Proxy,
     RevisionMeta,
     ParentTestAdminModel,
@@ -656,6 +662,60 @@ class ExcludedFieldsTest(RevisionTestBase):
         super(ExcludedFieldsTest, self).tearDown()
         excluded_revision_manager.unregister(ReversionTestModel1)
         excluded_revision_manager.unregister(ReversionTestModel2)
+
+
+autoreg_manager = AutoRegisterRevisionManager("auto-reg")
+
+
+class AutoRegisterRevisionManagerTest(TestCase):
+
+    def setUp(self):
+        super(AutoRegisterRevisionManagerTest, self).setUp()
+        self.child_1 = TestAutoRegisterChild.objects.create(name="Child 1")
+        self.child_2 = TestAutoRegisterChild.objects.create(name="Child 2")
+
+    def testAutoRegisterFollowedRelationsViaForeignKey(self):
+        parent = TestAutoRegisterParent(name="Parent", child=self.child_1)
+        # Explicitly register TestAutoRegisterParent, not TestAutoRegisterChild
+        autoreg_manager.register(
+            TestAutoRegisterParent, follow=("child",))
+        self.assertTrue(
+            autoreg_manager.is_registered(TestAutoRegisterParent))
+        # TestAutoRegisterChild is not yet registered
+        self.assertFalse(
+            autoreg_manager.is_registered(TestAutoRegisterChild))
+        # Trigger a follow by saving revision
+        with reversion.create_revision():
+            # Save succeeds because TestAutoRegisterChild is auto-registered
+            parent.save()
+        # TestAutoRegisterChild has been auto-registered
+        self.assertTrue(
+            autoreg_manager.is_registered(TestAutoRegisterChild))
+
+    def testAutoRegisterFollowedRelationsViaManyToMany(self):
+        parent = TestAutoRegisterParent.objects.create(name="Parent")
+        parent.children.add(self.child_1, self.child_2)
+        # TestAutoRegisterParent is registerd, not TestAutoRegisterChild
+        autoreg_manager.register(
+            TestAutoRegisterParent, follow=("children",))
+        self.assertTrue(
+            autoreg_manager.is_registered(TestAutoRegisterParent))
+        self.assertFalse(
+            autoreg_manager.is_registered(TestAutoRegisterChild))
+        # Trigger a many-to-many follow by saving revision
+        with reversion.create_revision():
+            parent.save()
+        # Models have been auto-registered
+        self.assertTrue(
+            autoreg_manager.is_registered(TestAutoRegisterParent))
+        self.assertTrue(
+            autoreg_manager.is_registered(TestAutoRegisterChild))
+
+    def tearDown(self):
+        autoreg_manager.unregister(TestAutoRegisterParent)
+        autoreg_manager.unregister(TestAutoRegisterChild)
+        TestAutoRegisterParent.objects.all().delete()
+        super(AutoRegisterRevisionManagerTest, self).tearDown()
 
 
 class CreateInitialRevisionsTest(ReversionTestBase):

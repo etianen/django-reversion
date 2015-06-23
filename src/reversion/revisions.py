@@ -7,6 +7,7 @@ from functools import wraps, reduce, partial
 from threading import local
 from weakref import WeakValueDictionary
 import copy
+import logging
 
 try:
     from django.apps.apps import get_model
@@ -24,6 +25,9 @@ from django.db.models.signals import post_save
 from django.utils.encoding import force_text
 
 from reversion.models import Revision, Version, has_int_pk, pre_revision_commit, post_revision_commit
+
+
+logger = logging.getLogger(__name__)
 
 
 class VersionAdapter(object):
@@ -626,6 +630,35 @@ class RevisionManager(object):
             else:
                 version_data = lambda: adapter.get_version_data(instance, self._revision_context_manager._db)
                 self._revision_context_manager.add_to_context(self, instance, version_data)
+
+
+class AutoRegisterRevisionManager(RevisionManager):
+    """
+    Revision manager that automatically registers previously unregistered model
+    classes as it encounters them, so we can `follow` any object relationships
+    without needing to pre-register classes that might be traversed.
+    This is mainly useful for CMSes where there may be a complex object
+    relationship model and a set of content types that can grow over time.
+    """
+
+    def get_adapter(self, model):
+        """
+        Try to automatically register any unregistered models we visit.
+        """
+        try:
+            super(AutoRegisterRevisionManager, self).get_adapter(model)
+        except RegistrationError:
+            exc_info = sys.exc_info()  # Remember original exception
+            try:
+                self.register(model)
+                logger.debug("Auto-registered model %r" % model)
+            except Exception, ex:
+                # Log auto-registration error to aid debugging, but...
+                logger.warn("Failed to auto-register model %r: %s" % (model, ex))
+                # ... re-raise the original exception for clarity.
+                raise exc_info[0], exc_info[1], exc_info[2]
+
+        return super(AutoRegisterRevisionManager, self).get_adapter(model)
 
 
 # A shared revision manager.
