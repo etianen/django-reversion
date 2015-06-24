@@ -6,6 +6,7 @@ from functools import partial
 
 from django import template
 from django.db import models, transaction, connection
+from django.conf import settings
 from django.conf.urls import patterns, url
 from django.contrib import admin
 from django.contrib.admin import helpers, options
@@ -270,45 +271,59 @@ class VersionAdmin(admin.ModelAdmin):
         ModelForm = self.get_form(request, obj)
         formsets = []
         if request.method == "POST":
+            was_reverted = False
+
+            # If configured to restore exact version data, do so without
+            # processing any submitted form data which may have been altered...
+            if getattr(settings, 'REVERSION_ADMIN_STRICT_REVERT', False):
+                version.revision.revert(delete=True)
+                new_object = model.objects.get(pk=object_id)
+                was_reverted = True
+
+            # ...otherwise restore version data based on submitted form fields.
             # This section is copied directly from the model admin change view
             # method.  Maybe one day there will be a hook for doing this better.
-            form = ModelForm(request.POST, request.FILES, instance=obj, initial=self.get_revision_form_data(request, obj, version))
-            if form.is_valid():
-                form_validated = True
-                new_object = self.save_form(request, form, change=True)
-                # HACK: If the value of a file field is None, remove the file from the model.
-                for field in new_object._meta.fields:
-                    if isinstance(field, models.FileField) and field.name in form.cleaned_data and form.cleaned_data[field.name] is None:
-                        setattr(new_object, field.name, None)
             else:
-                form_validated = False
-                new_object = obj
-            prefixes = {}
-
-            for FormSet, inline in zip(self.get_formsets(request, new_object),
-                                       self.get_inline_instances(request)):
-                prefix = FormSet.get_default_prefix()
-                prefixes[prefix] = prefixes.get(prefix, 0) + 1
-                if prefixes[prefix] != 1:
-                    prefix = "%s-%s" % (prefix, prefixes[prefix])
-                formset = FormSet(request.POST, request.FILES,
-                                  instance=new_object, prefix=prefix,
-                                  queryset=inline.get_queryset(request))
-                self._hack_inline_formset_initial(inline, FormSet, formset, obj, version, revert, recover)
-                # Add this hacked formset to the form.
-                formsets.append(formset)
-            if all_valid(formsets) and form_validated:
-                self.save_model(request, new_object, form, change=True)
-                form.save_m2m()
-                for formset in formsets:
+                form = ModelForm(request.POST, request.FILES, instance=obj, initial=self.get_revision_form_data(request, obj, version))
+                if form.is_valid():
+                    form_validated = True
+                    new_object = self.save_form(request, form, change=True)
                     # HACK: If the value of a file field is None, remove the file from the model.
-                    related_objects = formset.save(commit=False)
-                    for related_obj, related_form in zip(related_objects, formset.saved_forms):
-                        for field in related_obj._meta.fields:
-                            if isinstance(field, models.FileField) and field.name in related_form.cleaned_data and related_form.cleaned_data[field.name] is None:
-                                setattr(related_obj, field.name, None)
-                        related_obj.save()
-                    formset.save_m2m()
+                    for field in new_object._meta.fields:
+                        if isinstance(field, models.FileField) and field.name in form.cleaned_data and form.cleaned_data[field.name] is None:
+                            setattr(new_object, field.name, None)
+                else:
+                    form_validated = False
+                    new_object = obj
+                prefixes = {}
+
+                for FormSet, inline in zip(self.get_formsets(request, new_object),
+                                        self.get_inline_instances(request)):
+                    prefix = FormSet.get_default_prefix()
+                    prefixes[prefix] = prefixes.get(prefix, 0) + 1
+                    if prefixes[prefix] != 1:
+                        prefix = "%s-%s" % (prefix, prefixes[prefix])
+                    formset = FormSet(request.POST, request.FILES,
+                                    instance=new_object, prefix=prefix,
+                                    queryset=inline.get_queryset(request))
+                    self._hack_inline_formset_initial(inline, FormSet, formset, obj, version, revert, recover)
+                    # Add this hacked formset to the form.
+                    formsets.append(formset)
+                if all_valid(formsets) and form_validated:
+                    self.save_model(request, new_object, form, change=True)
+                    form.save_m2m()
+                    for formset in formsets:
+                        # HACK: If the value of a file field is None, remove the file from the model.
+                        related_objects = formset.save(commit=False)
+                        for related_obj, related_form in zip(related_objects, formset.saved_forms):
+                            for field in related_obj._meta.fields:
+                                if isinstance(field, models.FileField) and field.name in related_form.cleaned_data and related_form.cleaned_data[field.name] is None:
+                                    setattr(related_obj, field.name, None)
+                            related_obj.save()
+                        formset.save_m2m()
+                    was_reverted = True
+
+            if was_reverted:
                 change_message = _("Reverted to previous version, saved on %(datetime)s") % {"datetime": localize(version.revision.date_created)}
                 self.log_change(request, new_object, change_message)
                 self.message_user(request, _('The %(model)s "%(name)s" was reverted successfully. You may edit it again below.') % {"model": force_text(opts.verbose_name), "name": force_text(obj)})

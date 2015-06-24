@@ -754,10 +754,10 @@ class VersionAdminTest(TestCase):
         response = self.client.get("/admin/test_reversion/childtestadminmodel/%s/history/" % obj_pk)
         self.assertContains(response, "child instance1 version2")
         self.assertContains(response, "child instance1 version1")
-        # Check that a version can be rolled back.
+        # Check that a version can be rolled back with modified data
         response = self.client.post("/admin/test_reversion/childtestadminmodel/%s/history/%s/" % (obj_pk, versions[1].pk), {
-            "parent_name": "parent instance1 version3",
-            "child_name": "child instance1 version3",
+            "parent_name": "parent instance1 version3",  # name differs from version data
+            "child_name": "child instance1 version3",  # name differs from version data
         })
         self.assertEqual(response.status_code, 302)
         # Check that a version is created.
@@ -765,6 +765,23 @@ class VersionAdminTest(TestCase):
         self.assertEqual(versions.count(), 3)
         self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version3")
         self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version3")
+        # Check that a version can be rolled back with no data modification allowed
+        with self.settings(REVERSION_ADMIN_STRICT_REVERT=True):
+            response = self.client.post("/admin/test_reversion/childtestadminmodel/%s/history/%s/" % (obj_pk, versions[0].pk), {
+                "parent_name": "parent instance1 version4",  # name differs from version data
+                "child_name": "child instance1 version4",  # name differs from version data
+            })
+            self.assertEqual(response.status_code, 302)
+        # Check that a version is created and data is unmodified despite
+        # differences in submitted form data.
+        versions = reversion.get_for_object(obj)
+        self.assertEqual(versions.count(), 4)
+        self.assertEqual(versions[0].field_dict["parent_name"],
+                         # Name is unchanged from reverted version, not "version4"
+                         "parent instance1 version3")
+        self.assertEqual(versions[0].field_dict["child_name"],
+                         # Name is unchanged from reverted version, not "version4"
+                         "child instance1 version3")
         # Check that a deleted version can be viewed.
         obj.delete()
         response = self.client.get("/admin/test_reversion/childtestadminmodel/recover/")
