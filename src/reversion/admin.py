@@ -276,7 +276,18 @@ class VersionAdmin(admin.ModelAdmin):
             # If configured to restore exact version data, do so without
             # processing any submitted form data which may have been altered...
             if getattr(settings, 'REVERSION_ADMIN_STRICT_REVERT', False):
-                version.revision.revert(delete=True)
+                if getattr(settings,
+                           'REVERSION_ADMIN_STRICT_REVERT_WITH_PRE_DELETE',
+                           False):
+                    # Brutal hack to remove obsolete relationships from the
+                    # current in-database object by deleting the entire object.
+                    # This is necessary in cases where the versioned object
+                    # graph is too complex for reversion's inbuilt
+                    # delete-on-revert feature to handle.
+                    obj.delete()
+                    version.revision.revert()
+                else:
+                    version.revision.revert(delete=True)
                 new_object = model.objects.get(pk=object_id)
                 was_reverted = True
 
