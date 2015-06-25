@@ -279,12 +279,13 @@ class VersionAdmin(admin.ModelAdmin):
         # Generate the model form.
         ModelForm = self.get_form(request, obj)
         formsets = []
+        is_strict_revert = getattr(settings, 'REVERSION_ADMIN_STRICT_REVERT', False)
         if request.method == "POST":
             was_reverted = False
 
             # If configured to restore exact version data, do so without
             # processing any submitted form data which may have been altered...
-            if getattr(settings, 'REVERSION_ADMIN_STRICT_REVERT', False):
+            if is_strict_revert:
                 self._perform_strict_revert(request, obj, version, context,
                                             revert=revert, recover=recover)
                 new_object = model.objects.get(pk=object_id)
@@ -390,6 +391,7 @@ class VersionAdmin(admin.ModelAdmin):
                         "change": True,
                         "revert": revert,
                         "recover": recover,
+                        "is_strict_revert": is_strict_revert,
                         "has_add_permission": self.has_add_permission(request),
                         "has_change_permission": self.has_change_permission(request, obj),
                         "has_delete_permission": self.has_delete_permission(request, obj),
