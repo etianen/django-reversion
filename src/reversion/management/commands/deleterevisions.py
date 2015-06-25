@@ -195,11 +195,17 @@ Examples:
 
         # Ask confirmation
         if confirmation:
+            prompt = "Are you sure you want to delete theses revisions? [y|N] "
             try:
-                raw_input = raw_input
+                # Use `raw_input` function in Python 2
+                choice = raw_input(prompt)
             except NameError:
-                raw_input = input
-            choice = raw_input("Are you sure you want to delete theses revisions? [y|N] ")
+                # If `raw_input` function is not available we are probably in
+                # Python 3, in which the function was renamed `input`:
+                # https://www.python.org/dev/peps/pep-3111/
+                # NOTE: We really don't want to end up here in Python 2, as
+                # input() would then eval the user input as Python code.
+                choice = input(prompt)
             if choice.lower() != "y":
                 print("Aborting revision deletion.")
                 return
