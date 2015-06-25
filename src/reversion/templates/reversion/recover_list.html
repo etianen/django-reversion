@@ -26,10 +26,12 @@
                     </thead>
                     <tbody>
                         {% for deletion in deleted %}
+                            {% with ct_id=deletion.field_dict.polymorphic_ctype %}
                             <tr>
-                                <th scope="row"><a href="{{deletion.pk|unlocalize}}/">{{deletion.revision.date_created}}</a></th>
+                                <th scope="row"><a href="{{deletion.pk|unlocalize}}/{% if ct_id %}?ct_id={{ct_id}}{% endif %}">{{deletion.revision.date_created}}</a></th>
                                 <td>{{deletion.object_repr}}</td>
                             </tr>
+                            {% endwith %}
                         {% endfor %}
                     </tbody>
                 </table>
