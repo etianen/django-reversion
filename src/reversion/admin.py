@@ -261,6 +261,15 @@ class VersionAdmin(admin.ModelAdmin):
         def total_form_count_hack(count):
             return lambda: count
         formset.total_form_count = total_form_count_hack(len(initial))
+
+    def _perform_strict_revert(self, request, obj, version, context, revert=False, recover=False):
+        """
+        Perform strict revert of version. This is implemented as a method to
+        allow for easy override in subclasses for situations where the
+        versioned object graph is too complex for reversion's inbuilt
+        delete-on-revert feature to handle.
+        """
+        version.revision.revert(delete=True)
     
     def render_revision_form(self, request, obj, version, context, revert=False, recover=False):
         """Renders the object revision form."""
@@ -276,18 +285,8 @@ class VersionAdmin(admin.ModelAdmin):
             # If configured to restore exact version data, do so without
             # processing any submitted form data which may have been altered...
             if getattr(settings, 'REVERSION_ADMIN_STRICT_REVERT', False):
-                if getattr(settings,
-                           'REVERSION_ADMIN_STRICT_REVERT_WITH_PRE_DELETE',
-                           False):
-                    # Brutal hack to remove obsolete relationships from the
-                    # current in-database object by deleting the entire object.
-                    # This is necessary in cases where the versioned object
-                    # graph is too complex for reversion's inbuilt
-                    # delete-on-revert feature to handle.
-                    obj.delete()
-                    version.revision.revert()
-                else:
-                    version.revision.revert(delete=True)
+                self._perform_strict_revert(request, obj, version, context,
+                                            revert=revert, recover=recover)
                 new_object = model.objects.get(pk=object_id)
                 was_reverted = True
 
