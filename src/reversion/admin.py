@@ -370,7 +370,7 @@ class VersionAdmin(admin.ModelAdmin):
                         "has_delete_permission": self.has_delete_permission(request, obj),
                         "has_file_field": True,
                         "has_absolute_url": False,
-                        "form_url": mark_safe(request.path),
+                        "form_url": mark_safe(request.get_full_path()),
                         "opts": opts,
                         "content_type_id": ContentType.objects.get_for_model(self.model).id,
                         "save_as": False,
