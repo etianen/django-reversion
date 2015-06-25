@@ -219,12 +219,32 @@ class VersionAdmin(admin.ModelAdmin):
             fk_name = FormSet.ct_fk_field.name
         # Look up the revision data.
         revision_versions = version.revision.version_set.all()
-        related_versions = dict([(related_version.object_id, related_version)
-                                 for related_version in revision_versions
-                                 if ContentType.objects.get_for_id(related_version.content_type_id).model_class() == FormSet.model
-                                 and force_text(related_version.field_dict[fk_name]) == force_text(object_id)])
+        related_versions = {}
+        for related_version in revision_versions:
+            ctype_model = ContentType.objects \
+                .get_for_id(related_version.content_type_id).model_class()
+
+            if ctype_model != FormSet.model:
+                # ContentType model class does not match formset model, but
+                # also check the actual model class of the item since this can
+                # differ from the ContentType for polymorphic items.
+                actual_model = related_version.object_version.object.__class__
+                if actual_model == FormSet.model \
+                        and issubclass(actual_model, ctype_model):
+                    # We have a match, let's not skip this item after all
+                    pass
+                else:
+                    # Actual model class also differs, skip this item
+                    continue
+
+            fk_str = force_text(related_version.field_dict[fk_name])
+            obj_id_str = force_text(object_id)
+            if fk_str != obj_id_str:
+                continue
+
+            related_versions[related_version.object_id] = related_version
         return related_versions
-    
+
     def _hack_inline_formset_initial(self, inline, FormSet, formset, obj, version, revert, recover):
         """Hacks the given formset to contain the correct initial data."""
         # if the FK this inline formset represents is not being followed, don't process data for it.
