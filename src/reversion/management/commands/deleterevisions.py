@@ -1,12 +1,13 @@
 from __future__ import unicode_literals
 
-import datetime, operator, sys
+import datetime, operator
 from optparse import make_option
 
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 from django.db.models import Q, Count
 from django.contrib.contenttypes.models import ContentType
+from django.utils.six.moves import input
 
 from reversion.models import Revision, Version
 from django.db.utils import DatabaseError
@@ -195,17 +196,7 @@ Examples:
 
         # Ask confirmation
         if confirmation:
-            prompt = "Are you sure you want to delete theses revisions? [y|N] "
-            try:
-                # Use `raw_input` function in Python 2
-                choice = raw_input(prompt)
-            except NameError:
-                # If `raw_input` function is not available we are probably in
-                # Python 3, in which the function was renamed `input`:
-                # https://www.python.org/dev/peps/pep-3111/
-                # NOTE: We really don't want to end up here in Python 2, as
-                # input() would then eval the user input as Python code.
-                choice = input(prompt)
+            choice = input("Are you sure you want to delete theses revisions? [y|N] ")
             if choice.lower() != "y":
                 print("Aborting revision deletion.")
                 return
