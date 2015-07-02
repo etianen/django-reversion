@@ -25,7 +25,7 @@ class RevisionMiddleware(object):
         """Closes the revision."""
         if request.META.get(REVISION_MIDDLEWARE_FLAG, False):
             del request.META[REVISION_MIDDLEWARE_FLAG]
-            revision_context_manager.end()
+            revision_context_manager.end(request=request)
     
     def process_response(self, request, response):
         """Closes the revision."""

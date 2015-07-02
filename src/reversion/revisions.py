@@ -165,7 +165,7 @@ class RevisionContextManager(local):
         """
         self._stack.append(manage_manually)
 
-    def end(self):
+    def end(self,request=None):
         """Ends a revision for this thread."""
         self._assert_active()
         self._stack.pop()
@@ -181,7 +181,7 @@ class RevisionContextManager(local):
                                 in manager_context.items()
                                 if obj.pk is not None
                             ),
-                            user = self._user,
+                            user = self._user or (hasattr(request, "user") and request.user),
                             comment = self._comment,
                             meta = self._meta,
                             ignore_duplicates = self._ignore_duplicates,
