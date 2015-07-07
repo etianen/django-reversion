@@ -13,9 +13,9 @@ def patch_admin(model, admin_site=None):
     """
     Enables version control with full admin integration for a model that has
     already been registered with the django admin site.
-    
+
     This is excellent for adding version control to existing Django contrib
-    applications. 
+    applications.
     """
     admin_site = admin_site or admin.site
     try:
@@ -65,7 +65,7 @@ else:
     def generate_patch(old_version, new_version, field_name, cleanup=None):
         """
         Generates a text patch of the named field between the two versions.
-        
+
         The cleanup parameter can be None, "semantic" or "efficiency" to clean up the diff
         for greater human readibility.
         """
@@ -75,12 +75,11 @@ else:
 
     def generate_patch_html(old_version, new_version, field_name, cleanup=None):
         """
-        Generates a pretty html version of the differences between the named 
+        Generates a pretty html version of the differences between the named
         field in two versions.
-        
+
         The cleanup parameter can be None, "semantic" or "efficiency" to clean up the diff
         for greater human readibility.
         """
         diffs = generate_diffs(old_version, new_version, field_name, cleanup)
         return dmp.diff_prettyHtml(diffs)
-
