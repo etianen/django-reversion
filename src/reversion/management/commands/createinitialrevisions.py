@@ -113,6 +113,8 @@ class Command(BaseCommand):
             pass
         # Check all models for empty revisions.
         if default_revision_manager.is_registered(model_class):
+            if verbosity >= 2:
+                print("Creating initial revision(s) for model %s ..."  % (force_text(model_class._meta.verbose_name)))
             created_count = 0
             content_type = ContentType.objects.db_manager(database).get_for_model(model_class)
             versioned_pk_queryset = Version.objects.using(database).filter(content_type=content_type).all()

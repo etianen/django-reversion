@@ -1,12 +1,13 @@
 from __future__ import unicode_literals
 
-import datetime, operator, sys
+import datetime, operator
 from optparse import make_option
 
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 from django.db.models import Q, Count
 from django.contrib.contenttypes.models import ContentType
+from django.utils.six.moves import input
 
 from reversion.models import Revision, Version
 from django.db.utils import DatabaseError
@@ -195,11 +196,7 @@ Examples:
 
         # Ask confirmation
         if confirmation:
-            try:
-                raw_input = raw_input
-            except NameError:
-                raw_input = input
-            choice = raw_input("Are you sure you want to delete theses revisions? [y|N] ")
+            choice = input("Are you sure you want to delete theses revisions? [y|N] ")
             if choice.lower() != "y":
                 print("Aborting revision deletion.")
                 return

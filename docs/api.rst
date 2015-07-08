@@ -94,7 +94,7 @@ It is possible to attach a comment and a user reference to an active revision us
         your_model.save()
         reversion.set_user(user)
         reversion.set_comment("Comment text...")
-    
+
 If you use ``RevisionMiddleware``, then the user will automatically be added to the revision from the incoming request.
 
 Custom meta data
@@ -105,7 +105,8 @@ You can attach custom meta data to a revision by creating a separate django mode
     from reversion.models import Revision
 
     class VersionRating(models.Model):
-        revision = models.ForeignKey(Revision)  # There must be a relationship with Revision
+        # There must be a relationship with Revision called `revision`.
+        revision = models.ForeignKey(Revision)
         rating = models.PositiveIntegerField()
 
 You can then attach this meta class to a revision using the following method::
