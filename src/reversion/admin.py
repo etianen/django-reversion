@@ -62,6 +62,10 @@ class VersionAdmin(admin.ModelAdmin):
     # If True, then the default ordering of object_history and recover lists will be reversed.
     history_latest_first = False
 
+    # If True when you revert/restore version data the exact prior version will
+    # be restored; modifications from the submitted admin form data are ignored
+    strict_revert = False
+
     def _autoregister(self, model, follow=None):
         """Registers a model with reversion, if required."""
         if not self.revision_manager.is_registered(model):
@@ -279,13 +283,12 @@ class VersionAdmin(admin.ModelAdmin):
         # Generate the model form.
         ModelForm = self.get_form(request, obj)
         formsets = []
-        is_strict_revert = getattr(settings, 'REVERSION_ADMIN_STRICT_REVERT', False)
         if request.method == "POST":
             was_reverted = False
 
             # If configured to restore exact version data, do so without
             # processing any submitted form data which may have been altered...
-            if is_strict_revert:
+            if self.strict_revert:
                 self._perform_strict_revert(request, obj, version, context,
                                             revert=revert, recover=recover)
                 new_object = model.objects.get(pk=object_id)
@@ -391,7 +394,7 @@ class VersionAdmin(admin.ModelAdmin):
                         "change": True,
                         "revert": revert,
                         "recover": recover,
-                        "is_strict_revert": is_strict_revert,
+                        "strict_revert": self.strict_revert,
                         "has_add_permission": self.has_add_permission(request),
                         "has_change_permission": self.has_change_permission(request, obj),
                         "has_delete_permission": self.has_delete_permission(request, obj),

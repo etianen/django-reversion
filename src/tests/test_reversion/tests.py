@@ -36,6 +36,7 @@ from test_reversion.models import (
     RevisionMeta,
     ParentTestAdminModel,
     ChildTestAdminModel,
+    StrictChildTestAdminModel,
     InlineTestParentModel,
     InlineTestChildModel,
 )
@@ -765,23 +766,6 @@ class VersionAdminTest(TestCase):
         self.assertEqual(versions.count(), 3)
         self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version3")
         self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version3")
-        # Check that a version can be rolled back with no data modification allowed
-        with self.settings(REVERSION_ADMIN_STRICT_REVERT=True):
-            response = self.client.post("/admin/test_reversion/childtestadminmodel/%s/history/%s/" % (obj_pk, versions[0].pk), {
-                "parent_name": "parent instance1 version4",  # name differs from version data
-                "child_name": "child instance1 version4",  # name differs from version data
-            })
-            self.assertEqual(response.status_code, 302)
-        # Check that a version is created and data is unmodified despite
-        # differences in submitted form data.
-        versions = reversion.get_for_object(obj)
-        self.assertEqual(versions.count(), 4)
-        self.assertEqual(versions[0].field_dict["parent_name"],
-                         # Name is unchanged from reverted version, not "version4"
-                         "parent instance1 version3")
-        self.assertEqual(versions[0].field_dict["child_name"],
-                         # Name is unchanged from reverted version, not "version4"
-                         "child instance1 version3")
         # Check that a deleted version can be viewed.
         obj.delete()
         response = self.client.get("/admin/test_reversion/childtestadminmodel/recover/")
@@ -792,6 +776,71 @@ class VersionAdminTest(TestCase):
             "child_name": "child instance1 version4",
         })
         obj = ChildTestAdminModel.objects.get(id=obj_pk)
+
+    # Near-dupe of testRevisionSavedOnPost, but with strict revert
+    @skipUnless('django.contrib.admin' in settings.INSTALLED_APPS,
+                "django.contrib.admin not activated")
+    def testRevisionSavedOnPostAndStrictRevertRestore(self):
+        self.assertEqual(StrictChildTestAdminModel.objects.count(), 0)
+        # Create an instance via the admin.
+        response = self.client.post("/admin/test_reversion/strictchildtestadminmodel/add/", {
+            "parent_name": "parent instance1 version1",
+            "child_name": "child instance1 version1",
+            "_continue": 1,
+        })
+        self.assertEqual(response.status_code, 302)
+        obj_pk = response["Location"].split("/")[-2]
+        obj = StrictChildTestAdminModel.objects.get(id=obj_pk)
+        # Check that a version is created.
+        versions = reversion.get_for_object(obj)
+        self.assertEqual(versions.count(), 1)
+        self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version1")
+        self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version1")
+        # Save a new version.
+        response = self.client.post("/admin/test_reversion/strictchildtestadminmodel/%s/" % obj_pk, {
+            "parent_name": "parent instance1 version2",
+            "child_name": "child instance1 version2",
+            "_continue": 1,
+        })
+        self.assertEqual(response.status_code, 302)
+        # Check that a version is created.
+        versions = reversion.get_for_object(obj)
+        self.assertEqual(versions.count(), 2)
+        self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version2")
+        self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version2")
+        # Check that the versions can be listed.
+        response = self.client.get("/admin/test_reversion/strictchildtestadminmodel/%s/history/" % obj_pk)
+        self.assertContains(response, "child instance1 version2")
+        self.assertContains(response, "child instance1 version1")
+        # Check that a version can be rolled back with no data modification allowed
+        response = self.client.post("/admin/test_reversion/strictchildtestadminmodel/%s/history/%s/" % (obj_pk, versions[0].pk), {
+            "parent_name": "parent instance1 version-modified1",
+            "child_name": "child instance1 version-modified1",
+        })
+        self.assertEqual(response.status_code, 302)
+        # Check that a version is created and data is unmodified despite
+        # differences in submitted form data.
+        versions = reversion.get_for_object(obj)
+        self.assertEqual(versions.count(), 3)
+        self.assertEqual(versions[0].field_dict["parent_name"],
+                         # Name is unchanged from reverted version, not "version3"
+                         "parent instance1 version2")
+        self.assertEqual(versions[0].field_dict["child_name"],
+                         # Name is unchanged from reverted version, not "version3"
+                         "child instance1 version2")
+        # Check that a deleted version can be viewed.
+        obj.delete()
+        response = self.client.get("/admin/test_reversion/strictchildtestadminmodel/recover/")
+        self.assertContains(response, "child instance1 version2")
+        # Check that a deleted version can be recovered.
+        response = self.client.post("/admin/test_reversion/strictchildtestadminmodel/recover/%s/" % versions[0].pk, {
+            "parent_name": "parent instance1 version-modified2",
+            "child_name": "child instance1 version-modified2",
+        })
+        obj = StrictChildTestAdminModel.objects.get(id=obj_pk)
+        # Restored object has original version data, not values submitted in form
+        self.assertEqual("parent instance1 version2", obj.parent_name)
+        self.assertEqual("child instance1 version2", obj.child_name)
 
 
     def createInlineObjects(self, should_delete):

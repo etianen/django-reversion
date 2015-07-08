@@ -90,6 +90,10 @@ class ChildTestAdminModel(ParentTestAdminModel):
         return self.child_name
 
 
+class StrictChildTestAdminModel(ChildTestAdminModel):
+    pass
+
+
 class InlineTestParentModel(models.Model):
 
     name = models.CharField(
