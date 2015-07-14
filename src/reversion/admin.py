@@ -10,9 +10,9 @@ from django.conf.urls import patterns, url
 from django.contrib import admin
 from django.contrib.admin import helpers, options
 try:
-    from django.contrib.admin.utils import unquote, quote
+    from django.contrib.admin.utils import unquote, quote, flatten_fieldsets
 except ImportError:  # Django < 1.7
-    from django.contrib.admin.util import unquote, quote
+    from django.contrib.admin.util import unquote, quote, flatten_fieldsets
 try:
     from django.contrib.contenttypes.admin import GenericInlineModelAdmin
     from django.contrib.contenttypes.fields import GenericRelation
@@ -301,15 +301,16 @@ class VersionAdmin(admin.ModelAdmin):
                 # Add this hacked formset to the form.
                 formsets.append(formset)
         # Generate admin form helper.
-        adminForm = helpers.AdminForm(form, self.get_fieldsets(request, obj),
-            self.prepopulated_fields, self.get_readonly_fields(request, obj),
+        fieldsets = self.get_fieldsets(request, obj)
+        adminForm = helpers.AdminForm(form, fieldsets,
+            self.prepopulated_fields, flatten_fieldsets(fieldsets),  # Set readonly fields to all the fieldsets.
             model_admin=self)
         media = self.media + adminForm.media
         # Generate formset helpers.
         inline_admin_formsets = []
         for inline, formset in zip(self.get_inline_instances(request), formsets):
             fieldsets = list(inline.get_fieldsets(request, obj))
-            readonly = list(inline.get_readonly_fields(request, obj))
+            readonly = flatten_fieldsets(fieldsets)  # Set readonly fields to all the fieldsets.
             prepopulated = inline.get_prepopulated_fields(request, obj)
             inline_admin_formset = helpers.InlineAdminFormSet(inline, formset,
                 fieldsets, prepopulated, readonly, model_admin=self)
