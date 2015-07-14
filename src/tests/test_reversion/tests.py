@@ -755,25 +755,19 @@ class VersionAdminTest(TestCase):
         self.assertContains(response, "child instance1 version2")
         self.assertContains(response, "child instance1 version1")
         # Check that a version can be rolled back.
-        response = self.client.post("/admin/test_reversion/childtestadminmodel/%s/history/%s/" % (obj_pk, versions[1].pk), {
-            "parent_name": "parent instance1 version3",
-            "child_name": "child instance1 version3",
-        })
+        response = self.client.post("/admin/test_reversion/childtestadminmodel/%s/history/%s/" % (obj_pk, versions[1].pk))
         self.assertEqual(response.status_code, 302)
         # Check that a version is created.
         versions = reversion.get_for_object(obj)
         self.assertEqual(versions.count(), 3)
-        self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version3")
-        self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version3")
+        self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version1")
+        self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version1")
         # Check that a deleted version can be viewed.
         obj.delete()
         response = self.client.get("/admin/test_reversion/childtestadminmodel/recover/")
-        self.assertContains(response, "child instance1 version3")
+        self.assertContains(response, "child instance1 version1")
         # Check that a deleted version can be recovered.
-        response = self.client.post("/admin/test_reversion/childtestadminmodel/recover/%s/" % versions[0].pk, {
-            "parent_name": "parent instance1 version4",
-            "child_name": "child instance1 version4",
-        })
+        response = self.client.post("/admin/test_reversion/childtestadminmodel/recover/%s/" % versions[0].pk)
         obj = ChildTestAdminModel.objects.get(id=obj_pk)
 
 
@@ -901,4 +895,3 @@ class DeleteUserTest(RevisionTestBase):
         self.user.delete()
         self.assertEqual(Revision.objects.count(), 1)
         self.assertEqual(Version.objects.count(), 4)
-
