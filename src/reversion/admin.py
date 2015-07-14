@@ -417,8 +417,7 @@ class VersionAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         """Renders the change view."""
         opts = self.model._meta
-        context = {"recoverlist_url": reverse("%s:%s_%s_recoverlist" % (self.admin_site.name, opts.app_label, opts.model_name)),
-                   "add_url": reverse("%s:%s_%s_add" % (self.admin_site.name, opts.app_label, opts.model_name)),}
+        context = {"recoverlist_url": reverse("%s:%s_%s_recoverlist" % (self.admin_site.name, opts.app_label, opts.model_name))}
         context.update(extra_context or {})
         return super(VersionAdmin, self).changelist_view(request, context)
 
