@@ -17,6 +17,12 @@ env:
   - DJANGO=django==1.8.3 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
 matrix:
   fast_finish: true
+  exclude:
+    # mysqlclient does not work with Python 3.2.
+    - python: 3.2
+      env: DJANGO=django==1.7.9 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+    - python: 3.2
+      env: DJANGO=django==1.8.3 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
 services:
   - postgresql
   - mysql
