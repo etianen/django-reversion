@@ -218,8 +218,14 @@ class VersionAdmin(admin.ModelAdmin):
         model = self.model
         opts = model._meta
         deleted = self._order_version_queryset(self.revision_manager.get_deleted(self.model))
+        # Get the site context.
+        try:
+            each_context = self.admin_site.each_context(request)
+        except TypeError:  # Django <= 1.7 pragma: no cover
+            each_context = self.admin_site.each_context()
+        # Get the rest of the context.
         context = dict(
-            self.admin_site.each_context(request),
+            each_context,
             opts = opts,
             app_label = opts.app_label,
             module_name = capfirst(opts.verbose_name),

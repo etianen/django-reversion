@@ -158,4 +158,4 @@ class InlineTestUnrelatedParentModel(models.Model):
 
 class InlineTestUnrelatedChildModel(models.Model):
 
-    pass
+    parent = models.ForeignKey(InlineTestUnrelatedParentModel)
