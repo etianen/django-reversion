@@ -740,6 +740,11 @@ class VersionAdminTest(TestCase):
         response = self.client.get("/admin/test_reversion/childtestadminmodel/%s/history/%s/" % (obj_pk, versions[1].pk))
         self.assertContains(response, "parent instance1 version1")
         self.assertContains(response, "child instance1 version1")
+        # Check that loading the version data didn't roll it back!
+        obj = ChildTestAdminModel.objects.get(pk=obj.pk)
+        self.assertEqual(obj.child_name, "child instance1 version2")
+        self.assertEqual(obj.parent_name, "parent instance1 version2")
+        self.assertEqual(reversion.get_for_object(obj).count(), 2)
         # Check that a version can be rolled back.
         response = self.client.post("/admin/test_reversion/childtestadminmodel/%s/history/%s/" % (obj_pk, versions[1].pk))
         self.assertEqual(response.status_code, 302)
@@ -748,15 +753,29 @@ class VersionAdminTest(TestCase):
         self.assertEqual(versions.count(), 3)
         self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version1")
         self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version1")
-        # Check that a deleted version can be viewed.
+        # Check that the models were rolled back.
+        obj = ChildTestAdminModel.objects.get(pk=obj.pk)
+        self.assertEqual(obj.child_name, "child instance1 version1")
+        self.assertEqual(obj.parent_name, "parent instance1 version1")
+        # Check that a deleted version can be viewed in the list.
         obj.delete()
         response = self.client.get("/admin/test_reversion/childtestadminmodel/recover/")
+        self.assertContains(response, "child instance1 version1")
+        # Check that a delete version can be viewed in detail.
+        response = self.client.get("/admin/test_reversion/childtestadminmodel/recover/%s/" % versions[0].pk)
         self.assertContains(response, "parent instance1 version1")
         self.assertContains(response, "child instance1 version1")
         # Check that a deleted version can be recovered.
         response = self.client.post("/admin/test_reversion/childtestadminmodel/recover/%s/" % versions[0].pk)
-        obj = ChildTestAdminModel.objects.get(id=obj_pk)
-
+        # Check that a version is created.
+        versions = reversion.get_for_object_reference(ChildTestAdminModel, obj_pk)
+        self.assertEqual(versions.count(), 4)
+        self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version1")
+        self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version1")
+        # Check that the models were rolled back.
+        obj = ChildTestAdminModel.objects.get(pk=obj_pk)
+        self.assertEqual(obj.child_name, "child instance1 version1")
+        self.assertEqual(obj.parent_name, "parent instance1 version1")
 
     def createInlineObjects(self):
         # Create an instance via the admin without a child.

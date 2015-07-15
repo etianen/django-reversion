@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 
 from contextlib import contextmanager
 
-from django.db import models, transaction
+from django.db import models, transaction, connection
 from django.conf.urls import patterns, url
 from django.contrib import admin
 from django.contrib.admin import helpers, options
@@ -17,9 +17,8 @@ try:
     from django.contrib.contenttypes.fields import GenericRelation
 except ImportError:  # Django < 1.9  pragma: no cover
     from django.contrib.contenttypes.generic import GenericInlineModelAdmin, GenericRelation
-from django.contrib.contenttypes.models import ContentType
 from django.core.urlresolvers import reverse
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ImproperlyConfigured
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils.html import mark_safe
 from django.utils.text import capfirst
@@ -144,6 +143,9 @@ class VersionAdmin(admin.ModelAdmin):
     def __init__(self, *args, **kwargs):
         """Initializes the VersionAdmin"""
         super(VersionAdmin, self).__init__(*args, **kwargs)
+        # Check that database transactions are supported.
+        if not connection.features.uses_savepoints:  # pragma: no cover
+            raise ImproperlyConfigured("Cannot use VersionAdmin with a database that does not support savepoints.")
         # Automatically register models if required.
         if not self.revision_manager.is_registered(self.model):
             inline_fields = []
@@ -186,102 +188,94 @@ class VersionAdmin(admin.ModelAdmin):
         context.update(extra_context or {})
         return render(request, self.recover_list_template or self._get_template_list("recover_list.html"), context)
 
-    def _hack_inline_formset_initial(self, inline, FormSet, formset, obj, version, revert, recover):
-        """Hacks the given formset to contain the correct initial data."""
-        # If the FK this inline formset represents is not being followed, don't process data for it.
-        # see https://github.com/etianen/django-reversion/issues/222
-        _, follow_field, fk_name = self._introspect_inline_admin(inline.__class__)
-        if follow_field not in self.revision_manager.get_adapter(self.model).follow:
-            return
-        # Now we hack it to push in the data from the revision!
-        initial = []
-        for related_version in version.revision.version_set.all():
-            if ContentType.objects.get_for_id(related_version.content_type_id).model_class() == FormSet.model and force_text(related_version.field_dict[fk_name]) == force_text(obj.pk):
-                initial.append(related_version.field_dict)
-        # Reconstruct the forms with the new revision data.
-        formset.initial = initial
-        formset.forms = [formset._construct_form(n) for n in range(len(initial))]
-        def total_form_count_hack(count):
-            return lambda: count
-        formset.total_form_count = total_form_count_hack(len(initial))
-
-    def render_revision_form(self, request, obj, version, extra_context, revert=False, recover=False):
+    def render_revision_form(self, request, version, extra_context, revert=False, recover=False):
         """Renders the object revision form."""
         model = self.model
         opts = model._meta
-        object_id = obj.pk
-        # Generate the model form.
-        ModelForm = self.get_form(request, obj)
-        formsets = []
+        # Allow the user to rollback.
         if request.method == "POST":
-            version.revision.revert(delete=True)
-            new_object = model.objects.get(pk=object_id)
-            change_message = _("Reverted to previous version, saved on %(datetime)s") % {"datetime": localize(version.revision.date_created)}
-            self.log_change(request, new_object, change_message)
-            self.message_user(request, _('The %(model)s "%(name)s" was reverted successfully. You may edit it again below.') % {"model": force_text(opts.verbose_name), "name": force_text(obj)})
-            # Redirect to the model change form.
-            return redirect("admin:{}_{}_change".format(opts.app_label, opts.model_name), new_object.pk)
-        else:
-            form = ModelForm(instance=obj, initial=self.get_revision_form_data(request, obj, version))
-            formsets, inline_instances = self._create_formsets(request, obj, change=True)
-        # Generate admin form helper.
-        fieldsets = list(self.get_fieldsets(request, obj))
-        adminForm = helpers.AdminForm(
-            form,
-            fieldsets,
-            self.get_prepopulated_fields(request, obj),
-            flatten_fieldsets(fieldsets),  # Set all fields to read-only.
-            model_admin=self)
-        media = self.media + adminForm.media
-        # Generate formset helpers.
-        inline_admin_formsets = []
-        for inline, formset in zip(inline_instances, formsets):
-            fieldsets = list(inline.get_fieldsets(request, obj))
-            readonly = list(inline.get_readonly_fields(request, obj))
-            prepopulated = dict(inline.get_prepopulated_fields(request, obj))
-            inline_admin_formset = helpers.InlineAdminFormSet(inline, formset,
-                fieldsets, prepopulated, readonly, model_admin=self)
-            inline_admin_formsets.append(inline_admin_formset)
-            media = media + inline_admin_formset.media
-        # Generate the context.
-        view_on_site_url = self.get_view_on_site_url(obj)
-        context = dict(
-            self.admin_site.each_context(request),
-            adminform = adminForm,
-            object_id = object_id,
-            original = obj,
-            is_popup = False,
-            media = media,
-            inline_admin_formsets = inline_admin_formsets,
-            errors = helpers.AdminErrorList(form, formsets),
-            preserved_filters = self.get_preserved_filters(request),
-            add = False,
-            change = True,
-            revert = revert,
-            recover = recover,
-            has_add_permission = self.has_add_permission(request),
-            has_change_permission = self.has_change_permission(request, obj),
-            has_delete_permission = self.has_delete_permission(request, obj),
-            has_file_field = True,
-            has_absolute_url = view_on_site_url is not None,
-            form_url = mark_safe(request.path),
-            opts = opts,
-            content_type_id = options.get_content_type_for_model(self.model).pk,
-            save_as = False,
-            save_on_top = self.save_on_top,
-            to_field_var = options.TO_FIELD_VAR,
-            is_popup_var = options.IS_POPUP_VAR,
-            app_label = opts.app_label,
-        )
-        context.update(extra_context)
-        # Render the form.
-        if revert:
-            form_template = self.revision_form_template or self._get_template_list("revision_form.html")
-        elif recover:
-            form_template = self.recover_form_template or self._get_template_list("recover_form.html")
-        else:
-            assert False
-        return render(request, form_template, context)
+            with self._create_revision(request):
+                version.revision.revert(delete=True)
+                obj = model.objects.get(pk=version.object_id)
+                # Check permissions.
+                if not self.has_change_permission(request, obj):  # pragma: no cover
+                    raise PermissionDenied
+                # Log the change.
+                change_message = _("Reverted to previous version, saved on %(datetime)s") % {"datetime": localize(version.revision.date_created)}
+                self.log_change(request, obj, change_message)
+                self.message_user(request, _('The %(model)s "%(name)s" was reverted successfully. You may edit it again below.') % {"model": force_text(opts.verbose_name), "name": force_text(obj)})
+                # Redirect to the model change form.
+                return redirect("admin:{}_{}_change".format(opts.app_label, opts.model_name), obj.pk)
+        # Load the object from the revision inside a database transaction,
+        # so we can roll it back when we're done.
+        with transaction.atomic():
+            savepoint = transaction.savepoint()
+            try:
+                version.revision.revert(delete=True)
+                obj = model.objects.get(pk=version.object_id)
+                # Check permissions.
+                if not self.has_change_permission(request, obj):  # pragma: no cover
+                    raise PermissionDenied
+                # Create the form and formsets.
+                ModelForm = self.get_form(request, obj)
+                form = ModelForm(instance=obj, initial=self.get_revision_form_data(request, obj, version))
+                formsets, inline_instances = self._create_formsets(request, obj, change=True)
+                # Generate admin form helper.
+                fieldsets = list(self.get_fieldsets(request, obj))
+                adminForm = helpers.AdminForm(
+                    form,
+                    fieldsets,
+                    self.get_prepopulated_fields(request, obj),
+                    flatten_fieldsets(fieldsets),  # Set all fields to read-only.
+                    model_admin=self)
+                media = self.media + adminForm.media
+                # Generate formset helpers.
+                inline_formsets = self.get_inline_formsets(request, formsets, inline_instances, obj)
+                for inline_formset in inline_formsets:
+                    media = media + inline_formset.media
+                # Generate the context.
+                view_on_site_url = self.get_view_on_site_url(obj)
+                context = dict(
+                    self.admin_site.each_context(request),
+                    title = (_("Recover %(name)s") if recover else _("Revert %(name)s")) % {"name": version.object_repr},
+                    adminform = adminForm,
+                    object_id = version.object_id,
+                    original = obj,
+                    is_popup = False,
+                    media = media,
+                    inline_admin_formsets = inline_formsets,
+                    errors = helpers.AdminErrorList(form, formsets),
+                    preserved_filters = self.get_preserved_filters(request),
+                    add = False,
+                    change = True,
+                    revert = revert,
+                    recover = recover,
+                    has_add_permission = self.has_add_permission(request),
+                    has_change_permission = self.has_change_permission(request, obj),
+                    has_delete_permission = self.has_delete_permission(request, obj),
+                    has_file_field = True,
+                    has_absolute_url = view_on_site_url is not None,
+                    form_url = mark_safe(request.path),
+                    opts = opts,
+                    content_type_id = options.get_content_type_for_model(self.model).pk,
+                    save_as = False,
+                    save_on_top = self.save_on_top,
+                    to_field_var = options.TO_FIELD_VAR,
+                    is_popup_var = options.IS_POPUP_VAR,
+                    app_label = opts.app_label,
+                )
+                context.update(extra_context or {})
+                # Render the form.
+                if revert:
+                    form_template = self.revision_form_template or self._get_template_list("revision_form.html")
+                elif recover:
+                    form_template = self.recover_form_template or self._get_template_list("recover_form.html")
+                else:
+                    assert False
+                return render(request, form_template, context)
+            finally:
+                # Roll back the savepoint.
+                transaction.savepoint_rollback(savepoint)
 
     # Views.
 
@@ -295,30 +289,14 @@ class VersionAdmin(admin.ModelAdmin):
 
     def recover_view(self, request, version_id, extra_context=None):
         """Displays a form that can recover a deleted model."""
-        with self._create_revision(request):
-            version = get_object_or_404(Version, pk=version_id)
-            obj = version.object_version.object
-            # Check if user has both change and add permissions for model.
-            if not self.has_change_permission(request, obj) or not self.has_add_permission(request):  # pragma: no cover
-                raise PermissionDenied
-            # Create the context.
-            context = {"title": _("Recover %(name)s") % {"name": version.object_repr},}
-            context.update(extra_context or {})
-            return self.render_revision_form(request, obj, version, context, recover=True)
+        version = get_object_or_404(Version, pk=version_id)
+        return self.render_revision_form(request, version, extra_context, recover=True)
 
     def revision_view(self, request, object_id, version_id, extra_context=None):
         """Displays the contents of the given revision."""
-        with self._create_revision(request):
-            object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
-            obj = get_object_or_404(self.model, pk=object_id)
-            version = get_object_or_404(Version, pk=version_id, object_id=force_text(obj.pk))
-            # Check if user has change permissions for model.
-            if not self.has_change_permission(request, obj):  # pragma: no cover
-                raise PermissionDenied
-            # Generate the context.
-            context = {"title": _("Revert %(name)s") % {"name": force_text(self.model._meta.verbose_name)},}
-            context.update(extra_context or {})
-            return self.render_revision_form(request, obj, version, context, revert=True)
+        object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
+        version = get_object_or_404(Version, pk=version_id, object_id=object_id)
+        return self.render_revision_form(request, version, extra_context, revert=True)
 
     def changelist_view(self, request, extra_context=None):
         """Renders the change view."""
