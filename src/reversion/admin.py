@@ -93,15 +93,6 @@ class VersionAdmin(admin.ModelAdmin):
         self.revision_context_manager.set_comment(message)
         super(VersionAdmin, self).log_change(request, object, message)
 
-    # Customization hooks.
-
-    def get_revision_form_data(self, request, obj, version):
-        """
-        Returns a dictionary of data to set in the admin form in order to revert
-        to the given revision.
-        """
-        return version.field_dict
-
     # Auto-registration.
 
     def _autoregister(self, model, follow=None):
@@ -218,7 +209,7 @@ class VersionAdmin(admin.ModelAdmin):
                     raise PermissionDenied
                 # Create the form and formsets.
                 ModelForm = self.get_form(request, obj)
-                form = ModelForm(instance=obj, initial=self.get_revision_form_data(request, obj, version))
+                form = ModelForm(instance=obj)
                 formsets, inline_instances = self._create_formsets(request, obj, change=True)
                 # Generate admin form helper.
                 fieldsets = list(self.get_fieldsets(request, obj))
