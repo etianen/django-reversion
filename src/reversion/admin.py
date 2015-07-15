@@ -2,18 +2,20 @@
 
 from __future__ import unicode_literals
 
+from contextlib import contextmanager
+
 from django.db import models, transaction
 from django.conf.urls import patterns, url
 from django.contrib import admin
 from django.contrib.admin import helpers, options
 try:
     from django.contrib.admin.utils import unquote, quote, flatten_fieldsets
-except ImportError:  # Django < 1.7
+except ImportError:  # Django < 1.7  pragma: no cover
     from django.contrib.admin.util import unquote, quote, flatten_fieldsets
 try:
     from django.contrib.contenttypes.admin import GenericInlineModelAdmin
     from django.contrib.contenttypes.fields import GenericRelation
-except ImportError:  # Django < 1.9
+except ImportError:  # Django < 1.9  pragma: no cover
     from django.contrib.contenttypes.generic import GenericInlineModelAdmin, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.urlresolvers import reverse
@@ -75,6 +77,22 @@ class VersionAdmin(admin.ModelAdmin):
         if self.history_latest_first:
             return queryset.order_by("-pk")
         return queryset.order_by("pk")
+
+    @contextmanager
+    def _create_revision(self, request):
+        with transaction.atomic(), self.revision_context_manager.create_revision():
+            self.revision_context_manager.set_user(request.user)
+            yield
+
+    # Messages.
+
+    def log_addition(self, request, object):
+        self.revision_context_manager.set_comment(_("Initial version."))
+        super(VersionAdmin, self).log_addition(request, object)
+
+    def log_change(self, request, object, message):
+        self.revision_context_manager.set_comment(message)
+        super(VersionAdmin, self).log_change(request, object, message)
 
     # Customization hooks.
 
@@ -268,16 +286,16 @@ class VersionAdmin(admin.ModelAdmin):
     # Views.
 
     def add_view(self, request, form_url='', extra_context=None):
-        with transaction.atomic(), self.revision_context_manager.create_revision():
+        with self._create_revision(request):
             return super(VersionAdmin, self).add_view(request, form_url, extra_context)
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
-        with transaction.atomic(), self.revision_context_manager.create_revision():
+        with self._create_revision(request):
             return super(VersionAdmin, self).change_view(request, object_id, form_url, extra_context)
 
     def recover_view(self, request, version_id, extra_context=None):
         """Displays a form that can recover a deleted model."""
-        with transaction.atomic(), self.revision_context_manager.create_revision():
+        with self._create_revision(request):
             version = get_object_or_404(Version, pk=version_id)
             obj = version.object_version.object
             # Check if user has both change and add permissions for model.
@@ -290,7 +308,7 @@ class VersionAdmin(admin.ModelAdmin):
 
     def revision_view(self, request, object_id, version_id, extra_context=None):
         """Displays the contents of the given revision."""
-        with transaction.atomic(), self.revision_context_manager.create_revision():
+        with self._create_revision(request):
             object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
             obj = get_object_or_404(self.model, pk=object_id)
             version = get_object_or_404(Version, pk=version_id, object_id=force_text(obj.pk))
@@ -304,7 +322,7 @@ class VersionAdmin(admin.ModelAdmin):
 
     def changelist_view(self, request, extra_context=None):
         """Renders the change view."""
-        with transaction.atomic(), self.revision_context_manager.create_revision():
+        with self._create_revision(request):
             return super(VersionAdmin, self).changelist_view(request, extra_context)
 
     def history_view(self, request, object_id, extra_context=None):
