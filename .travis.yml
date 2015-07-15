@@ -1,7 +1,6 @@
 language: python
 sudo: false
 python:
-  - 2.6
   - 2.7
   - 3.2
   - 3.3
@@ -10,19 +9,25 @@ cache:
   directories:
     - $HOME/.cache/pip
 env:
-  - DJANGO=django==1.6.11
-  - DJANGO=django==1.7.7
-  - DJANGO=django==1.8.1
+  - DJANGO=django==1.7.9
+  - DJANGO=django==1.7.9 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
+  - DJANGO=django==1.7.9 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+  - DJANGO=django==1.8.3
+  - DJANGO=django==1.8.3 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
+  - DJANGO=django==1.8.3 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
 matrix:
-  exclude:
-    - python: 2.6
-      env: DJANGO=django==1.7.7
-    - python: 2.6
-      env: DJANGO=django==1.8.1
   fast_finish: true
+services:
+  - postgresql
+  - mysql
 install:
   - travis_retry pip install $DJANGO
+  - if [[ "$DB_ENGINE" == "django.db.backends.postgresql_psycopg2" ]] ; then travis_retry pip install psycopg2; fi
+  - if [[ "$DB_ENGINE" == "django.db.backends.mysql" ]] ; then travis_retry pip install mysqlclient ; fi
   - pip install -e .[test,diff]
+before_script:
+  - if [[ "$DB_ENGINE" == "django.db.backends.mysql" ]] ; then mysql -e 'create database test_project'; fi
+  - if [[ "$DB_ENGINE" == "django.db.backends.postgresql_psycopg2" ]] ; then psql -c 'create database test_project;' -U postgres; fi
 script: coverage run src/tests/manage.py test src/tests/test_reversion/
 after_script: coverage report
 notifications:
