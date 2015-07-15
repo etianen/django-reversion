@@ -17,7 +17,7 @@ from django.conf import settings
 from django.contrib import admin
 try:
     from django.contrib.auth import get_user_model
-except ImportError: # django < 1.5
+except ImportError: # django < 1.5  pragma: no cover
     from django.contrib.auth.models import User
 else:
     User = get_user_model()
@@ -39,6 +39,7 @@ from test_reversion.models import (
     ChildTestAdminModel,
     InlineTestParentModel,
     InlineTestChildModel,
+    InlineTestChildGenericModel
 )
 from test_reversion import admin  # Force early registration of all admin models.
 
@@ -690,13 +691,7 @@ class VersionAdminTest(TestCase):
         self.user.set_password("bar")
         self.user.save()
         # Log the user in.
-        if hasattr(self, "settings"):
-            with self.settings(INSTALLED_APPS=tuple(set(tuple(settings.INSTALLED_APPS) + ("django.contrib.sessions",)))):  # HACK: Without this the client won't log in, for some reason.
-                self.client.login(
-                    username = "foo",
-                    password = "bar",
-                )
-        else:
+        with self.settings(INSTALLED_APPS=tuple(set(tuple(settings.INSTALLED_APPS) + ("django.contrib.sessions",)))):  # HACK: Without this the client won't log in, for some reason.
             self.client.login(
                 username = "foo",
                 password = "bar",
@@ -765,7 +760,8 @@ class VersionAdminTest(TestCase):
             "name": "parent version1",
             "children-TOTAL_FORMS": "0",
             "children-INITIAL_FORMS": "0",
-            # "children-0-name": "child version 1",
+            "test_reversion-inlinetestchildgenericmodel-content_type-object_id-TOTAL_FORMS": "0",
+            "test_reversion-inlinetestchildgenericmodel-content_type-object_id-INITIAL_FORMS": "0",
             "_continue": 1,
             })
         self.assertEqual(response.status_code, 302)
@@ -778,22 +774,19 @@ class VersionAdminTest(TestCase):
             "children-TOTAL_FORMS": "1",
             "children-INITIAL_FORMS": "0",
             "children-0-name": "child version 1",
+            "test_reversion-inlinetestchildgenericmodel-content_type-object_id-TOTAL_FORMS": "1",
+            "test_reversion-inlinetestchildgenericmodel-content_type-object_id-INITIAL_FORMS": "0",
+            "test_reversion-inlinetestchildgenericmodel-content_type-object_id-0-name": "generic child version 1",
             "_continue": 1,
             })
         self.assertEqual(response.status_code, 302)
         children = InlineTestChildModel.objects.filter(parent=parent_pk)
         self.assertEqual(children.count(), 1)
-
+        generic_children = parent.generic_children.all()
+        self.assertEqual(generic_children.count(), 1)
         # get list of versions
         version_list = reversion.get_for_object(parent)
         self.assertEqual(len(version_list), 2)
-
-        # check if reversion page has the checkbox for the inline checked
-        response = self.client.get("/admin/test_reversion/inlinetestparentmodel/%s/history/%s/" %
-                                   (parent_pk, version_list[1].id))
-        self.assertEqual(response.status_code, 200)
-
-        # don't actually submit a post since the values we submit would be from the test, not what the admin defaults
 
 
     @skipUnless('django.contrib.admin' in settings.INSTALLED_APPS,
@@ -832,7 +825,7 @@ class VersionAdminTest(TestCase):
 
 try:
     from reversion.helpers import generate_patch, generate_patch_html
-except ImportError:
+except ImportError:  # pragma: no cover
     can_test_patch = False
 else:
     can_test_patch = True

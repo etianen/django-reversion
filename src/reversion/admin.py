@@ -170,7 +170,7 @@ class VersionAdmin(admin.ModelAdmin):
     def recoverlist_view(self, request, extra_context=None):
         """Displays a deleted model to allow recovery."""
         # check if user has change or add permissions for model
-        if not self.has_change_permission(request) and not self.has_add_permission(request):
+        if not self.has_change_permission(request) and not self.has_add_permission(request):  # pragma: no cover
             raise PermissionDenied
         model = self.model
         opts = model._meta
@@ -299,7 +299,7 @@ class VersionAdmin(admin.ModelAdmin):
             version = get_object_or_404(Version, pk=version_id)
             obj = version.object_version.object
             # Check if user has both change and add permissions for model.
-            if not self.has_change_permission(request, obj) or not self.has_add_permission(request):
+            if not self.has_change_permission(request, obj) or not self.has_add_permission(request):  # pragma: no cover
                 raise PermissionDenied
             # Create the context.
             context = {"title": _("Recover %(name)s") % {"name": version.object_repr},}
@@ -313,7 +313,7 @@ class VersionAdmin(admin.ModelAdmin):
             obj = get_object_or_404(self.model, pk=object_id)
             version = get_object_or_404(Version, pk=version_id, object_id=force_text(obj.pk))
             # Check if user has change permissions for model.
-            if not self.has_change_permission(request, obj):
+            if not self.has_change_permission(request, obj):  # pragma: no cover
                 raise PermissionDenied
             # Generate the context.
             context = {"title": _("Revert %(name)s") % {"name": force_text(self.model._meta.verbose_name)},}
@@ -328,7 +328,7 @@ class VersionAdmin(admin.ModelAdmin):
     def history_view(self, request, object_id, extra_context=None):
         """Renders the history view."""
         # Check if user has change permissions for model
-        if not self.has_change_permission(request):
+        if not self.has_change_permission(request):  # pragma: no cover
             raise PermissionDenied
         object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
         opts = self.model._meta
