@@ -36,6 +36,11 @@ def get_str_pk():
     return force_text(str_pk_gen)
 
 
+class ReversionTestModel1Child(ReversionTestModel1):
+
+    pass
+
+
 class ReversionTestModel2(ReversionTestModelBase):
 
     id = models.CharField(

@@ -30,6 +30,7 @@ from reversion.models import Revision, Version
 
 from test_reversion.models import (
     ReversionTestModel1,
+    ReversionTestModel1Child,
     ReversionTestModel2,
     ReversionTestModel3,
     TestFollowModel,
@@ -419,11 +420,6 @@ class ApiTest(RevisionTestBase):
         self.assertEqual(revision.user, self.user)
         self.assertEqual(revision.comment, "Foo bar")
         self.assertEqual(revision.revisionmeta.age, 5)
-
-
-class ReversionTestModel1Child(ReversionTestModel1):
-
-    pass
 
 
 class MultiTableInheritanceApiTest(RevisionTestBase):
