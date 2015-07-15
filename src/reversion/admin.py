@@ -82,10 +82,9 @@ class VersionAdmin(admin.ModelAdmin):
 
     @contextmanager
     def _create_revision(self, request):
-        with transaction.atomic():
-            with self.revision_context_manager.create_revision():
-                self.revision_context_manager.set_user(request.user)
-                yield
+        with transaction.atomic(), self.revision_context_manager.create_revision():
+            self.revision_context_manager.set_user(request.user)
+            yield
 
     # Messages.
 
