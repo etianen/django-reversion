@@ -62,7 +62,7 @@ def main():
     import django
     try:
         django.setup()
-    except AttributeError:
+    except AttributeError:  # pragma: no cover
         pass  # This is Django < 1.7
     # Configure the test runner.
     from django.test.utils import get_runner
@@ -74,7 +74,7 @@ def main():
     )
     # Run the tests.
     failures = test_runner.run_tests(["test_reversion"])
-    if failures:
+    if failures:  # pragma: no cover
         sys.exit(failures)
 
 

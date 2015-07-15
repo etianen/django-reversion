@@ -186,8 +186,9 @@ class InternalsTest(RevisionTestBase):
     def testContextManager(self):
         # New revision should be created.
         with reversion.create_revision():
-            self.test11.name = "model1 instance1 version2"
-            self.test11.save()
+            with reversion.create_revision():
+                self.test11.name = "model1 instance1 version2"
+                self.test11.save()
         self.assertEqual(Revision.objects.count(), 2)
         self.assertEqual(Version.objects.count(), 5)
 
@@ -210,13 +211,14 @@ class InternalsTest(RevisionTestBase):
         self.assertEqual(Version.objects.count(), 4)
 
     def testRevisionContextAbandonedOnError(self):
-        try:
-            with reversion.create_revision():
-                self.test11.name = "model1 instance1 version2"
-                self.test11.save()
-                raise Exception("Foo")
-        except:
-            pass
+        with reversion.create_revision():
+            try:
+                with reversion.create_revision():
+                    self.test11.name = "model1 instance1 version2"
+                    self.test11.save()
+                    raise Exception("Foo")
+            except:
+                pass
         self.assertEqual(Revision.objects.count(), 1)
         self.assertEqual(Version.objects.count(), 4)
 

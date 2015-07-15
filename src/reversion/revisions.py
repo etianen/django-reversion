@@ -132,7 +132,7 @@ class RevisionContextStackFrame(object):
         self.meta = []
 
     def fork(self, is_managing_manually):
-        return RevisionContextManager(is_managing_manually, self.is_invalid, self.ignore_duplicates)
+        return RevisionContextStackFrame(is_managing_manually, self.is_invalid, self.ignore_duplicates)
 
     def join(self, other_context):
         if not other_context.is_invalid:
