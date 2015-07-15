@@ -697,14 +697,10 @@ class VersionAdminTest(TestCase):
                 password = "bar",
             )
 
-    @skipUnless('django.contrib.admin' in settings.INSTALLED_APPS,
-                "django.contrib.admin not activated")
     def testAutoRegisterWorks(self):
         self.assertTrue(reversion.is_registered(ChildTestAdminModel))
         self.assertTrue(reversion.is_registered(ParentTestAdminModel))
 
-    @skipUnless('django.contrib.admin' in settings.INSTALLED_APPS,
-                "django.contrib.admin not activated")
     def testRevisionSavedOnPost(self):
         self.assertEqual(ChildTestAdminModel.objects.count(), 0)
         # Create an instance via the admin.
@@ -788,30 +784,20 @@ class VersionAdminTest(TestCase):
         version_list = reversion.get_for_object(parent)
         self.assertEqual(len(version_list), 2)
 
-
-    @skipUnless('django.contrib.admin' in settings.INSTALLED_APPS,
-                "django.contrib.admin not activated")
     def testInlineAdmin(self):
         self.assertTrue(reversion.is_registered(InlineTestParentModel))
-
         # make sure model is following the child FK
         self.assertTrue('children' in reversion.get_adapter(InlineTestParentModel).follow)
-
         self.createInlineObjects()
-
         # unregister model
         reversion.unregister(InlineTestParentModel)
         self.assertFalse(reversion.is_registered(InlineTestParentModel))
-
         # re-register without following
         reversion.register(InlineTestParentModel)
         self.assertTrue(reversion.is_registered(InlineTestParentModel))
-
         # make sure model is NOT following the child FK
         self.assertFalse('children' in reversion.get_adapter(InlineTestParentModel).follow)
-
         self.createInlineObjects()
-
 
     def tearDown(self):
         self.client.logout()
