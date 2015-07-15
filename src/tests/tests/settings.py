@@ -81,6 +81,9 @@ DATABASES = {
         "NAME": os.environ.get("DB_NAME", os.path.join(os.path.dirname(__file__), 'db.sqlite3')),
         "USER": os.environ.get("DB_USER", ""),
         "PASSWORD": os.environ.get("DB_PASSWORD", ""),
+        "TEST": {
+            "SERIALIZE": False,  # Speed up tests.
+        },
     }
 }
 
