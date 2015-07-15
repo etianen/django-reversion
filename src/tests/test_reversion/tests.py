@@ -324,16 +324,15 @@ class ApiTest(RevisionTestBase):
         self.assertEqual(len(reversion.get_unique_for_object(self.test21)), 2)
 
     def testCanGetForDate(self):
-        with self.settings(USE_TZ=True):
-            now = timezone.now()
-            # Test a model with an int pk.
-            version = reversion.get_for_date(self.test11, now)
-            self.assertEqual(version.field_dict["name"], "model1 instance1 version2")
-            self.assertRaises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test11, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)))
-            # Test a model with a str pk.
-            version = reversion.get_for_date(self.test21, now)
-            self.assertEqual(version.field_dict["name"], "model2 instance1 version2")
-            self.assertRaises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test21, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)))
+        now = timezone.now()
+        # Test a model with an int pk.
+        version = reversion.get_for_date(self.test11, now)
+        self.assertEqual(version.field_dict["name"], "model1 instance1 version2")
+        self.assertRaises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test11, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)))
+        # Test a model with a str pk.
+        version = reversion.get_for_date(self.test21, now)
+        self.assertEqual(version.field_dict["name"], "model2 instance1 version2")
+        self.assertRaises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test21, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)))
 
     def testCanGetDeleted(self):
         with reversion.create_revision():
@@ -656,8 +655,6 @@ class CreateInitialRevisionsTest(ReversionTestBase):
 
 class RevisionMiddlewareTest(ReversionTestBase):
 
-    urls = "test_reversion.urls"
-
     def testRevisionMiddleware(self):
         self.assertEqual(Revision.objects.count(), 0)
         self.assertEqual(Version.objects.count(), 0)
@@ -678,8 +675,6 @@ class RevisionMiddlewareTest(ReversionTestBase):
 
 class VersionAdminTest(TestCase):
 
-    urls = "test_reversion.urls"
-
     def setUp(self):
         self.old_TEMPLATE_DIRS = settings.TEMPLATE_DIRS
         settings.TEMPLATE_DIRS = (
@@ -693,11 +688,10 @@ class VersionAdminTest(TestCase):
         self.user.set_password("bar")
         self.user.save()
         # Log the user in.
-        with self.settings(INSTALLED_APPS=tuple(set(tuple(settings.INSTALLED_APPS) + ("django.contrib.sessions",)))):  # HACK: Without this the client won't log in, for some reason.
-            self.client.login(
-                username = "foo",
-                password = "bar",
-            )
+        self.client.login(
+            username = "foo",
+            password = "bar",
+        )
 
     def testAutoRegisterWorks(self):
         self.assertTrue(reversion.is_registered(ChildTestAdminModel))

@@ -19,7 +19,7 @@ matrix:
 install:
   - travis_retry pip install $DJANGO
   - pip install -e .[test,diff]
-script: coverage run src/tests/runtests.py
+script: coverage run src/tests/manage.py test src/tests/test_reversion/
 after_script: coverage report
 notifications:
   email: false

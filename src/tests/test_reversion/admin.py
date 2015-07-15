@@ -16,15 +16,12 @@ from test_reversion.models import (
 )
 
 
-site = admin.AdminSite()
-
-
 class ChildTestAdminModelAdmin(reversion.VersionAdmin):
 
     pass
 
 
-site.register(ChildTestAdminModel, ChildTestAdminModelAdmin)
+admin.site.register(ChildTestAdminModel, ChildTestAdminModelAdmin)
 
 
 class InlineTestChildModelInline(admin.TabularInline):
@@ -52,7 +49,7 @@ class InlineTestParentModelAdmin(reversion.VersionAdmin):
     inlines = (InlineTestChildModelInline, InlineTestChildGenericModelInline)
 
 
-site.register(InlineTestParentModel, InlineTestParentModelAdmin)
+admin.site.register(InlineTestParentModel, InlineTestParentModelAdmin)
 
 
 class InlineTestUnrelatedChildModelInline(admin.TabularInline):
@@ -65,4 +62,4 @@ class InlineTestUnrelatedParentModelAdmin(reversion.VersionAdmin):
     inlines = (InlineTestUnrelatedChildModelInline,)
 
 
-site.register(InlineTestUnrelatedParentModel, InlineTestUnrelatedParentModelAdmin)
+admin.site.register(InlineTestUnrelatedParentModel, InlineTestUnrelatedParentModelAdmin)
