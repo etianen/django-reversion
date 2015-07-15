@@ -173,7 +173,7 @@ class VersionAdmin(admin.ModelAdmin):
         with self._create_revision(request):
             return super(VersionAdmin, self).change_view(request, object_id, form_url, extra_context)
 
-    def revisionform_view(self, request, version, extra_context=None):
+    def revisionform_view(self, request, version, template_name, extra_context=None):
         try:
             with transaction.atomic():
                 # Revert the revision.
@@ -183,6 +183,7 @@ class VersionAdmin(admin.ModelAdmin):
                     response = self.changeform_view(request, version.object_id, request.path, extra_context)
                     # Decide on whether the keep the changes.
                     if not (request.method == "POST" and response.status_code == 302):
+                        response.template_name = template_name  # Set the template name to the correct template.
                         response.render()  # Eagerly render the response, so it's using the latest version of the database.
                         raise RollBackRevisionView  # Raise an exception to undo the transaction and the revision.
         except RollBackRevisionView:
@@ -192,7 +193,7 @@ class VersionAdmin(admin.ModelAdmin):
     def recover_view(self, request, version_id, extra_context=None):
         """Displays a form that can recover a deleted model."""
         version = get_object_or_404(Version, pk=version_id)
-        return self.revisionform_view(request, version, {
+        return self.revisionform_view(request, version, self.recover_form_template or self._get_template_list("recover_form.html"), {
             "title": _("Recover %(name)s") % {"name": version.object_repr},
         })
 
@@ -200,7 +201,7 @@ class VersionAdmin(admin.ModelAdmin):
         """Displays the contents of the given revision."""
         object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
         version = get_object_or_404(Version, pk=version_id, object_id=object_id)
-        return self.revisionform_view(request, version, {
+        return self.revisionform_view(request, version, self.revision_form_template or self._get_template_list("revision_form.html"), {
             "title": _("Revert %(name)s") % {"name": version.object_repr},
         })
 

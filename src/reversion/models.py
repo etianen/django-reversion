@@ -32,7 +32,7 @@ def safe_revert(versions):
             unreverted_versions.append(version)
     if len(unreverted_versions) == len(versions):  # pragma: no cover
         raise RevertError("Could not revert revision, due to database integrity errors.")
-    if unreverted_versions:
+    if unreverted_versions:  # pragma: no cover
         safe_revert(unreverted_versions)
 
 
@@ -77,17 +77,17 @@ class Revision(models.Model):
         # Optionally delete objects no longer in the current revision.
         if delete:
             # Get a dict of all objects in this revision.
-            old_revision = {}
+            old_revision = set()
             for version in version_set:
                 try:
                     obj = version.object
                 except ContentType.objects.get_for_id(version.content_type_id).model_class().DoesNotExist:
                     pass
                 else:
-                    old_revision[obj] = version
+                    old_revision.add(obj)
             # Calculate the set of all objects that are in the revision now.
             from reversion.revisions import RevisionManager
-            current_revision = RevisionManager.get_manager(self.manager_slug)._follow_relationships(obj for obj in old_revision.keys() if obj is not None)
+            current_revision = RevisionManager.get_manager(self.manager_slug)._follow_relationships(obj for obj in old_revision if obj is not None)
             # Delete objects that are no longer in the current revision.
             for item in current_revision:
                 if item not in old_revision:

@@ -706,6 +706,10 @@ class VersionAdminTest(TestCase):
         self.assertTrue(reversion.is_registered(InlineTestChildGenericModel))
         self.assertTrue(reversion.is_registered(InlineTestParentModel))
 
+    def testChangelist(self):
+        response = self.client.get("/admin/test_reversion/childtestadminmodel/")
+        self.assertEqual(response.status_code, 200)
+
     def testRevisionSavedOnPost(self):
         self.assertEqual(ChildTestAdminModel.objects.count(), 0)
         # Create an instance via the admin.
@@ -798,7 +802,6 @@ class VersionAdminTest(TestCase):
         self.assertEqual(response.status_code, 302)
         parent_pk = response["Location"].split("/")[-2]
         parent = InlineTestParentModel.objects.get(id=parent_pk)
-
         # Update  instance via the admin to add a child
         response = self.client.post("/admin/test_reversion/inlinetestparentmodel/%s/" % parent_pk, {
             "name": "parent version1",
