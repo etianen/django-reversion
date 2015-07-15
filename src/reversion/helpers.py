@@ -40,7 +40,7 @@ def patch_admin(model, admin_site=None):
 
 try:
     from diff_match_patch import diff_match_patch
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
 else:
     dmp = diff_match_patch()
@@ -58,7 +58,7 @@ else:
             dmp.diff_cleanupEfficiency(diffs)
         elif cleanup is None:
             pass
-        else:
+        else:  # pragma: no cover
             raise ValueError("cleanup parameter should be one of 'semantic', 'efficiency' or None.")
         return diffs
 

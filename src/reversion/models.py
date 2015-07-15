@@ -5,12 +5,12 @@ from __future__ import unicode_literals
 from django.contrib.contenttypes.models import ContentType
 try:
     from django.contrib.contenttypes.fields import GenericForeignKey
-except ImportError:  # Django < 1.9
+except ImportError:  # Django < 1.9 pragma: no cover
     from django.contrib.contenttypes.generic import GenericForeignKey
 from django.conf import settings
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import models, IntegrityError
+from django.db import models, IntegrityError, transaction
 from django.dispatch.dispatcher import Signal
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text, python_2_unicode_compatible
@@ -26,10 +26,11 @@ def safe_revert(versions):
     unreverted_versions = []
     for version in versions:
         try:
-            version.revert()
-        except (IntegrityError, ObjectDoesNotExist):
+            with transaction.atomic():
+                version.revert()
+        except (IntegrityError, ObjectDoesNotExist):  # pragma: no cover
             unreverted_versions.append(version)
-    if len(unreverted_versions) == len(versions):
+    if len(unreverted_versions) == len(versions):  # pragma: no cover
         raise RevertError("Could not revert revision, due to database integrity errors.")
     if unreverted_versions:
         safe_revert(unreverted_versions)
@@ -181,7 +182,7 @@ class Version(models.Model):
                     parent_version = Version.objects.get(revision__id=self.revision_id,
                                                          content_type=content_type,
                                                          object_id=parent_id)
-                except Version.DoesNotExist:
+                except Version.DoesNotExist:  # pragma: no cover
                     pass
                 else:
                     result.update(parent_version.field_dict)

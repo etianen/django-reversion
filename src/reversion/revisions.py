@@ -11,7 +11,7 @@ import copy
 try:
     from django.apps import apps
     get_model = apps.get_model
-except ImportError:  # For Django < 1.7
+except ImportError:  # For Django < 1.7  pragma: no cover
     from django.db.models import get_model
 
 from django.contrib.contenttypes.models import ContentType
@@ -73,14 +73,14 @@ class VersionAdapter(object):
             # Get the referenced obj(s).
             try:
                 related = getattr(obj, relationship)
-            except ObjectDoesNotExist:
+            except ObjectDoesNotExist:  # pragma: no cover
                 continue
             if isinstance(related, models.Model):
                 yield related
             elif isinstance(related, (models.Manager, QuerySet)):
                 for related_obj in related.all():
                     yield related_obj
-            elif related is not None:
+            elif related is not None:  # pragma: no cover
                 raise TypeError("Cannot follow the relationship {relationship}. Expected a model or QuerySet, found {related}".format(
                     relationship = relationship,
                     related = related,
@@ -153,7 +153,7 @@ class RevisionContextManager(local):
 
     def _assert_active(self):
         """Checks for an active revision, throwning an exception if none."""
-        if not self.is_active():
+        if not self.is_active():  # pragma: no cover
             raise RevisionManagementError("There is no active revision for this thread")
 
     def start(self, manage_manually=False):
@@ -261,7 +261,7 @@ class RevisionContextManager(local):
         are closed. Not closing all active revisions can cause memory leaks
         and weird behaviour.
         """
-        while self.is_active():
+        while self.is_active():  # pragma: no cover
             self.end()
 
     # High-level context management.
@@ -330,12 +330,12 @@ class RevisionManager(object):
         """Returns the manager with the given slug."""
         if manager_slug in cls._created_managers:
             return cls._created_managers[manager_slug]
-        raise RegistrationError("No revision manager exists with the slug %r" % manager_slug)
+        raise RegistrationError("No revision manager exists with the slug %r" % manager_slug)  # pragma: no cover
 
     def __init__(self, manager_slug, revision_context_manager=revision_context_manager):
         """Initializes the revision manager."""
         # Check the slug is unique for this revision manager.
-        if manager_slug in RevisionManager._created_managers:
+        if manager_slug in RevisionManager._created_managers:  # pragma: no cover
             raise RegistrationError("A revision manager has already been created with the slug %r" % manager_slug)
         # Store a reference to this manager.
         self.__class__._created_managers[manager_slug] = self
@@ -597,7 +597,7 @@ class RevisionManager(object):
         ).values_list("latest_pk", flat=True)
         # HACK: MySQL deals extremely badly with this as a subquery, and can hang infinitely.
         # TODO: If a version is identified where this bug no longer applies, we can add a version specifier.
-        if connection.vendor == "mysql":
+        if connection.vendor == "mysql":  # pragma: no cover
             deleted_version_pks = list(deleted_version_pks)
         # Return the deleted versions!
         return self._get_versions(db).filter(pk__in=deleted_version_pks).order_by("-pk")
