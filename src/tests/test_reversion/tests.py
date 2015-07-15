@@ -7,6 +7,7 @@ These tests require Python 2.5 to run.
 from __future__ import unicode_literals
 
 import datetime, os
+from unittest import skipUnless
 
 from django.db import models
 from django.test import TestCase
@@ -20,8 +21,8 @@ except ImportError: # django < 1.5
     from django.contrib.auth.models import User
 else:
     User = get_user_model()
-from django.utils.unittest import skipUnless
 from django.db.models.signals import pre_delete
+from django.utils import timezone
 
 import reversion
 from reversion.revisions import RegistrationError, RevisionManager
@@ -43,19 +44,6 @@ from test_reversion import admin  # Force early registration of all admin models
 
 
 ZERO = datetime.timedelta(0)
-
-
-class UTC(datetime.tzinfo):
-    """UTC"""
-
-    def utcoffset(self, dt):
-        return ZERO
-
-    def tzname(self, dt):
-        return "UTC"
-
-    def dst(self, dt):
-        return ZERO
 
 
 class RegistrationTest(TestCase):
@@ -334,15 +322,15 @@ class ApiTest(RevisionTestBase):
 
     def testCanGetForDate(self):
         with self.settings(USE_TZ=True):
-            now = datetime.datetime.now(UTC())
+            now = timezone.now()
             # Test a model with an int pk.
             version = reversion.get_for_date(self.test11, now)
             self.assertEqual(version.field_dict["name"], "model1 instance1 version2")
-            self.assertRaises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test11, datetime.datetime(1970, 1, 1, tzinfo=UTC())))
+            self.assertRaises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test11, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)))
             # Test a model with a str pk.
             version = reversion.get_for_date(self.test21, now)
             self.assertEqual(version.field_dict["name"], "model2 instance1 version2")
-            self.assertRaises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test21, datetime.datetime(1970, 1, 1, tzinfo=UTC())))
+            self.assertRaises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test21, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)))
 
     def testCanGetDeleted(self):
         with reversion.create_revision():
@@ -771,7 +759,7 @@ class VersionAdminTest(TestCase):
         obj = ChildTestAdminModel.objects.get(id=obj_pk)
 
 
-    def createInlineObjects(self, should_delete):
+    def createInlineObjects(self):
         # Create an instance via the admin without a child.
         response = self.client.post("/admin/test_reversion/inlinetestparentmodel/add/", {
             "name": "parent version1",
@@ -804,10 +792,6 @@ class VersionAdminTest(TestCase):
         response = self.client.get("/admin/test_reversion/inlinetestparentmodel/%s/history/%s/" %
                                    (parent_pk, version_list[1].id))
         self.assertEqual(response.status_code, 200)
-        if should_delete:
-            self.assertContains(response, '<input checked="checked" id="id_children-0-DELETE" name="children-0-DELETE" type="checkbox" />') # this is crude
-        else:
-            self.assertNotContains(response, '<input checked="checked" id="id_children-0-DELETE" name="children-0-DELETE" type="checkbox" />') # this is crude
 
         # don't actually submit a post since the values we submit would be from the test, not what the admin defaults
 
@@ -820,7 +804,7 @@ class VersionAdminTest(TestCase):
         # make sure model is following the child FK
         self.assertTrue('children' in reversion.get_adapter(InlineTestParentModel).follow)
 
-        self.createInlineObjects(True)
+        self.createInlineObjects()
 
         # unregister model
         reversion.unregister(InlineTestParentModel)
@@ -833,7 +817,7 @@ class VersionAdminTest(TestCase):
         # make sure model is NOT following the child FK
         self.assertFalse('children' in reversion.get_adapter(InlineTestParentModel).follow)
 
-        self.createInlineObjects(False)
+        self.createInlineObjects()
 
 
     def tearDown(self):

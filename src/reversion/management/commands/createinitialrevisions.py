@@ -7,7 +7,11 @@ except ImportError:  # For Python 2.6
     from django.utils.datastructures import SortedDict as OrderedDict
 
 try:
-    from django.apps.apps import get_app, get_apps, get_model, get_models
+    from django.apps import apps
+    get_app = apps.get_app
+    get_apps = apps.get_apps
+    get_model = apps.get_model
+    get_models = apps.get_models
 except ImportError:  # For Django < 1.7
     from django.db.models import get_app, get_apps, get_model, get_models
 
@@ -49,10 +53,10 @@ class Command(BaseCommand):
     help = "Creates initial revisions for a given app [and model]."
 
     def handle(self, *app_labels, **options):
-        
+
         # Activate project's default language
         translation.activate(settings.LANGUAGE_CODE)
-        
+
         comment = options["comment"]
         batch_size = options["batch_size"]
         database = options.get('database')
@@ -100,7 +104,7 @@ class Command(BaseCommand):
         for app, model_classes in app_list.items():
             for model_class in model_classes:
                 self.create_initial_revisions(app, model_class, comment, batch_size, verbosity, database=database)
-        
+
         # Go back to default language
         translation.deactivate()
 

@@ -18,7 +18,8 @@ matrix:
   fast_finish: true
 install:
   - travis_retry pip install $DJANGO
-  - pip install -e .
-script: python src/tests/runtests.py
+  - pip install -e .[test,diff]
+script: coverage run src/tests/runtests.py
+after_script: coverage report
 notifications:
   email: false

@@ -2,14 +2,15 @@
 
 from __future__ import unicode_literals
 
-import operator, sys
+import operator
 from functools import wraps, reduce, partial
 from threading import local
 from weakref import WeakValueDictionary
 import copy
 
 try:
-    from django.apps.apps import get_model
+    from django.apps import apps
+    get_model = apps.get_model
 except ImportError:  # For Django < 1.7
     from django.db.models import get_model
 

@@ -1,0 +1,19 @@
+[report]
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+
+    # Don't complain if tests don't hit defensive assertion code:
+    raise AssertionError
+    raise NotImplementedError
+    assert False
+
+    # Don't complain if tests don't hit model __str__ methods.
+    def __str__
+
+omit =
+    */venv/*
+    */virtualenv/*
+    */django_s3_storage_test/*
+
+show_missing = True
