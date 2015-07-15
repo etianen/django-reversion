@@ -700,6 +700,9 @@ class VersionAdminTest(TestCase):
     def testAutoRegisterWorks(self):
         self.assertTrue(reversion.is_registered(ChildTestAdminModel))
         self.assertTrue(reversion.is_registered(ParentTestAdminModel))
+        self.assertTrue(reversion.is_registered(InlineTestChildModel))
+        self.assertTrue(reversion.is_registered(InlineTestChildGenericModel))
+        self.assertTrue(reversion.is_registered(InlineTestParentModel))
 
     def testRevisionSavedOnPost(self):
         self.assertEqual(ChildTestAdminModel.objects.count(), 0)
@@ -733,6 +736,10 @@ class VersionAdminTest(TestCase):
         response = self.client.get("/admin/test_reversion/childtestadminmodel/%s/history/" % obj_pk)
         self.assertContains(response, "child instance1 version2")
         self.assertContains(response, "child instance1 version1")
+        # Check that version data can be loaded.
+        response = self.client.get("/admin/test_reversion/childtestadminmodel/%s/history/%s/" % (obj_pk, versions[1].pk))
+        self.assertContains(response, "parent instance1 version1")
+        self.assertContains(response, "child instance1 version1")
         # Check that a version can be rolled back.
         response = self.client.post("/admin/test_reversion/childtestadminmodel/%s/history/%s/" % (obj_pk, versions[1].pk))
         self.assertEqual(response.status_code, 302)
@@ -744,6 +751,7 @@ class VersionAdminTest(TestCase):
         # Check that a deleted version can be viewed.
         obj.delete()
         response = self.client.get("/admin/test_reversion/childtestadminmodel/recover/")
+        self.assertContains(response, "parent instance1 version1")
         self.assertContains(response, "child instance1 version1")
         # Check that a deleted version can be recovered.
         response = self.client.post("/admin/test_reversion/childtestadminmodel/recover/%s/" % versions[0].pk)
