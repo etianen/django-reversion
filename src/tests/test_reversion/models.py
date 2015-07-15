@@ -77,11 +77,15 @@ class RevisionMeta(models.Model):
 
 # Admin test models.
 
+@python_2_unicode_compatible
 class ParentTestAdminModel(models.Model):
 
     parent_name = models.CharField(
         max_length = 200,
     )
+
+    def __str__(self):
+        return self.parent_name
 
 
 @python_2_unicode_compatible

@@ -7,6 +7,7 @@ from functools import wraps, reduce, partial
 from threading import local
 from weakref import WeakValueDictionary
 import copy
+from collections import defaultdict
 
 try:
     from django.apps import apps
@@ -121,6 +122,25 @@ class RevisionManagementError(Exception):
     """Exception that is thrown when something goes wrong with revision managment."""
 
 
+class RevisionContextStackFrame(object):
+
+    def __init__(self, is_managing_manually, is_invalid=False, ignore_duplicates=False):
+        self.is_managing_manually = is_managing_manually
+        self.is_invalid = is_invalid
+        self.ignore_duplicates = ignore_duplicates
+        self.objects = defaultdict(dict)
+        self.meta = []
+
+    def fork(self, is_managing_manually):
+        return RevisionContextManager(is_managing_manually, self.is_invalid, self.ignore_duplicates)
+
+    def join(self, other_context):
+        if not other_context.is_invalid:
+            for manager_name, object_versions in other_context.objects.items():
+                self.objects[manager_name].update(object_versions)
+            self.meta.extend(other_context.meta)
+
+
 class RevisionContextManager(local):
 
     """Manages the state of the current revision."""
@@ -133,28 +153,24 @@ class RevisionContextManager(local):
 
     def clear(self):
         """Puts the revision manager back into its default state."""
-        self._objects = {}
         self._user = None
         self._comment = ""
         self._stack = []
-        self._is_invalid = False
-        self._meta = []
-        self._ignore_duplicates = False
         self._db = None
 
     def is_active(self):
         """Returns whether there is an active revision for this thread."""
         return bool(self._stack)
 
-    def is_managing_manually(self):
-        """Returns whether this revision context has manual management enabled."""
-        self._assert_active()
-        return self._stack[-1]
-
     def _assert_active(self):
         """Checks for an active revision, throwning an exception if none."""
         if not self.is_active():  # pragma: no cover
             raise RevisionManagementError("There is no active revision for this thread")
+
+    @property
+    def _current_frame(self):
+        self._assert_active()
+        return self._stack[-1]
 
     def start(self, manage_manually=False):
         """
@@ -164,17 +180,22 @@ class RevisionContextManager(local):
         leave these methods alone and instead use the revision context manager
         or the `create_revision` decorator.
         """
-        self._stack.append(manage_manually)
+        if self.is_active():
+            self._stack.append(self._current_frame.fork(manage_manually))
+        else:
+            self._stack.append(RevisionContextStackFrame(manage_manually))
 
     def end(self):
         """Ends a revision for this thread."""
         self._assert_active()
-        self._stack.pop()
-        if not self._stack:
+        stack_frame = self._stack.pop()
+        if self._stack:
+            self._current_frame.join(stack_frame)
+        else:
             try:
-                if not self.is_invalid():
+                if not stack_frame.is_invalid:
                     # Save the revision data.
-                    for manager, manager_context in self._objects.items():
+                    for manager, manager_context in stack_frame.objects.items():
                         manager.save_revision(
                             dict(
                                 (obj, callable(data) and data() or data)
@@ -184,31 +205,14 @@ class RevisionContextManager(local):
                             ),
                             user = self._user,
                             comment = self._comment,
-                            meta = self._meta,
-                            ignore_duplicates = self._ignore_duplicates,
+                            meta = stack_frame.meta,
+                            ignore_duplicates = stack_frame.ignore_duplicates,
                             db = self._db,
                         )
             finally:
                 self.clear()
 
-    def invalidate(self):
-        """Marks this revision as broken, so should not be commited."""
-        self._assert_active()
-        self._is_invalid = True
-
-    def is_invalid(self):
-        """Checks whether this revision is invalid."""
-        return self._is_invalid
-
-    def add_to_context(self, manager, obj, version_data):
-        """Adds an object to the current revision."""
-        self._assert_active()
-        try:
-            manager_context = self._objects[manager]
-        except KeyError:
-            manager_context = {}
-            self._objects[manager] = manager_context
-        manager_context[obj] = version_data
+    # Revision context properties that apply to the entire stack.
 
     def get_db(self):
         """Returns the current DB alias being used."""
@@ -238,20 +242,35 @@ class RevisionContextManager(local):
         self._assert_active()
         return self._comment
 
+    # Revision context properties that apply to the current stack frame.
+
+    def is_managing_manually(self):
+        """Returns whether this revision context has manual management enabled."""
+        return self._current_frame.is_managing_manually
+
+    def invalidate(self):
+        """Marks this revision as broken, so should not be commited."""
+        self._current_frame.is_invalid = True
+
+    def is_invalid(self):
+        """Checks whether this revision is invalid."""
+        return self._current_frame.is_invalid
+
+    def add_to_context(self, manager, obj, version_data):
+        """Adds an object to the current revision."""
+        self._current_frame.objects[manager][obj] = version_data
+
     def add_meta(self, cls, **kwargs):
         """Adds a class of meta information to the current revision."""
-        self._assert_active()
-        self._meta.append((cls, kwargs))
+        self._current_frame.meta.append((cls, kwargs))
 
     def set_ignore_duplicates(self, ignore_duplicates):
         """Sets whether to ignore duplicate revisions."""
-        self._assert_active()
-        self._ignore_duplicates = ignore_duplicates
+        self._current_frame.ignore_duplicates = ignore_duplicates
 
     def get_ignore_duplicates(self):
         """Gets whether to ignore duplicate revisions."""
-        self._assert_active()
-        return self._ignore_duplicates
+        return self._current_frame.ignore_duplicates
 
     # Signal receivers.
 
