@@ -57,6 +57,22 @@ class TestFollowModel(ReversionTestModelBase):
     )
 
 
+class TestAutoRegisterChild(ReversionTestModelBase):
+    pass
+
+
+class TestAutoRegisterParent(ReversionTestModelBase):
+
+    child = models.ForeignKey(
+        TestAutoRegisterChild,
+        null=True,
+    )
+
+    children = models.ManyToManyField(
+        TestAutoRegisterChild,
+    )
+
+
 class ReversionTestModel1Proxy(ReversionTestModel1):
 
     class Meta:

@@ -7,6 +7,7 @@ from functools import wraps, reduce, partial
 from threading import local
 from weakref import WeakValueDictionary
 import copy
+import logging
 
 try:
     from django.apps.apps import get_model
@@ -24,6 +25,9 @@ from django.db.models.signals import post_save
 from django.utils.encoding import force_text
 
 from reversion.models import Revision, Version, has_int_pk, pre_revision_commit, post_revision_commit
+
+
+logger = logging.getLogger(__name__)
 
 
 class VersionAdapter(object):
@@ -331,7 +335,8 @@ class RevisionManager(object):
             return cls._created_managers[manager_slug]
         raise RegistrationError("No revision manager exists with the slug %r" % manager_slug)
 
-    def __init__(self, manager_slug, revision_context_manager=revision_context_manager):
+    def __init__(self, manager_slug, adapter_cls=VersionAdapter,
+                 revision_context_manager=revision_context_manager):
         """Initializes the revision manager."""
         # Check the slug is unique for this revision manager.
         if manager_slug in RevisionManager._created_managers:
@@ -341,6 +346,7 @@ class RevisionManager(object):
         # Store config params.
         self._manager_slug = manager_slug
         self._registered_models = {}
+        self._adapter_cls = adapter_cls
         self._revision_context_manager = revision_context_manager
         self._eager_signals = {}
         self._signals = {}
@@ -371,8 +377,11 @@ class RevisionManager(object):
             in self._registered_models.keys()
         ]
 
-    def register(self, model=None, adapter_cls=VersionAdapter, signals=None, eager_signals=None, **field_overrides):
+    def register(self, model=None, adapter_cls=None, signals=None, eager_signals=None, **field_overrides):
         """Registers a model with this revision manager."""
+        # Use default adapter class unless overridden in this method call
+        if adapter_cls is None:
+            adapter_cls = self._adapter_cls
         # Default to post_save if no signals are given
         if signals is None and eager_signals is None:
             signals = [post_save]
@@ -621,6 +630,35 @@ class RevisionManager(object):
             else:
                 version_data = lambda: adapter.get_version_data(instance, self._revision_context_manager._db)
                 self._revision_context_manager.add_to_context(self, instance, version_data)
+
+
+class AutoRegisterRevisionManager(RevisionManager):
+    """
+    Revision manager that automatically registers previously unregistered model
+    classes as it encounters them, so we can `follow` any object relationships
+    without needing to pre-register classes that might be traversed.
+    This is mainly useful for CMSes where there may be a complex object
+    relationship model and a set of content types that can grow over time.
+    """
+
+    def get_adapter(self, model):
+        """
+        Try to automatically register any unregistered models we visit.
+        """
+        try:
+            super(AutoRegisterRevisionManager, self).get_adapter(model)
+        except RegistrationError:
+            exc_info = sys.exc_info()  # Remember original exception
+            try:
+                self.register(model)
+                logger.debug("Auto-registered model %r" % model)
+            except Exception, ex:
+                # Log auto-registration error to aid debugging, but...
+                logger.warn("Failed to auto-register model %r: %s" % (model, ex))
+                # ... re-raise the original exception for clarity.
+                raise exc_info[0], exc_info[1], exc_info[2]
+
+        return super(AutoRegisterRevisionManager, self).get_adapter(model)
 
 
 # A shared revision manager.

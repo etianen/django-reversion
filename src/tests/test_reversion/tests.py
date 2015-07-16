@@ -24,7 +24,11 @@ from django.utils.unittest import skipUnless
 from django.db.models.signals import pre_delete
 
 import reversion
-from reversion.revisions import RegistrationError, RevisionManager
+from reversion.revisions import (
+    RegistrationError,
+    RevisionManager,
+    AutoRegisterRevisionManager,
+)
 from reversion.models import Revision, Version
 
 from test_reversion.models import (
@@ -32,6 +36,8 @@ from test_reversion.models import (
     ReversionTestModel2,
     ReversionTestModel3,
     TestFollowModel,
+    TestAutoRegisterChild,
+    TestAutoRegisterParent,
     ReversionTestModel1Proxy,
     RevisionMeta,
     ParentTestAdminModel,
@@ -116,6 +122,35 @@ class RegistrationTest(TestCase):
         self.assertRaises(RegistrationError, lambda: isinstance(reversion.get_adapter(ReversionTestModel3)))
         self.assertFalse(ReversionTestModel3 in reversion.default_revision_manager._signals)
         self.assertFalse(ReversionTestModel3 in reversion.default_revision_manager._eager_signals)
+
+    def testRevisionManagerDefaultAdapter(self):
+        # Default adapter is used unless overridden
+        class TestModel1(models.Model):
+            pass
+        reversion.register(TestModel1)
+        self.assertTrue(reversion.is_registered(TestModel1))
+        self.assertEqual(reversion.VersionAdapter,
+                         reversion.get_adapter(TestModel1).__class__)
+        # Can specify default adapter for a revision manager class
+        class CustomVersionAdapter1(reversion.VersionAdapter):
+            pass
+        class TestModel2(models.Model):
+            pass
+        rev_manager = RevisionManager("test-manager-1",
+                                      adapter_cls=CustomVersionAdapter1)
+        rev_manager.register(TestModel2)
+        self.assertTrue(rev_manager.is_registered(TestModel2))
+        self.assertEqual(CustomVersionAdapter1,
+                         rev_manager.get_adapter(TestModel2).__class__)
+        # Can override revision manager's default adapter on `register` call
+        class CustomVersionAdapter2(reversion.VersionAdapter):
+            pass
+        class TestModel3(models.Model):
+            pass
+        rev_manager.register(TestModel3, adapter_cls=CustomVersionAdapter2)
+        self.assertTrue(rev_manager.is_registered(TestModel3))
+        self.assertEqual(CustomVersionAdapter2,
+                         rev_manager.get_adapter(TestModel3).__class__)
 
 
 class ReversionTestBase(TestCase):
@@ -627,6 +662,60 @@ class ExcludedFieldsTest(RevisionTestBase):
         super(ExcludedFieldsTest, self).tearDown()
         excluded_revision_manager.unregister(ReversionTestModel1)
         excluded_revision_manager.unregister(ReversionTestModel2)
+
+
+autoreg_manager = AutoRegisterRevisionManager("auto-reg")
+
+
+class AutoRegisterRevisionManagerTest(TestCase):
+
+    def setUp(self):
+        super(AutoRegisterRevisionManagerTest, self).setUp()
+        self.child_1 = TestAutoRegisterChild.objects.create(name="Child 1")
+        self.child_2 = TestAutoRegisterChild.objects.create(name="Child 2")
+
+    def testAutoRegisterFollowedRelationsViaForeignKey(self):
+        parent = TestAutoRegisterParent(name="Parent", child=self.child_1)
+        # Explicitly register TestAutoRegisterParent, not TestAutoRegisterChild
+        autoreg_manager.register(
+            TestAutoRegisterParent, follow=("child",))
+        self.assertTrue(
+            autoreg_manager.is_registered(TestAutoRegisterParent))
+        # TestAutoRegisterChild is not yet registered
+        self.assertFalse(
+            autoreg_manager.is_registered(TestAutoRegisterChild))
+        # Trigger a follow by saving revision
+        with reversion.create_revision():
+            # Save succeeds because TestAutoRegisterChild is auto-registered
+            parent.save()
+        # TestAutoRegisterChild has been auto-registered
+        self.assertTrue(
+            autoreg_manager.is_registered(TestAutoRegisterChild))
+
+    def testAutoRegisterFollowedRelationsViaManyToMany(self):
+        parent = TestAutoRegisterParent.objects.create(name="Parent")
+        parent.children.add(self.child_1, self.child_2)
+        # TestAutoRegisterParent is registerd, not TestAutoRegisterChild
+        autoreg_manager.register(
+            TestAutoRegisterParent, follow=("children",))
+        self.assertTrue(
+            autoreg_manager.is_registered(TestAutoRegisterParent))
+        self.assertFalse(
+            autoreg_manager.is_registered(TestAutoRegisterChild))
+        # Trigger a many-to-many follow by saving revision
+        with reversion.create_revision():
+            parent.save()
+        # Models have been auto-registered
+        self.assertTrue(
+            autoreg_manager.is_registered(TestAutoRegisterParent))
+        self.assertTrue(
+            autoreg_manager.is_registered(TestAutoRegisterChild))
+
+    def tearDown(self):
+        autoreg_manager.unregister(TestAutoRegisterParent)
+        autoreg_manager.unregister(TestAutoRegisterChild)
+        TestAutoRegisterParent.objects.all().delete()
+        super(AutoRegisterRevisionManagerTest, self).tearDown()
 
 
 class CreateInitialRevisionsTest(ReversionTestBase):
