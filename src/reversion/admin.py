@@ -23,6 +23,7 @@ from django.shortcuts import get_object_or_404, render
 from django.utils.text import capfirst
 from django.utils.translation import ugettext as _
 from django.utils.encoding import force_text
+from django.utils.formats import localize
 
 from reversion.models import Version
 from reversion.revisions import default_revision_manager
@@ -182,7 +183,9 @@ class VersionAdmin(admin.ModelAdmin):
                 with self._create_revision(request):
                     response = self.changeform_view(request, version.object_id, request.path, extra_context)
                     # Decide on whether the keep the changes.
-                    if not (request.method == "POST" and response.status_code == 302):
+                    if request.method == "POST" and response.status_code == 302:
+                        self.revision_context_manager.set_comment(_("Reverted to previous version, saved on %(datetime)s") % {"datetime": localize(version.revision.date_created)})
+                    else:
                         response.template_name = template_name  # Set the template name to the correct template.
                         response.render()  # Eagerly render the response, so it's using the latest version of the database.
                         raise RollBackRevisionView  # Raise an exception to undo the transaction and the revision.
