@@ -11,3 +11,4 @@ MANIFEST
 src/django_reversion.egg-info/
 docs/_build
 .coverage
+*.sqlite3

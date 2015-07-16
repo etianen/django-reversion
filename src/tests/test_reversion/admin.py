@@ -1,8 +1,8 @@
 from django.contrib import admin
 try:
-    from django.contrib.contenttypes.admin import GenericInlineModelAdmin
+    from django.contrib.contenttypes.admin import GenericTabularInline
 except ImportError:  # Django < 1.9  pragma: no cover
-    from django.contrib.contenttypes.generic import GenericInlineModelAdmin
+    from django.contrib.contenttypes.generic import GenericTabularInline
 
 import reversion
 
@@ -35,13 +35,15 @@ class InlineTestChildModelInline(admin.TabularInline):
     verbose_name_plural = "Children"
 
 
-class InlineTestChildGenericModelInline(GenericInlineModelAdmin):
+class InlineTestChildGenericModelInline(GenericTabularInline):
 
     model = InlineTestChildGenericModel
 
     ct_field = "content_type"
 
     ct_fk_field = "object_id"
+
+    extra = 0
 
 
 class InlineTestParentModelAdmin(reversion.VersionAdmin):
