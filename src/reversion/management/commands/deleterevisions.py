@@ -17,12 +17,12 @@ class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
         make_option("--date", "-t",
             dest="date",
-            help="Delete only revisions older then the specify date. The date should be a valid date given in the ISO format (YYYY-MM-DD)"),
+            help="Delete only revisions older than the specify date. The date should be a valid date given in the ISO format (YYYY-MM-DD)"),
         make_option("--days", "-d",
             dest="days",
             default=0,
             type="int",
-            help="Delete only revisions older then the specify number of days."),
+            help="Delete only revisions older than the specify number of days."),
         make_option("--keep-revision", "-k",
             dest="keep",
             default=0,
@@ -62,11 +62,11 @@ Examples:
     
         deleterevisions myapp.mymodel --days=365 --force
         
-    That will delete every revision of myapp.model that are older then 365 days, even if there's revisions involving other apps and/or models.
+    That will delete every revision of myapp.model that are older than 365 days, even if there's revisions involving other apps and/or models.
     
         deleterevisions myapp.mymodel --keep=10
         
-    That will delete only revisions of myapp.model if there's more then 10 revisions for an object, keeping the 10 most recent revisons.
+    That will delete only revisions of myapp.model if there's more than 10 revisions for an object, keeping the 10 most recent revisons.
 """
 
     def handle(self, *app_labels, **options):
@@ -149,7 +149,7 @@ Examples:
                 else:
                     objs = objs.exclude(content_type__in=models)
 
-            # Get all the objects that have more then the maximum revisions
+            # Get all the objects that have more than the maximum revisions
             objs = objs.values("object_id", "content_type_id").annotate(total_ver=Count("object_id")).filter(total_ver__gt=keep)
 
             revisions_not_keeped = set()
