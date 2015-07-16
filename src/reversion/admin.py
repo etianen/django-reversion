@@ -6,6 +6,7 @@ from functools import partial
 
 from django import template
 from django.db import models, transaction, connection
+from django.conf import settings
 from django.conf.urls import patterns, url
 from django.contrib import admin
 from django.contrib.admin import helpers, options
@@ -60,6 +61,10 @@ class VersionAdmin(admin.ModelAdmin):
 
     # If True, then the default ordering of object_history and recover lists will be reversed.
     history_latest_first = False
+
+    # If True when you revert/restore version data the exact prior version will
+    # be restored; modifications from the submitted admin form data are ignored
+    strict_revert = False
 
     def _autoregister(self, model, follow=None):
         """Registers a model with reversion, if required."""
@@ -261,6 +266,15 @@ class VersionAdmin(admin.ModelAdmin):
             return lambda: count
         formset.total_form_count = total_form_count_hack(len(initial))
 
+    def _perform_strict_revert(self, request, obj, version, context, revert=False, recover=False):
+        """
+        Perform strict revert of version. This is implemented as a method to
+        allow for easy override in subclasses for situations where the
+        versioned object graph is too complex for reversion's inbuilt
+        delete-on-revert feature to handle.
+        """
+        version.revision.revert(delete=True)
+
     def render_revision_form(self, request, obj, version, context, revert=False, recover=False):
         """Renders the object revision form."""
         model = self.model
@@ -270,45 +284,60 @@ class VersionAdmin(admin.ModelAdmin):
         ModelForm = self.get_form(request, obj)
         formsets = []
         if request.method == "POST":
+            was_reverted = False
+
+            # If configured to restore exact version data, do so without
+            # processing any submitted form data which may have been altered...
+            if self.strict_revert:
+                self._perform_strict_revert(request, obj, version, context,
+                                            revert=revert, recover=recover)
+                new_object = model.objects.get(pk=object_id)
+                was_reverted = True
+
+            # ...otherwise restore version data based on submitted form fields.
             # This section is copied directly from the model admin change view
             # method.  Maybe one day there will be a hook for doing this better.
-            form = ModelForm(request.POST, request.FILES, instance=obj, initial=self.get_revision_form_data(request, obj, version))
-            if form.is_valid():
-                form_validated = True
-                new_object = self.save_form(request, form, change=True)
-                # HACK: If the value of a file field is None, remove the file from the model.
-                for field in new_object._meta.fields:
-                    if isinstance(field, models.FileField) and field.name in form.cleaned_data and form.cleaned_data[field.name] is None:
-                        setattr(new_object, field.name, None)
             else:
-                form_validated = False
-                new_object = obj
-            prefixes = {}
-
-            for FormSet, inline in zip(self.get_formsets(request, new_object),
-                                       self.get_inline_instances(request)):
-                prefix = FormSet.get_default_prefix()
-                prefixes[prefix] = prefixes.get(prefix, 0) + 1
-                if prefixes[prefix] != 1:
-                    prefix = "%s-%s" % (prefix, prefixes[prefix])
-                formset = FormSet(request.POST, request.FILES,
-                                  instance=new_object, prefix=prefix,
-                                  queryset=inline.get_queryset(request))
-                self._hack_inline_formset_initial(inline, FormSet, formset, obj, version, revert, recover)
-                # Add this hacked formset to the form.
-                formsets.append(formset)
-            if all_valid(formsets) and form_validated:
-                self.save_model(request, new_object, form, change=True)
-                form.save_m2m()
-                for formset in formsets:
+                form = ModelForm(request.POST, request.FILES, instance=obj, initial=self.get_revision_form_data(request, obj, version))
+                if form.is_valid():
+                    form_validated = True
+                    new_object = self.save_form(request, form, change=True)
                     # HACK: If the value of a file field is None, remove the file from the model.
-                    related_objects = formset.save(commit=False)
-                    for related_obj, related_form in zip(related_objects, formset.saved_forms):
-                        for field in related_obj._meta.fields:
-                            if isinstance(field, models.FileField) and field.name in related_form.cleaned_data and related_form.cleaned_data[field.name] is None:
-                                setattr(related_obj, field.name, None)
-                        related_obj.save()
-                    formset.save_m2m()
+                    for field in new_object._meta.fields:
+                        if isinstance(field, models.FileField) and field.name in form.cleaned_data and form.cleaned_data[field.name] is None:
+                            setattr(new_object, field.name, None)
+                else:
+                    form_validated = False
+                    new_object = obj
+                prefixes = {}
+
+                for FormSet, inline in zip(self.get_formsets(request, new_object),
+                                        self.get_inline_instances(request)):
+                    prefix = FormSet.get_default_prefix()
+                    prefixes[prefix] = prefixes.get(prefix, 0) + 1
+                    if prefixes[prefix] != 1:
+                        prefix = "%s-%s" % (prefix, prefixes[prefix])
+                    formset = FormSet(request.POST, request.FILES,
+                                    instance=new_object, prefix=prefix,
+                                    queryset=inline.get_queryset(request))
+                    self._hack_inline_formset_initial(inline, FormSet, formset, obj, version, revert, recover)
+                    # Add this hacked formset to the form.
+                    formsets.append(formset)
+                if all_valid(formsets) and form_validated:
+                    self.save_model(request, new_object, form, change=True)
+                    form.save_m2m()
+                    for formset in formsets:
+                        # HACK: If the value of a file field is None, remove the file from the model.
+                        related_objects = formset.save(commit=False)
+                        for related_obj, related_form in zip(related_objects, formset.saved_forms):
+                            for field in related_obj._meta.fields:
+                                if isinstance(field, models.FileField) and field.name in related_form.cleaned_data and related_form.cleaned_data[field.name] is None:
+                                    setattr(related_obj, field.name, None)
+                            related_obj.save()
+                        formset.save_m2m()
+                    was_reverted = True
+
+            if was_reverted:
                 change_message = _("Reverted to previous version, saved on %(datetime)s") % {"datetime": localize(version.revision.date_created)}
                 self.log_change(request, new_object, change_message)
                 self.message_user(request, _('The %(model)s "%(name)s" was reverted successfully. You may edit it again below.') % {"model": force_text(opts.verbose_name), "name": force_text(obj)})
@@ -365,6 +394,7 @@ class VersionAdmin(admin.ModelAdmin):
                         "change": True,
                         "revert": revert,
                         "recover": recover,
+                        "strict_revert": self.strict_revert,
                         "has_add_permission": self.has_add_permission(request),
                         "has_change_permission": self.has_change_permission(request, obj),
                         "has_delete_permission": self.has_delete_permission(request, obj),

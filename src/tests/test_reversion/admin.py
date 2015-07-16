@@ -4,6 +4,7 @@ import reversion
 
 from test_reversion.models import (
     ChildTestAdminModel,
+    StrictChildTestAdminModel,
     InlineTestChildModel,
     InlineTestParentModel,
     InlineTestUnrelatedChildModel,
@@ -20,6 +21,14 @@ class ChildTestAdminModelAdmin(reversion.VersionAdmin):
 
 
 site.register(ChildTestAdminModel, ChildTestAdminModelAdmin)
+
+
+class StrictChildTestAdminModelAdmin(reversion.VersionAdmin):
+
+    strict_revert = True  # Enable strict admin revert/restore
+
+
+site.register(StrictChildTestAdminModel, StrictChildTestAdminModelAdmin)
 
 
 class InlineTestChildModelInline(admin.TabularInline):
