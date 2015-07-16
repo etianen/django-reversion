@@ -1,12 +1,12 @@
 {% extends "admin/base_site.html" %}
-{% load i18n l10n %}
+{% load i18n l10n admin_urls %}
 
 
 {% block breadcrumbs %}
     <div class="breadcrumbs">
-        <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a> &rsaquo; 
-        <a href="{% url 'admin:app_list' app_label %}">{{app_label|capfirst|escape}}</a> &rsaquo; 
-        <a href="{{changelist_url}}">{{opts.verbose_name_plural|capfirst}}</a> &rsaquo; 
+        <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a> &rsaquo;
+        <a href="{% url 'admin:app_list' app_label %}">{{app_label|capfirst|escape}}</a> &rsaquo;
+        <a href="{% url opts|admin_urlname:'changelist' %}">{{opts.verbose_name_plural|capfirst}}</a> &rsaquo;
         {% blocktrans with opts.verbose_name_plural|escape as name %}Recover deleted {{name}}{% endblocktrans %}
     </div>
 {% endblock %}
@@ -27,7 +27,7 @@
                     <tbody>
                         {% for deletion in deleted %}
                             <tr>
-                                <th scope="row"><a href="{{deletion.pk|unlocalize}}/">{{deletion.revision.date_created}}</a></th>
+                                <th scope="row"><a href="{% url opts|admin_urlname:'recover' deletion.pk %}">{{deletion.revision.date_created}}</a></th>
                                 <td>{{deletion.object_repr}}</td>
                             </tr>
                         {% endfor %}
@@ -39,4 +39,3 @@
         </div>
     </div>
 {% endblock %}
-

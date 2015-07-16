@@ -5,12 +5,12 @@ from __future__ import unicode_literals
 from django.contrib.contenttypes.models import ContentType
 try:
     from django.contrib.contenttypes.fields import GenericForeignKey
-except ImportError:  # Django < 1.9
+except ImportError:  # Django < 1.9 pragma: no cover
     from django.contrib.contenttypes.generic import GenericForeignKey
 from django.conf import settings
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import models, IntegrityError
+from django.db import models, IntegrityError, transaction
 from django.dispatch.dispatcher import Signal
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text, python_2_unicode_compatible
@@ -26,12 +26,13 @@ def safe_revert(versions):
     unreverted_versions = []
     for version in versions:
         try:
-            version.revert()
-        except (IntegrityError, ObjectDoesNotExist):
+            with transaction.atomic():
+                version.revert()
+        except (IntegrityError, ObjectDoesNotExist):  # pragma: no cover
             unreverted_versions.append(version)
-    if len(unreverted_versions) == len(versions):
+    if len(unreverted_versions) == len(versions):  # pragma: no cover
         raise RevertError("Could not revert revision, due to database integrity errors.")
-    if unreverted_versions:
+    if unreverted_versions:  # pragma: no cover
         safe_revert(unreverted_versions)
 
 
@@ -76,17 +77,17 @@ class Revision(models.Model):
         # Optionally delete objects no longer in the current revision.
         if delete:
             # Get a dict of all objects in this revision.
-            old_revision = {}
+            old_revision = set()
             for version in version_set:
                 try:
                     obj = version.object
                 except ContentType.objects.get_for_id(version.content_type_id).model_class().DoesNotExist:
                     pass
                 else:
-                    old_revision[obj] = version
+                    old_revision.add(obj)
             # Calculate the set of all objects that are in the revision now.
             from reversion.revisions import RevisionManager
-            current_revision = RevisionManager.get_manager(self.manager_slug)._follow_relationships(obj for obj in old_revision.keys() if obj is not None)
+            current_revision = RevisionManager.get_manager(self.manager_slug)._follow_relationships(obj for obj in old_revision if obj is not None)
             # Delete objects that are no longer in the current revision.
             for item in current_revision:
                 if item not in old_revision:
@@ -181,7 +182,7 @@ class Version(models.Model):
                     parent_version = Version.objects.get(revision__id=self.revision_id,
                                                          content_type=content_type,
                                                          object_id=parent_id)
-                except Version.DoesNotExist:
+                except Version.DoesNotExist:  # pragma: no cover
                     pass
                 else:
                     result.update(parent_version.field_dict)
