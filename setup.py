@@ -32,11 +32,9 @@ setup(
     cmdclass = cmdclass,
     install_requires = [
         "django>=1.7",
+        "diff-match-patch==20121119"
     ],
     extras_require = {
-        "diff": [
-            "diff_match_patch",
-        ],
         "test": [
             "coverage",
         ],
