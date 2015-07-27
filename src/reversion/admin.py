@@ -195,6 +195,11 @@ class VersionAdmin(admin.ModelAdmin):
 
     def recover_view(self, request, version_id, extra_context=None):
         """Displays a form that can recover a deleted model."""
+        # The revisionform view will check for change permission (via changeform_view),
+        # but we also need to check for add permissions here.
+        if not self.has_add_permission(request):  # pragma: no cover
+            raise PermissionDenied
+        # Render the recover view.
         version = get_object_or_404(Version, pk=version_id)
         return self.revisionform_view(request, version, self.recover_form_template or self._get_template_list("recover_form.html"), {
             "title": _("Recover %(name)s") % {"name": version.object_repr},
@@ -211,12 +216,16 @@ class VersionAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         """Renders the change view."""
         with self._create_revision(request):
-            return super(VersionAdmin, self).changelist_view(request, extra_context)
+            context = {
+                "has_change_permission": self.has_change_permission(request),
+            }
+            context.update(extra_context or {})
+            return super(VersionAdmin, self).changelist_view(request, context)
 
     def recoverlist_view(self, request, extra_context=None):
         """Displays a deleted model to allow recovery."""
-        # check if user has change or add permissions for model
-        if not self.has_change_permission(request) and not self.has_add_permission(request):  # pragma: no cover
+        # Check if user has change or add permissions for model
+        if not self.has_change_permission(request) or not self.has_add_permission(request):  # pragma: no cover
             raise PermissionDenied
         model = self.model
         opts = model._meta
