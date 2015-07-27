@@ -3,7 +3,6 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
@@ -26,7 +25,7 @@ msgstr "Obnovit smazané %(name)s"
 #: admin.py:165
 #, python-format
 msgid "Reverted to previous version, saved on %(datetime)s"
-msgstr "Vrátit se k předchozí verzi uložené v %(datetime)s"
+msgstr "Vráceno do předchozí verze uložené v %(datetime)s"
 
 #: admin.py:167
 #, python-format
@@ -49,7 +48,7 @@ msgstr "Navrátit se k předchozí verzi %(name)s"
 
 #: management/commands/createinitialrevisions.py:76
 msgid "Initial version."
-msgstr ""
+msgstr "První verze"
 
 #: templates/reversion/change_list.html:11
 #, python-format
@@ -125,4 +124,4 @@ msgstr "Navrátit %(verbose_name)s k předchozí verzi"
 
 #: templates/reversion/revision_form.html:28
 msgid "Press the save button below to revert to this version of the object."
-msgstr "Klikněte na tlačítko uložit pro návrat k této verze objektu."
+msgstr "Klikněte na tlačítko uložit pro návrat k této verzi objektu."
