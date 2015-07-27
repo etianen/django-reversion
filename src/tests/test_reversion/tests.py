@@ -324,6 +324,17 @@ class ApiTest(RevisionTestBase):
         self.assertEqual(reversion.get_for_object(self.test21).count(), 3)
         self.assertEqual(len(reversion.get_unique_for_object(self.test21)), 2)
 
+    def testCanGetUnique(self):
+        with reversion.create_revision():
+            self.test11.save()
+            self.test21.save()
+        # Test a model with an int pk.
+        self.assertEqual(reversion.get_for_object(self.test11).count(), 3)
+        self.assertEqual(len(list(reversion.get_for_object(self.test11).get_unique())), 2)
+        # Test a model with a str pk.
+        self.assertEqual(reversion.get_for_object(self.test21).count(), 3)
+        self.assertEqual(len(list(reversion.get_for_object(self.test21).get_unique())), 2)
+
     def testCanGetForDate(self):
         now = timezone.now()
         # Test a model with an int pk.

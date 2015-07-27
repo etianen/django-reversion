@@ -2,7 +2,7 @@
 
 from __future__ import unicode_literals
 
-import operator
+import operator, warnings
 from functools import wraps, reduce, partial
 from threading import local
 from weakref import WeakValueDictionary
@@ -566,14 +566,8 @@ class RevisionManager(object):
 
         The results are returned with the most recent versions first.
         """
-        versions = self.get_for_object(obj, db)
-        changed_versions = []
-        last_serialized_data = None
-        for version in versions:
-            if last_serialized_data != version.serialized_data:
-                changed_versions.append(version)
-            last_serialized_data = version.serialized_data
-        return changed_versions
+        warnings.warn(PendingDeprecationWarning, "Use get_for_object().get_unique() instead of get_unique_for_object().")
+        return list(self.get_for_object(obj, db).get_unique())
 
     def get_for_date(self, object, date, db=None):
         """Returns the latest version of an object for the given date."""

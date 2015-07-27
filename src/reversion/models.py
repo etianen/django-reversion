@@ -117,10 +117,25 @@ def has_int_pk(model):
     )
 
 
+class VersionQuerySet(models.QuerySet):
+
+    def get_unique(self):
+        """
+        Returns a generator of unique version data.
+        """
+        last_serialized_data = None
+        for version in self.iterator():
+            if last_serialized_data != version.serialized_data:
+                yield version
+            last_serialized_data = version.serialized_data
+
+
 @python_2_unicode_compatible
 class Version(models.Model):
 
     """A saved version of a database model."""
+
+    objects = VersionQuerySet.as_manager()
 
     revision = models.ForeignKey(Revision,
                                  help_text="The revision that contains this version.")
