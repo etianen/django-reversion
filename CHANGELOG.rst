@@ -2,6 +2,19 @@ django-reversion changelog
 ==========================
 
 
+1.9.0 - 04/08/2015
+------------------
+
+- Using database transactions do render consistent views of past revisions in database admin, fixing a lot of lingering minor issues (@etianen).
+- Correct handling of readonly fields in admin (@etianen).
+- Updates to Czech translation (@cuchac).
+- Arabic translation (@RamezIssac).
+- Fixing deleterevisions to work with Python2 (@jmurty).
+- Fixing edge-cases where an object does not have a PK (@johnfraney).
+- Tweaks, code cleanups and documentation fixes (@claudep, @johnfraney, @podloucky-init, Drew Hubl, @JanMalte, @jmurty, @etianen).
+
+
+
 1.8.7 - 21/05/2015
 ------------------
 
@@ -214,10 +227,10 @@ This release is compatible with Django 1.2.1.
 This release is compatible with Django 1.1.1.
 
 -  The django syncdb command will now automatically populate any
-   version-controlled models with an initial revision. This ensures existing 
-   projects that integrate Reversion won't get caught out. 
--  Reversion now works with SQLite for tables over 999 rows. 
--  Added Hebrew translation. 
+   version-controlled models with an initial revision. This ensures existing
+   projects that integrate Reversion won't get caught out.
+-  Reversion now works with SQLite for tables over 999 rows.
+-  Added Hebrew translation.
 
 
 1.2 - 12/10/2009
@@ -233,20 +246,20 @@ This release is compatible with Django 1.1.
 
 This release is compatible with Django 1.0.4.
 
--  Doc tests. 
--  German translation update. 
--  Better compatibility with the Django trunk.  
+-  Doc tests.
+-  German translation update.
+-  Better compatibility with the Django trunk.
 -  The ability to specify a serialization format used by the  ReversionAdmin
-   class when models are auto-registered. 
--  Reduction in the number of database queries performed by the Reversion   
+   class when models are auto-registered.
+-  Reduction in the number of database queries performed by the Reversion
 -  admin interface.
-      
-      
+
+
 1.1.1 - 25/03/2010
 ------------------
 
 This release is compatible with Django 1.0.2.
 
--  German and Italian translations. 
--  Helper functions for generating diffs. 
+-  German and Italian translations.
+-  Helper functions for generating diffs.
 -  Improved handling of one-to-many relationships in the admin.
