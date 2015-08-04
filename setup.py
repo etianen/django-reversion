@@ -23,7 +23,7 @@ setup(
     author_email = "dave@etianen.com",
     url = "http://github.com/etianen/django-reversion",
     zip_safe = False,
-    packages = find_packages(),
+    packages = find_packages("src"),
     package_dir = {
         "": "src",
     },
