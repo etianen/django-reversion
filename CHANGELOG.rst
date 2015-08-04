@@ -2,6 +2,12 @@ django-reversion changelog
 ==========================
 
 
+1.9.1 - 04/08/2015
+------------------
+
+- Fixing packaging error that rendered the 1.9.0 release unusable. No way to cover up the mistake, so here's a brand new bugfix release! (@etianen).
+
+
 1.9.0 - 04/08/2015
 ------------------
 
