@@ -566,7 +566,9 @@ class RevisionManager(object):
 
         The results are returned with the most recent versions first.
         """
-        warnings.warn(PendingDeprecationWarning, "Use get_for_object().get_unique() instead of get_unique_for_object().")
+        warnings.warn(
+            "Use get_for_object().get_unique() instead of get_unique_for_object().",
+            PendingDeprecationWarning)
         return list(self.get_for_object(obj, db).get_unique())
 
     def get_for_date(self, object, date, db=None):
