@@ -105,7 +105,7 @@ Examples:
             revision_query = revision_query.filter(manager_slug=manager)
 
         if date:
-            revision_query = revision_query.filter(date_created__lt=date)
+            revision_query = revision_query.filter(created_at__lt=date)
 
         if app_labels:
             app_list = set()
@@ -158,7 +158,7 @@ Examples:
             # revisions for all objects.
             # Was not able to avoid this loop...
             for obj in objs:
-                revisions_not_keeped.update(list(Version.objects.using(database).filter(content_type__id=obj["content_type_id"], object_id=obj["object_id"]).order_by("-revision__date_created").values_list("revision_id", flat=True)[keep:]))
+                revisions_not_keeped.update(list(Version.objects.using(database).filter(content_type__id=obj["content_type_id"], object_id=obj["object_id"]).order_by("-revision__created_at").values_list("revision_id", flat=True)[keep:]))
 
             revision_query = revision_query.filter(pk__in=revisions_not_keeped)
 

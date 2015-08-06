@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-08-06 23:05+0200\n"
+"POT-Creation-Date: 2015-08-06 22:59+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -45,139 +45,143 @@ msgstr "Obnovit smazané %(name)s"
 
 #: cores.py:21
 msgid "Versions"
-msgstr "Verze"
+msgstr ""
 
 #: cores.py:37
 msgid "type"
-msgstr "typ"
+msgstr ""
 
 #: cores.py:38
 msgid "content type"
-msgstr "typ objektu"
+msgstr ""
 
 #: cores.py:39
 msgid "object"
-msgstr "objekt"
+msgstr ""
 
 #: cores.py:40
 msgid "data"
-msgstr "data"
+msgstr ""
 
 #: models.py:59
 msgid "created at"
-msgstr "vytvořeno"
+msgstr ""
 
 #: models.py:60
 msgid "The date and time this revision was created."
-msgstr "Datum a čas kdy byla tato změna dat vytvořena"
+msgstr ""
 
 #: models.py:61
 msgid "user"
-msgstr "uživatel"
+msgstr ""
 
 #: models.py:62
 msgid "The user who created this revision."
-msgstr "Uživatel který vytvořil tuto změnu dat."
+msgstr ""
 
 #: models.py:63
+#, fuzzy
+#| msgid "Comment"
 msgid "comment"
-msgstr "komentář"
+msgstr "Komentář"
 
 #: models.py:63
 msgid "A text comment on this revision."
-msgstr "Textový komentář změny dat."
+msgstr ""
 
 #: models.py:98
 msgid "data revision"
-msgstr "datová změna"
+msgstr ""
 
 #: models.py:99
 msgid "data revisions"
-msgstr "datové změny"
+msgstr ""
 
 #: models.py:134
 msgid "Created"
-msgstr "Vytvořeno"
+msgstr ""
 
 #: models.py:135
 msgid "Changed"
-msgstr "Změněno"
+msgstr ""
 
 #: models.py:136
 msgid "Deleted"
-msgstr "Smazáno"
+msgstr ""
 
 #: models.py:137
 msgid "Follow"
-msgstr "Následovník"
+msgstr ""
 
 #: models.py:142
 msgid "revision"
-msgstr "datová změna"
+msgstr ""
 
 #: models.py:143
 msgid "The revision that contains this version."
-msgstr "Datová změna která obsahuje tuto verzi."
+msgstr ""
 
 #: models.py:144
 msgid "object id"
-msgstr "id objektu"
+msgstr ""
 
 #: models.py:145
 msgid "Primary key of the model under version control."
-msgstr "Primární klíč modelu,. který je verzovaný."
+msgstr ""
 
 #: models.py:147
 msgid "object id int"
-msgstr "identifikátor objektu ve formátu integer"
+msgstr ""
 
 #: models.py:148
 msgid ""
 "An indexed, integer version of the stored model's primary key, used for "
 "faster lookups."
 msgstr ""
-"Indexovaný integer primárního klíče verze uloženého modelu, je použit pro "
-"rychlejší vyhledávání."
 
 #: models.py:150
 msgid "Content type of the model under version control."
-msgstr "Datový typ verzovaného modelu."
+msgstr ""
 
 #: models.py:155
 msgid "format"
-msgstr "formát"
+msgstr ""
 
 #: models.py:156
 msgid "The serialization format used by this model."
-msgstr "Formát serializace použitý pro tento model."
+msgstr ""
 
 #: models.py:157
 msgid "serialized data"
-msgstr "serializovaná data"
+msgstr ""
 
 #: models.py:158
 msgid "The serialized form of this version of the model."
-msgstr "Serializovaná data verzovaného modelu."
+msgstr ""
 
 #: models.py:159
 msgid "object representation"
-msgstr "reprezentace objektu"
+msgstr ""
 
 #: models.py:160
 msgid "A string representation of the object."
-msgstr "Textová reprezentace objektu."
+msgstr ""
 
 #: models.py:161
 msgid "version type"
-msgstr "typ verze"
+msgstr ""
 
 #: models.py:266
+#, fuzzy
+#| msgid "Initial version."
 msgid "data version"
-msgstr "verze objektu"
+msgstr "První verze"
 
 #: models.py:267
+#, fuzzy
+#| msgid "Initial version."
 msgid "data versions"
-msgstr "verze objektů"
+msgstr "První verze"
 
 #: templates/reversion/object_history.html:8
 msgid ""
@@ -238,3 +242,19 @@ msgstr "Navrátit %(verbose_name)s k předchozí verzi"
 #: templates/reversion/revision_form.html:21
 msgid "Press the save button below to revert to this version of the object."
 msgstr "Klikněte na tlačítko uložit pro návrat k této verzi objektu."
+
+#~ msgid ""
+#~ "The %(model)s \"%(name)s\" was reverted successfully. You may edit it "
+#~ "again below."
+#~ msgstr ""
+#~ "Objekt %(model)s \"%(name)s\" byl úspěšně obnoven. Můžete ho znovu začít "
+#~ "upravovat níže."
+
+#~ msgid "Add %(name)s"
+#~ msgstr "Přidat %(name)s"
+
+#~ msgid "DATETIME_FORMAT"
+#~ msgstr "DATETIME_FORMAT"
+
+#~ msgid "Recover deleted %(verbose_name)s"
+#~ msgstr "Obnovit smazané %(verbose_name)s"

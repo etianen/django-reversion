@@ -38,9 +38,9 @@ class VersionAdmin(admin.ModelAdmin):
 
     """Abstract admin class for handling version controlled models."""
 
-    object_history_template = "reversion/object_history.html"
+    object_history_template = 'reversion/object_history.html'
 
-    change_list_template = "reversion/change_list.html"
+    change_list_template = 'reversion/change_list.html'
 
     revision_form_template = None
 
@@ -52,10 +52,7 @@ class VersionAdmin(admin.ModelAdmin):
     revision_manager = default_revision_manager
 
     # The serialization format to use when registering models with reversion.
-    reversion_format = "json"
-
-    # Whether to ignore duplicate revision data.
-    ignore_duplicate_revisions = False
+    reversion_format = 'json'
 
     # If True, then the default ordering of object_history and recover lists will be reversed.
     history_latest_first = False
@@ -70,16 +67,16 @@ class VersionAdmin(admin.ModelAdmin):
     def _get_template_list(self, template_name):
         opts = self.model._meta
         return (
-            "reversion/%s/%s/%s" % (opts.app_label, opts.object_name.lower(), template_name),
-            "reversion/%s/%s" % (opts.app_label, template_name),
-            "reversion/%s" % template_name,
+            'reversion/%s/%s/%s' % (opts.app_label, opts.object_name.lower(), template_name),
+            'reversion/%s/%s' % (opts.app_label, template_name),
+            'reversion/%s' % template_name,
         )
 
     def _order_version_queryset(self, queryset):
         """Applies the correct ordering to the given version queryset."""
         if self.history_latest_first:
-            return queryset.order_by("-pk")
-        return queryset.order_by("pk")
+            return queryset.order_by('-pk')
+        return queryset.order_by('pk')
 
     @contextmanager
     def _create_revision(self, request):
@@ -90,7 +87,7 @@ class VersionAdmin(admin.ModelAdmin):
     # Messages.
 
     def log_addition(self, request, object):
-        self.revision_context_manager.set_comment(_("Initial version."))
+        self.revision_context_manager.set_comment(_('Initial version.'))
         super(VersionAdmin, self).log_addition(request, object)
 
     def log_change(self, request, object, message):
@@ -140,7 +137,7 @@ class VersionAdmin(admin.ModelAdmin):
         super(VersionAdmin, self).__init__(*args, **kwargs)
         # Check that database transactions are supported.
         if not connection.features.uses_savepoints:  # pragma: no cover
-            raise ImproperlyConfigured("Cannot use VersionAdmin with a database that does not support savepoints.")
+            raise ImproperlyConfigured('Cannot use VersionAdmin with a database that does not support savepoints.')
         # Automatically register models if required.
         if not self.revision_manager.is_registered(self.model):
             inline_fields = []
@@ -158,10 +155,10 @@ class VersionAdmin(admin.ModelAdmin):
         admin_site = self.admin_site
         opts = self.model._meta
         info = opts.app_label, opts.model_name,
-        reversion_urls = patterns("",
-                                  url("^recover/$", admin_site.admin_view(self.recoverlist_view), name='%s_%s_recoverlist' % info),
-                                  url("^recover/([^/]+)/$", admin_site.admin_view(self.recover_view), name='%s_%s_recover' % info),
-                                  url("^([^/]+)/history/([^/]+)/$", admin_site.admin_view(self.revision_view), name='%s_%s_revision' % info),)
+        reversion_urls = patterns('',
+                                  url('^recover/$', admin_site.admin_view(self.recoverlist_view), name='%s_%s_recoverlist' % info),
+                                  url('^recover/([^/]+)/$', admin_site.admin_view(self.recover_view), name='%s_%s_recover' % info),
+                                  url('^([^/]+)/history/([^/]+)/$', admin_site.admin_view(self.revision_view), name='%s_%s_revision' % info),)
         return reversion_urls + urls
 
     # Views.
@@ -183,8 +180,8 @@ class VersionAdmin(admin.ModelAdmin):
                 with self._create_revision(request):
                     response = self.changeform_view(request, version.object_id, request.path, extra_context)
                     # Decide on whether the keep the changes.
-                    if request.method == "POST" and response.status_code == 302:
-                        self.revision_context_manager.set_comment(_("Reverted to previous version, saved on %(datetime)s") % {"datetime": localize(version.revision.date_created)})
+                    if request.method == 'POST' and response.status_code == 302:
+                        self.revision_context_manager.set_comment(_('Reverted to previous version, saved on %(datetime)s') % {'datetime': localize(version.revision.created_at)})
                     else:
                         response.template_name = template_name  # Set the template name to the correct template.
                         response.render()  # Eagerly render the response, so it's using the latest version of the database.
@@ -201,23 +198,23 @@ class VersionAdmin(admin.ModelAdmin):
             raise PermissionDenied
         # Render the recover view.
         version = get_object_or_404(Version, pk=version_id)
-        return self.revisionform_view(request, version, self.recover_form_template or self._get_template_list("recover_form.html"), {
-            "title": _("Recover %(name)s") % {"name": version.object_repr},
+        return self.revisionform_view(request, version, self.recover_form_template or self._get_template_list('recover_form.html'), {
+            'title': _('Recover %(name)s') % {'name': version.object_repr},
         })
 
     def revision_view(self, request, object_id, version_id, extra_context=None):
         """Displays the contents of the given revision."""
         object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
         version = get_object_or_404(Version, pk=version_id, object_id=object_id)
-        return self.revisionform_view(request, version, self.revision_form_template or self._get_template_list("revision_form.html"), {
-            "title": _("Revert %(name)s") % {"name": version.object_repr},
+        return self.revisionform_view(request, version, self.revision_form_template or self._get_template_list('revision_form.html'), {
+            'title': _('Revert %(name)s') % {'name': version.object_repr},
         })
 
     def changelist_view(self, request, extra_context=None):
         """Renders the change view."""
         with self._create_revision(request):
             context = {
-                "has_change_permission": self.has_change_permission(request),
+                'has_change_permission': self.has_change_permission(request),
             }
             context.update(extra_context or {})
             return super(VersionAdmin, self).changelist_view(request, context)
@@ -241,11 +238,11 @@ class VersionAdmin(admin.ModelAdmin):
             opts = opts,
             app_label = opts.app_label,
             module_name = capfirst(opts.verbose_name),
-            title = _("Recover deleted %(name)s") % {"name": force_text(opts.verbose_name_plural)},
+            title=_('Recover deleted %(name)s') % {'name': force_text(opts.verbose_name_plural)},
             deleted = deleted,
         )
         context.update(extra_context or {})
-        return render(request, self.recover_list_template or self._get_template_list("recover_list.html"), context)
+        return render(request, self.recover_list_template or self._get_template_list('recover_list.html'), context)
 
     def history_view(self, request, object_id, extra_context=None):
         """Renders the history view."""
@@ -256,16 +253,16 @@ class VersionAdmin(admin.ModelAdmin):
         opts = self.model._meta
         action_list = [
             {
-                "revision": version.revision,
-                "url": reverse("%s:%s_%s_revision" % (self.admin_site.name, opts.app_label, opts.model_name), args=(quote(version.object_id), version.id)),
+                'revision': version.revision,
+                'url': reverse('%s:%s_%s_revision' % (self.admin_site.name, opts.app_label, opts.model_name), args=(quote(version.object_id), version.id)),
             }
             for version
             in self._order_version_queryset(self.revision_manager.get_for_object_reference(
                 self.model,
                 object_id,
-            ).select_related("revision__user"))
+            ).select_related('revision__user'))
         ]
         # Compile the context.
-        context = {"action_list": action_list}
+        context = {'action_list': action_list}
         context.update(extra_context or {})
         return super(VersionAdmin, self).history_view(request, object_id, context)

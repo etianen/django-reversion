@@ -21,7 +21,7 @@ def patch_admin(model, admin_site=None):
     try:
         ModelAdmin = admin_site._registry[model].__class__
     except KeyError:
-        raise NotRegistered("The model {model} has not been registered with the admin site.".format(
+        raise NotRegistered('The model {model} has not been registered with the admin site.'.format(
             model = model,
         ))
     # Unregister existing admin class.
@@ -48,18 +48,18 @@ else:
     def generate_diffs(old_version, new_version, field_name, cleanup):
         """Generates a diff array for the named field between the two versions."""
         # Extract the text from the versions.
-        old_text = old_version.field_dict[field_name] or ""
-        new_text = new_version.field_dict[field_name] or ""
+        old_text = old_version.field_dict[field_name] or ''
+        new_text = new_version.field_dict[field_name] or ''
         # Generate the patch.
         diffs = dmp.diff_main(force_text(old_text), force_text(new_text))
-        if cleanup == "semantic":
+        if cleanup == 'semantic':
             dmp.diff_cleanupSemantic(diffs)
-        elif cleanup == "efficiency":
+        elif cleanup == 'efficiency':
             dmp.diff_cleanupEfficiency(diffs)
         elif cleanup is None:
             pass
         else:  # pragma: no cover
-            raise ValueError("cleanup parameter should be one of 'semantic', 'efficiency' or None.")
+            raise ValueError('cleanup parameter should be one of \'semantic\', \'efficiency\' or None.')
         return diffs
 
     def generate_patch(old_version, new_version, field_name, cleanup=None):

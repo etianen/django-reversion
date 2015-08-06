@@ -32,7 +32,7 @@ get_registered_models = default_revision_manager.get_registered_models
 # Context management.
 create_revision = revision_context_manager.create_revision
 
-    
+
 # Revision meta data.
 get_db = revision_context_manager.get_db
 set_db = revision_context_manager.set_db
@@ -41,8 +41,6 @@ set_user = revision_context_manager.set_user
 get_comment = revision_context_manager.get_comment
 set_comment = revision_context_manager.set_comment
 add_meta = revision_context_manager.add_meta
-get_ignore_duplicates = revision_context_manager.get_ignore_duplicates
-set_ignore_duplicates = revision_context_manager.set_ignore_duplicates
 
 
 # Low level API.
