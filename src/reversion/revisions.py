@@ -431,7 +431,8 @@ class RevisionManager(object):
         """Registers a model with this revision manager."""
         # Default to post_save and post_delete if no signals are given
         if signals is None and eager_signals is None:
-            signals = [post_save, post_delete]
+            signals = [post_save, pre_delete]
+            eager_signals = [pre_delete]
         # Store signals for usage in the signal receiver
         self._eager_signals[model] = list(eager_signals or [])
         self._signals[model] = list(signals or [])
