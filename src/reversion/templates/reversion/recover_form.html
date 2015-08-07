@@ -19,3 +19,6 @@
 {% block form_top %}
     <p>{% blocktrans %}Press the save button below to recover this version of the object.{% endblocktrans %}</p>
 {% endblock %}
+
+
+{% block content %}{% with is_popup=1 %}{{block.super}}{% endwith %}{% endblock %}
