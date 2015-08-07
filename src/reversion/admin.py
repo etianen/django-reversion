@@ -85,6 +85,7 @@ class VersionAdmin(admin.ModelAdmin):
     def _create_revision(self, request):
         with transaction.atomic(), self.revision_context_manager.create_revision():
             self.revision_context_manager.set_user(request.user)
+            self.revision_context_manager.set_ignore_duplicates(self.ignore_duplicate_revisions)
             yield
 
     # Messages.
