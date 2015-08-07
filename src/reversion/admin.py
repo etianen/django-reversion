@@ -174,6 +174,10 @@ class VersionAdmin(admin.ModelAdmin):
         with self._create_revision(request):
             return super(VersionAdmin, self).change_view(request, object_id, form_url, extra_context)
 
+    def delete_view(self, request, *args, **kwargs):
+        with self._create_revision(request):
+            return super(VersionAdmin, self).delete_view(request, *args, **kwargs)
+
     def revisionform_view(self, request, version, template_name, extra_context=None):
         try:
             with transaction.atomic():
