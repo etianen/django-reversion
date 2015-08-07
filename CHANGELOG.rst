@@ -2,6 +2,13 @@ django-reversion changelog
 ==========================
 
 
+1.9.2 - 07/08/2015
+------------------
+
+- Fixing regression with "delete", "save as new" and "save and continue" button being shown in recover and revision admin views (@etianen).
+- Fixing regression where VersionAdmin.ignore_duplicate_revisions was ignored (@etianen).
+
+
 1.9.1 - 04/08/2015
 ------------------
 
