@@ -438,11 +438,12 @@ class RevisionManager(object):
         self._signals[model] = list(signals or [])
         # Return a class decorator if model is not given
 
-        if follow_parents and model._meta.proxy:
+        if follow_parents:
             field_overrides['follow'] = follow = field_overrides.get('follow', [])
 
             for parent_model, field in model._meta.parents.items():
-                follow.append(field.name)
+                if field:
+                    follow.append(field.name)
                 if not self.is_registered(parent_model):
                     self.register(parent_model, adapter_cls, signals, eager_signals, follow_parents)
 
