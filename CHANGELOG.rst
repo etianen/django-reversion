@@ -2,6 +2,12 @@ django-reversion changelog
 ==========================
 
 
+1.9.3 - 07/08/2015
+------------------
+
+- Fixing regression with admin redirects following save action (@etianen).
+
+
 1.9.2 - 07/08/2015
 ------------------
 
