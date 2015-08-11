@@ -8,7 +8,8 @@ Developed by Dave Hall.
 
 from __future__ import unicode_literals
 
-from reversion.revisions import default_revision_manager, revision_context_manager, VersionAdapter
+from reversion.revisions import (default_revision_manager, revision_context_manager, VersionAdapter,
+                                 create_command_revision)
 from reversion.admin import VersionAdmin
 from reversion.models import pre_revision_commit, post_revision_commit
 from reversion.version import __version__ 
@@ -31,6 +32,7 @@ get_registered_models = default_revision_manager.get_registered_models
 
 # Context management.
 create_revision = revision_context_manager.create_revision
+create_command_revision = create_command_revision
 
 
 # Revision meta data.
@@ -41,6 +43,7 @@ set_user = revision_context_manager.set_user
 get_comment = revision_context_manager.get_comment
 set_comment = revision_context_manager.set_comment
 add_meta = revision_context_manager.add_meta
+add_callback = revision_context_manager.add_callback
 
 
 # Low level API.

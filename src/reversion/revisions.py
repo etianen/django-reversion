@@ -3,11 +3,17 @@
 from __future__ import unicode_literals
 
 import warnings
+
 from functools import wraps, partial
+
 from threading import local
+
 from weakref import WeakValueDictionary
+
 import copy
+
 from collections import defaultdict
+import sys
 
 try:
     from django.apps import apps
@@ -19,8 +25,9 @@ from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.signals import request_finished
+from django.contrib.contenttypes import generic
 from django.db import models, connection, transaction
-from django.db.models import Q, Max
+from django.db.models import Max
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, post_delete, pre_delete, pre_save
 from django.utils.encoding import force_text
@@ -189,6 +196,7 @@ class RevisionContextManager(local):
         self._user = None
         self._comment = ''
         self._stack = []
+        self._callbacks = []
         self._db = None
 
     def is_active(self):
@@ -234,7 +242,7 @@ class RevisionContextManager(local):
                 if not stack_frame.is_invalid:
                     # Save the revision data.
                     for manager, manager_context in stack_frame.objects.items():
-                        manager.save_revision(
+                        revision = manager.save_revision(
                             dict(
                                 (obj, self._prepare_data(type, data))
                                 for obj, (type, data)
@@ -246,6 +254,9 @@ class RevisionContextManager(local):
                             meta = stack_frame.meta,
                             db = self._db,
                         )
+                        if revision:
+                            for callback in self._callbacks:
+                                callback(revision)
             finally:
                 self.clear()
 
@@ -278,6 +289,11 @@ class RevisionContextManager(local):
         """Gets the current comment for the revision."""
         self._assert_active()
         return self._comment
+
+    def add_callback(self, callback):
+        """Adds callback for the revision."""
+        self._assert_active()
+        self._callbacks.append(callback)
 
     # Revision context properties that apply to the current stack frame.
 
@@ -464,6 +480,10 @@ class RevisionManager(object):
         all_signals = self._signals[model] + self._eager_signals[model]
         for signal in all_signals:
             signal.connect(self._signal_receiver, model)
+
+        model.reversion_versions = generic.GenericRelation(Version)
+        model.reversion_versions.contribute_to_class(model, 'reversion_versions')
+
         return model
 
     def get_adapter(self, model):
@@ -486,6 +506,9 @@ class RevisionManager(object):
             signal.disconnect(self._signal_receiver, model)
         del self._signals[model]
         del self._eager_signals[model]
+
+        delattr(model, 'reversion_versions')
+        model.reversion_versions = generic.GenericRelation(Version)
 
     def _follow_relationships(self, objects):
         """Follows all relationships in the given set of objects."""
@@ -685,3 +708,19 @@ class RevisionManager(object):
 
 # A shared revision manager.
 default_revision_manager = RevisionManager('default')
+
+
+def create_command_revision(cls, manage_manually=False):
+    """Login decorator for all methods inside test usage: @login(user_data)"""
+
+    def _command_revision(cls):
+        func = getattr(cls, 'handle')
+
+        def _set_comment(*args, **kwargs):
+            revision_context_manager.set_comment('Command log from "%s", args "%s"' % (sys.argv[1], ' '.join(sys.argv[2:])))
+            return func(*args, **kwargs)
+
+        setattr(cls, 'handle', revision_context_manager.create_revision(manage_manually)(_set_comment))
+        return cls
+
+    return _command_revision(cls)

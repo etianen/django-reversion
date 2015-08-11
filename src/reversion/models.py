@@ -2,15 +2,14 @@
 
 from __future__ import unicode_literals
 
-from django.contrib.contenttypes.models import ContentType
 from compressor.utils.decorators import cached_property
-from is_core.utils.decorators import short_description
 
 try:
     from django.contrib.contenttypes.fields import GenericForeignKey
 except ImportError:  # Django < 1.9 pragma: no cover
     from django.contrib.contenttypes.generic import GenericForeignKey
 
+from django.contrib.contenttypes.models import ContentType
 from django.conf import settings
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
@@ -240,7 +239,7 @@ class Version(models.Model):
                 result.append(parent_version.object_version.object)
         return result
 
-    def version_editor(self):
+    def reversion_editor(self):
         if self.revision.user:
             return self.revision.user.email
 

@@ -34,7 +34,7 @@ class RevisionMiddleware(object):  # pragma: no cover
             revision_context_manager.set_user(request.user)
 
         if revision_context_manager.is_active():
-            revision_context_manager.set_comment('Request log from RevisionMiddleware, path %s' % request.path)
+            revision_context_manager.set_comment('Request log from "RevisionMiddleware", path "%s"' % request.path)
 
         self._close_revision(request)
         return response
