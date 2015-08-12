@@ -25,12 +25,16 @@ from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.signals import request_finished
-from django.contrib.contenttypes import generic
 from django.db import models, connection, transaction
 from django.db.models import Max
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, post_delete, pre_delete, pre_save
 from django.utils.encoding import force_text
+
+try:
+    from django.contrib.contenttypes.fields import GenericRelation
+except ImportError:  # Django < 1.9 pragma: no cover
+    from django.contrib.contenttypes.generic import GenericRelation
 
 from reversion.models import Revision, Version, has_int_pk, pre_revision_commit, post_revision_commit
 
@@ -481,7 +485,7 @@ class RevisionManager(object):
         for signal in all_signals:
             signal.connect(self._signal_receiver, model)
 
-        model.reversion_versions = generic.GenericRelation(Version)
+        model.reversion_versions = GenericRelation(Version)
         model.reversion_versions.contribute_to_class(model, 'reversion_versions')
 
         return model
@@ -508,7 +512,7 @@ class RevisionManager(object):
         del self._eager_signals[model]
 
         delattr(model, 'reversion_versions')
-        model.reversion_versions = generic.GenericRelation(Version)
+        model.reversion_versions = GenericRelation(Version)
 
     def _follow_relationships(self, objects):
         """Follows all relationships in the given set of objects."""
