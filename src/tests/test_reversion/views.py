@@ -40,7 +40,7 @@ def decorator_from_middleware(middleware_class):
     """
     middleware_path = "%s.%s" % (middleware_class.__module__,
                                  middleware_class.__name__)
-    if middleware_path in settings.MIDDLEWARE_CLASSES:
+    if middleware_path in settings.MIDDLEWARE_CLASSES:  # pragma: no cover
         return lambda view_func: view_func
     return django_decorator_from_middleware(middleware_class)
 
@@ -86,4 +86,4 @@ def error_revision_view(request):
 @revision_middleware_django_decorator
 @revision_middleware_django_decorator
 def double_middleware_revision_view(request):
-    raise Exception("Foo")
+    assert False

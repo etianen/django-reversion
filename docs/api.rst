@@ -125,7 +125,7 @@ To revert a model to a previous version, use the following method::
     version_list = reversion.get_for_object(your_model)
 
     # Build a list of all previous versions, latest versions first, duplicates removed:
-    version_list = reversion.get_unique_for_object(your_model)
+    version_list = reversion.get_for_object(your_model).get_unique()
 
     # Find the most recent version for a given date:
     version = reversion.get_for_date(your_model, datetime.datetime(2008, 7, 10))

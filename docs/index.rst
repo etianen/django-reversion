@@ -12,7 +12,7 @@ To install django-reversion, follow these steps:
 2.  Add ``'reversion'`` to ``INSTALLED_APPS``.
 3.  Run ``manage.py syncdb``.
 
-The latest release (1.8.7) of django-reversion is designed to work with Django 1.8. If you have installed anything other than the latest version of Django, please check the :ref:`compatible Django versions <django-versions>` page before installing django-reversion.
+The latest release (1.9.3) of django-reversion is designed to work with Django 1.8. If you have installed anything other than the latest version of Django, please check the :ref:`compatible Django versions <django-versions>` page before installing django-reversion.
 
 There are a number of alternative methods you can use when installing django-reversion. Please check the :ref:`installation methods <installation>` page for more information.
 
@@ -27,7 +27,7 @@ django-reversion can be used to add a powerful rollback and recovery facility to
     class YourModelAdmin(reversion.VersionAdmin):
 
         pass
-        
+
     admin.site.register(YourModel, YourModelAdmin)
 
 Whenever you register a model with the ``VersionAdmin`` class, be sure to run the ``./manage.py createinitialrevisions`` command to populate the version database with an initial set of model data. Depending on the number of rows in your database, this command could take a while to execute.

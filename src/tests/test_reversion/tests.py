@@ -7,6 +7,7 @@ These tests require Python 2.5 to run.
 from __future__ import unicode_literals
 
 import datetime, os
+from unittest import skipUnless
 
 from django.db import models
 from django.test import TestCase
@@ -16,12 +17,12 @@ from django.conf import settings
 from django.contrib import admin
 try:
     from django.contrib.auth import get_user_model
-except ImportError: # django < 1.5
+except ImportError: # django < 1.5  pragma: no cover
     from django.contrib.auth.models import User
 else:
     User = get_user_model()
-from django.utils.unittest import skipUnless
 from django.db.models.signals import pre_delete
+from django.utils import timezone
 
 import reversion
 from reversion.revisions import RegistrationError, RevisionManager
@@ -29,6 +30,7 @@ from reversion.models import Revision, Version
 
 from test_reversion.models import (
     ReversionTestModel1,
+    ReversionTestModel1Child,
     ReversionTestModel2,
     ReversionTestModel3,
     TestFollowModel,
@@ -38,24 +40,12 @@ from test_reversion.models import (
     ChildTestAdminModel,
     InlineTestParentModel,
     InlineTestChildModel,
+    InlineTestChildGenericModel
 )
 from test_reversion import admin  # Force early registration of all admin models.
 
 
 ZERO = datetime.timedelta(0)
-
-
-class UTC(datetime.tzinfo):
-    """UTC"""
-
-    def utcoffset(self, dt):
-        return ZERO
-
-    def tzname(self, dt):
-        return "UTC"
-
-    def dst(self, dt):
-        return ZERO
 
 
 class RegistrationTest(TestCase):
@@ -197,8 +187,9 @@ class InternalsTest(RevisionTestBase):
     def testContextManager(self):
         # New revision should be created.
         with reversion.create_revision():
-            self.test11.name = "model1 instance1 version2"
-            self.test11.save()
+            with reversion.create_revision():
+                self.test11.name = "model1 instance1 version2"
+                self.test11.save()
         self.assertEqual(Revision.objects.count(), 2)
         self.assertEqual(Version.objects.count(), 5)
 
@@ -221,13 +212,14 @@ class InternalsTest(RevisionTestBase):
         self.assertEqual(Version.objects.count(), 4)
 
     def testRevisionContextAbandonedOnError(self):
-        try:
-            with reversion.create_revision():
-                self.test11.name = "model1 instance1 version2"
-                self.test11.save()
-                raise Exception("Foo")
-        except:
-            pass
+        with reversion.create_revision():
+            try:
+                with reversion.create_revision():
+                    self.test11.name = "model1 instance1 version2"
+                    self.test11.save()
+                    raise Exception("Foo")
+            except:
+                pass
         self.assertEqual(Revision.objects.count(), 1)
         self.assertEqual(Version.objects.count(), 4)
 
@@ -332,17 +324,27 @@ class ApiTest(RevisionTestBase):
         self.assertEqual(reversion.get_for_object(self.test21).count(), 3)
         self.assertEqual(len(reversion.get_unique_for_object(self.test21)), 2)
 
+    def testCanGetUnique(self):
+        with reversion.create_revision():
+            self.test11.save()
+            self.test21.save()
+        # Test a model with an int pk.
+        self.assertEqual(reversion.get_for_object(self.test11).count(), 3)
+        self.assertEqual(len(list(reversion.get_for_object(self.test11).get_unique())), 2)
+        # Test a model with a str pk.
+        self.assertEqual(reversion.get_for_object(self.test21).count(), 3)
+        self.assertEqual(len(list(reversion.get_for_object(self.test21).get_unique())), 2)
+
     def testCanGetForDate(self):
-        with self.settings(USE_TZ=True):
-            now = datetime.datetime.now(UTC())
-            # Test a model with an int pk.
-            version = reversion.get_for_date(self.test11, now)
-            self.assertEqual(version.field_dict["name"], "model1 instance1 version2")
-            self.assertRaises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test11, datetime.datetime(1970, 1, 1, tzinfo=UTC())))
-            # Test a model with a str pk.
-            version = reversion.get_for_date(self.test21, now)
-            self.assertEqual(version.field_dict["name"], "model2 instance1 version2")
-            self.assertRaises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test21, datetime.datetime(1970, 1, 1, tzinfo=UTC())))
+        now = timezone.now()
+        # Test a model with an int pk.
+        version = reversion.get_for_date(self.test11, now)
+        self.assertEqual(version.field_dict["name"], "model1 instance1 version2")
+        self.assertRaises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test11, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)))
+        # Test a model with a str pk.
+        version = reversion.get_for_date(self.test21, now)
+        self.assertEqual(version.field_dict["name"], "model2 instance1 version2")
+        self.assertRaises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test21, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)))
 
     def testCanGetDeleted(self):
         with reversion.create_revision():
@@ -429,11 +431,6 @@ class ApiTest(RevisionTestBase):
         self.assertEqual(revision.user, self.user)
         self.assertEqual(revision.comment, "Foo bar")
         self.assertEqual(revision.revisionmeta.age, 5)
-
-
-class ReversionTestModel1Child(ReversionTestModel1):
-
-    pass
 
 
 class MultiTableInheritanceApiTest(RevisionTestBase):
@@ -665,8 +662,6 @@ class CreateInitialRevisionsTest(ReversionTestBase):
 
 class RevisionMiddlewareTest(ReversionTestBase):
 
-    urls = "test_reversion.urls"
-
     def testRevisionMiddleware(self):
         self.assertEqual(Revision.objects.count(), 0)
         self.assertEqual(Version.objects.count(), 0)
@@ -687,8 +682,6 @@ class RevisionMiddlewareTest(ReversionTestBase):
 
 class VersionAdminTest(TestCase):
 
-    urls = "test_reversion.urls"
-
     def setUp(self):
         self.old_TEMPLATE_DIRS = settings.TEMPLATE_DIRS
         settings.TEMPLATE_DIRS = (
@@ -702,26 +695,22 @@ class VersionAdminTest(TestCase):
         self.user.set_password("bar")
         self.user.save()
         # Log the user in.
-        if hasattr(self, "settings"):
-            with self.settings(INSTALLED_APPS=tuple(set(tuple(settings.INSTALLED_APPS) + ("django.contrib.sessions",)))):  # HACK: Without this the client won't log in, for some reason.
-                self.client.login(
-                    username = "foo",
-                    password = "bar",
-                )
-        else:
-            self.client.login(
-                username = "foo",
-                password = "bar",
-            )
+        self.client.login(
+            username = "foo",
+            password = "bar",
+        )
 
-    @skipUnless('django.contrib.admin' in settings.INSTALLED_APPS,
-                "django.contrib.admin not activated")
     def testAutoRegisterWorks(self):
         self.assertTrue(reversion.is_registered(ChildTestAdminModel))
         self.assertTrue(reversion.is_registered(ParentTestAdminModel))
+        self.assertTrue(reversion.is_registered(InlineTestChildModel))
+        self.assertTrue(reversion.is_registered(InlineTestChildGenericModel))
+        self.assertTrue(reversion.is_registered(InlineTestParentModel))
 
-    @skipUnless('django.contrib.admin' in settings.INSTALLED_APPS,
-                "django.contrib.admin not activated")
+    def testChangelist(self):
+        response = self.client.get("/admin/test_reversion/childtestadminmodel/")
+        self.assertEqual(response.status_code, 200)
+
     def testRevisionSavedOnPost(self):
         self.assertEqual(ChildTestAdminModel.objects.count(), 0)
         # Create an instance via the admin.
@@ -754,93 +743,100 @@ class VersionAdminTest(TestCase):
         response = self.client.get("/admin/test_reversion/childtestadminmodel/%s/history/" % obj_pk)
         self.assertContains(response, "child instance1 version2")
         self.assertContains(response, "child instance1 version1")
+        # Check that version data can be loaded.
+        response = self.client.get("/admin/test_reversion/childtestadminmodel/%s/history/%s/" % (obj_pk, versions[1].pk))
+        self.assertContains(response, "parent instance1 version1")
+        self.assertContains(response, "child instance1 version1")
+        # Check that loading the version data didn't roll it back!
+        obj = ChildTestAdminModel.objects.get(pk=obj.pk)
+        self.assertEqual(obj.child_name, "child instance1 version2")
+        self.assertEqual(obj.parent_name, "parent instance1 version2")
+        self.assertEqual(reversion.get_for_object(obj).count(), 2)
         # Check that a version can be rolled back.
         response = self.client.post("/admin/test_reversion/childtestadminmodel/%s/history/%s/" % (obj_pk, versions[1].pk), {
             "parent_name": "parent instance1 version3",
             "child_name": "child instance1 version3",
         })
         self.assertEqual(response.status_code, 302)
+        # Check that the models were rolled back.
+        obj = ChildTestAdminModel.objects.get(pk=obj.pk)
+        self.assertEqual(obj.child_name, "child instance1 version3")
+        self.assertEqual(obj.parent_name, "parent instance1 version3")
         # Check that a version is created.
         versions = reversion.get_for_object(obj)
         self.assertEqual(versions.count(), 3)
-        self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version3")
         self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version3")
-        # Check that a deleted version can be viewed.
+        self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version3")
+        # Check that a deleted version can be viewed in the list.
         obj.delete()
         response = self.client.get("/admin/test_reversion/childtestadminmodel/recover/")
+        self.assertContains(response, "child instance1 version3")
+        # Check that a delete version can be viewed in detail.
+        response = self.client.get("/admin/test_reversion/childtestadminmodel/recover/%s/" % versions[0].pk)
+        self.assertContains(response, "parent instance1 version3")
         self.assertContains(response, "child instance1 version3")
         # Check that a deleted version can be recovered.
         response = self.client.post("/admin/test_reversion/childtestadminmodel/recover/%s/" % versions[0].pk, {
             "parent_name": "parent instance1 version4",
             "child_name": "child instance1 version4",
         })
-        obj = ChildTestAdminModel.objects.get(id=obj_pk)
+        # Check that the models were rolled back.
+        obj = ChildTestAdminModel.objects.get(pk=obj_pk)
+        self.assertEqual(obj.child_name, "child instance1 version4")
+        self.assertEqual(obj.parent_name, "parent instance1 version4")
+        # Check that a version is created.
+        versions = reversion.get_for_object_reference(ChildTestAdminModel, obj_pk)
+        self.assertEqual(versions.count(), 4)
+        self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version4")
+        self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version4")
 
-
-    def createInlineObjects(self, should_delete):
+    def createInlineObjects(self):
         # Create an instance via the admin without a child.
         response = self.client.post("/admin/test_reversion/inlinetestparentmodel/add/", {
             "name": "parent version1",
             "children-TOTAL_FORMS": "0",
             "children-INITIAL_FORMS": "0",
-            # "children-0-name": "child version 1",
+            "test_reversion-inlinetestchildgenericmodel-content_type-object_id-TOTAL_FORMS": "0",
+            "test_reversion-inlinetestchildgenericmodel-content_type-object_id-INITIAL_FORMS": "0",
             "_continue": 1,
             })
         self.assertEqual(response.status_code, 302)
         parent_pk = response["Location"].split("/")[-2]
         parent = InlineTestParentModel.objects.get(id=parent_pk)
-
         # Update  instance via the admin to add a child
         response = self.client.post("/admin/test_reversion/inlinetestparentmodel/%s/" % parent_pk, {
             "name": "parent version1",
             "children-TOTAL_FORMS": "1",
             "children-INITIAL_FORMS": "0",
             "children-0-name": "child version 1",
+            "test_reversion-inlinetestchildgenericmodel-content_type-object_id-TOTAL_FORMS": "1",
+            "test_reversion-inlinetestchildgenericmodel-content_type-object_id-INITIAL_FORMS": "0",
+            "test_reversion-inlinetestchildgenericmodel-content_type-object_id-0-name": "generic child version 1",
             "_continue": 1,
             })
         self.assertEqual(response.status_code, 302)
         children = InlineTestChildModel.objects.filter(parent=parent_pk)
         self.assertEqual(children.count(), 1)
-
+        generic_children = parent.generic_children.all()
+        self.assertEqual(generic_children.count(), 1)
         # get list of versions
         version_list = reversion.get_for_object(parent)
         self.assertEqual(len(version_list), 2)
 
-        # check if reversion page has the checkbox for the inline checked
-        response = self.client.get("/admin/test_reversion/inlinetestparentmodel/%s/history/%s/" %
-                                   (parent_pk, version_list[1].id))
-        self.assertEqual(response.status_code, 200)
-        if should_delete:
-            self.assertContains(response, '<input checked="checked" id="id_children-0-DELETE" name="children-0-DELETE" type="checkbox" />') # this is crude
-        else:
-            self.assertNotContains(response, '<input checked="checked" id="id_children-0-DELETE" name="children-0-DELETE" type="checkbox" />') # this is crude
-
-        # don't actually submit a post since the values we submit would be from the test, not what the admin defaults
-
-
-    @skipUnless('django.contrib.admin' in settings.INSTALLED_APPS,
-                "django.contrib.admin not activated")
     def testInlineAdmin(self):
         self.assertTrue(reversion.is_registered(InlineTestParentModel))
-
         # make sure model is following the child FK
         self.assertTrue('children' in reversion.get_adapter(InlineTestParentModel).follow)
-
-        self.createInlineObjects(True)
-
+        self.createInlineObjects()
         # unregister model
         reversion.unregister(InlineTestParentModel)
         self.assertFalse(reversion.is_registered(InlineTestParentModel))
-
         # re-register without following
         reversion.register(InlineTestParentModel)
         self.assertTrue(reversion.is_registered(InlineTestParentModel))
-
         # make sure model is NOT following the child FK
         self.assertFalse('children' in reversion.get_adapter(InlineTestParentModel).follow)
-
-        self.createInlineObjects(False)
-
+        self.createInlineObjects()
 
     def tearDown(self):
         self.client.logout()
@@ -854,7 +850,7 @@ class VersionAdminTest(TestCase):
 
 try:
     from reversion.helpers import generate_patch, generate_patch_html
-except ImportError:
+except ImportError:  # pragma: no cover
     can_test_patch = False
 else:
     can_test_patch = True
@@ -901,4 +897,3 @@ class DeleteUserTest(RevisionTestBase):
         self.user.delete()
         self.assertEqual(Revision.objects.count(), 1)
         self.assertEqual(Version.objects.count(), 4)
-
