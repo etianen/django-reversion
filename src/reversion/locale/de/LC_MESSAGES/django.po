@@ -45,6 +45,10 @@ msgstr "%s wiederherstellen"
 msgid "Revert %(name)s"
 msgstr "%(name)s zurücksetzen"
 
+#: management/commands/createinitialrevisions.py:76
+msgid "Initial version."
+msgstr "Ursprüngliche Version."
+
 #: templates/reversion/change_list.html:11
 #, python-format
 msgid "Add %(name)s"
