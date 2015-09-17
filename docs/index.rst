@@ -10,7 +10,7 @@ To install django-reversion, follow these steps:
 
 1.  Install with pip: ``pip install django-reversion``.
 2.  Add ``'reversion'`` to ``INSTALLED_APPS``.
-3.  Run ``manage.py syncdb``.
+3.  Run ``manage.py migrate``.
 
 The latest release (1.9.3) of django-reversion is designed to work with Django 1.8. If you have installed anything other than the latest version of Django, please check the :ref:`compatible Django versions <django-versions>` page before installing django-reversion.
 
