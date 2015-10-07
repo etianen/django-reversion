@@ -18,6 +18,7 @@ If you're using Django <= 1.8, with the latest release of django-reversion, impo
 If you're using Django >= 1.9, then use the master branch of django-reversion, and import the low-level API as follows:
 
 ::
+
     from reversion import revisions
 
 
