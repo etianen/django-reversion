@@ -90,9 +90,13 @@ class VersionAdmin(admin.ModelAdmin):
 
     # Messages.
 
-    def log_addition(self, request, object):
-        self.revision_context_manager.set_comment(_("Initial version."))
-        super(VersionAdmin, self).log_addition(request, object)
+    def log_addition(self, request, object, change_message=None):
+        change_message = change_message or _("Initial version.")
+        self.revision_context_manager.set_comment(change_message)
+        try:
+            super(VersionAdmin, self).log_addition(request, object, change_message)
+        except TypeError:  # Django < 1.9 pragma: no cover
+            super(VersionAdmin, self).log_addition(request, object)
 
     def log_change(self, request, object, message):
         self.revision_context_manager.set_comment(message)
