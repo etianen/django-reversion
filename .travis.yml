@@ -19,6 +19,13 @@ env:
   - DJANGO=django==1.9a1 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
 matrix:
   fast_finish: true
+  exclude:
+    - python: 3.5
+      env: DJANGO=django==1.7.10
+    - python: 3.5
+      env: DJANGO=django==1.7.10 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
+    - python: 3.5
+      env: DJANGO=django==1.7.10 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
 services:
   - postgresql
   - mysql
