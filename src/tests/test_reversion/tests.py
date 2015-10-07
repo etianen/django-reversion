@@ -23,7 +23,7 @@ else:
     User = get_user_model()
 from django.db.models.signals import pre_delete
 from django.utils import timezone
-from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse, resolve
 
 from reversion.revisions import (
     register,
@@ -744,7 +744,7 @@ class VersionAdminTest(TestCase):
             "_continue": 1,
         })
         self.assertEqual(response.status_code, 302)
-        obj_pk = response["Location"].split("/")[-3]
+        obj_pk = resolve(response["Location"].replace("http://testserver", "")).args[0]
         obj = ChildTestAdminModel.objects.get(id=obj_pk)
         # Check that a version is created.
         versions = get_for_object(obj)
@@ -825,7 +825,7 @@ class VersionAdminTest(TestCase):
             "_continue": 1,
             })
         self.assertEqual(response.status_code, 302)
-        parent_pk = response["Location"].split("/")[-3]
+        parent_pk = resolve(response["Location"].replace("http://testserver", "")).args[0]
         parent = InlineTestParentModel.objects.get(id=parent_pk)
         # Update  instance via the admin to add a child
         response = self.client.post(reverse("admin:test_reversion_inlinetestparentmodel_change", args=(parent_pk,)), {
