@@ -32,12 +32,14 @@ services:
   - mysql
 install:
   - travis_retry pip install $DJANGO
+  - if [[ "$DB_ENGINE" == "django.db.backends.postgresql" ]] ; then travis_retry pip install psycopg2; fi
   - if [[ "$DB_ENGINE" == "django.db.backends.postgresql_psycopg2" ]] ; then travis_retry pip install psycopg2; fi
   - if [[ "$DB_ENGINE" == "django.db.backends.mysql" ]] ; then travis_retry pip install mysqlclient ; fi
   - pip install -e .[test,diff]
 before_script:
   - if [[ "$DB_ENGINE" == "django.db.backends.mysql" ]] ; then mysql -e 'create database test_project'; fi
   - if [[ "$DB_ENGINE" == "django.db.backends.postgresql_psycopg2" ]] ; then psql -c 'create database test_project;' -U postgres; fi
+  - if [[ "$DB_ENGINE" == "django.db.backends.postgresql" ]] ; then psql -c 'create database test_project;' -U postgres; fi
 script: coverage run src/tests/manage.py test src/tests/test_reversion/
 after_script: coverage report
 notifications:
