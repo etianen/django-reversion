@@ -5,16 +5,20 @@ python:
   - 3.2
   - 3.3
   - 3.4
+  - 3.5
 cache:
   directories:
     - $HOME/.cache/pip
 env:
-  - DJANGO=django==1.7.9
-  - DJANGO=django==1.7.9 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
-  - DJANGO=django==1.7.9 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-  - DJANGO=django==1.8.3
-  - DJANGO=django==1.8.3 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
-  - DJANGO=django==1.8.3 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+  - DJANGO=django==1.7.10
+  - DJANGO=django==1.7.10 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
+  - DJANGO=django==1.7.10 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+  - DJANGO=django==1.8.4
+  - DJANGO=django==1.8.4 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
+  - DJANGO=django==1.8.4 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+  - DJANGO=django==1.9a1
+  - DJANGO=django==1.9a1 DB_ENGINE="django.db.backends.postgresql" DB_NAME="test_project" DB_USER="postgres"
+  - DJANGO=django==1.9a1 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
 matrix:
   fast_finish: true
   exclude:
