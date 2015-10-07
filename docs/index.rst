@@ -22,9 +22,9 @@ Admin integration
 
 django-reversion can be used to add a powerful rollback and recovery facility to your admin site. To enable this, simply register your models with a subclass of ``reversion.VersionAdmin``::
 
-    import reversion
+    from reversion.admin import VersionAdmin
 
-    class YourModelAdmin(reversion.VersionAdmin):
+    class YourModelAdmin(VersionAdmin):
 
         pass
 
