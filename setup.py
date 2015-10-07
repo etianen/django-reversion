@@ -1,3 +1,5 @@
+import sys
+sys.path.insert(0, "src")
 from setuptools import setup, find_packages
 from reversion import __version__
 
