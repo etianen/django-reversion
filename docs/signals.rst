@@ -7,8 +7,8 @@ django-reversion provides a number of custom signals that can be used to tie-in 
 
 **Important:** Don't connect to the pre_save or post_save signals of the Version or Revision models directly, use the signals outlined below instead. The pre_save and post_save signals are no longer sent by the Version or Revision models since django-reversion 1.7.
 
-reversion.pre_revision_commit
------------------------------
+reversion.signals.pre_revision_commit
+-------------------------------------
 
 This signal is triggered just before a revision is saved to the database. It receives the following keyword arguments:
 
@@ -17,8 +17,8 @@ This signal is triggered just before a revision is saved to the database. It rec
 * **versions** - The unsaved Version models in the revision.
 
 
-reversion.post_revision_commit
-------------------------------
+reversion.signals..post_revision_commit
+---------------------------------------
 
 This signal is triggered just after a revision is saved to the database. It receives the following keyword arguments:
 

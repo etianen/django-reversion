@@ -8,8 +8,14 @@ except ImportError:  # For Python 2.6
 
 try:
     from django.apps import apps
-    get_app = apps.get_app
-    get_apps = apps.get_apps
+    try:
+        get_app = apps.get_app
+    except AttributeError:  # For Django >= 1.9
+        get_app = lambda app_label: apps.get_app_config(app_label).models_module
+    try:
+        get_apps = apps.get_apps
+    except AttributeError:  # For Django >= 1.9
+        get_apps = lambda: [app_config.models_module for app_config in apps.get_app_configs() if app_config.models_module is not None]
     get_model = apps.get_model
     get_models = apps.get_models
 except ImportError:  # For Django < 1.7
@@ -27,7 +33,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import reset_queries
 from django.utils.encoding import force_text
 
-from reversion import default_revision_manager
+from reversion.revisions import default_revision_manager
 from reversion.models import Version, has_int_pk
 from django.utils import translation
 from django.conf import settings

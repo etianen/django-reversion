@@ -22,10 +22,10 @@ First of all, you need to use the :ref:`low level API <api>` to retrieve the ver
     page = Page.objects.all()[0]
 
     # Get the two versions to compare.
-    available_versions = reversion.get_for_object(page)
+    available_versions = revisions.get_for_object(page)
 
-    old_version = available_versions[0]
-    new_version = available_versions[1]
+    new_version = available_versions[0]
+    old_version = available_versions[1]
 
 Now, in order to generate a text patch::
 

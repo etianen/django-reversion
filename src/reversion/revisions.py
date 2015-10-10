@@ -25,7 +25,9 @@ from django.db.models.query import QuerySet
 from django.db.models.signals import post_save
 from django.utils.encoding import force_text
 
-from reversion.models import Revision, Version, has_int_pk, pre_revision_commit, post_revision_commit
+from reversion.models import Revision, Version, has_int_pk
+from reversion.signals import pre_revision_commit, post_revision_commit
+from reversion.errors import RevisionManagementError, RegistrationError
 
 
 class VersionAdapter(object):
@@ -115,11 +117,6 @@ class VersionAdapter(object):
             "serialized_data": self.get_serialized_data(obj),
             "object_repr": force_text(obj),
         }
-
-
-class RevisionManagementError(Exception):
-
-    """Exception that is thrown when something goes wrong with revision managment."""
 
 
 class RevisionContextStackFrame(object):
@@ -326,11 +323,6 @@ class RevisionContext(object):
 
 # A shared, thread-safe context manager.
 revision_context_manager = RevisionContextManager()
-
-
-class RegistrationError(Exception):
-
-    """Exception thrown when registration with django-reversion goes wrong."""
 
 
 class RevisionManager(object):
@@ -641,3 +633,35 @@ class RevisionManager(object):
 
 # A shared revision manager.
 default_revision_manager = RevisionManager("default")
+
+
+# Easy registration methods.
+register = default_revision_manager.register
+is_registered = default_revision_manager.is_registered
+unregister = default_revision_manager.unregister
+get_adapter = default_revision_manager.get_adapter
+get_registered_models = default_revision_manager.get_registered_models
+
+
+# Context management.
+create_revision = revision_context_manager.create_revision
+
+
+# Revision meta data.
+get_db = revision_context_manager.get_db
+set_db = revision_context_manager.set_db
+get_user = revision_context_manager.get_user
+set_user = revision_context_manager.set_user
+get_comment = revision_context_manager.get_comment
+set_comment = revision_context_manager.set_comment
+add_meta = revision_context_manager.add_meta
+get_ignore_duplicates = revision_context_manager.get_ignore_duplicates
+set_ignore_duplicates = revision_context_manager.set_ignore_duplicates
+
+
+# Low level API.
+get_for_object_reference = default_revision_manager.get_for_object_reference
+get_for_object = default_revision_manager.get_for_object
+get_unique_for_object = default_revision_manager.get_unique_for_object
+get_for_date = default_revision_manager.get_for_date
+get_deleted = default_revision_manager.get_deleted

@@ -4,7 +4,7 @@ try:
 except ImportError:  # Django < 1.9  pragma: no cover
     from django.contrib.contenttypes.generic import GenericTabularInline
 
-import reversion
+from reversion.admin import VersionAdmin
 
 from test_reversion.models import (
     ChildTestAdminModel,
@@ -16,7 +16,7 @@ from test_reversion.models import (
 )
 
 
-class ChildTestAdminModelAdmin(reversion.VersionAdmin):
+class ChildTestAdminModelAdmin(VersionAdmin):
 
     pass
 
@@ -46,7 +46,7 @@ class InlineTestChildGenericModelInline(GenericTabularInline):
     extra = 0
 
 
-class InlineTestParentModelAdmin(reversion.VersionAdmin):
+class InlineTestParentModelAdmin(VersionAdmin):
 
     inlines = (InlineTestChildModelInline, InlineTestChildGenericModelInline)
 
@@ -59,7 +59,7 @@ class InlineTestUnrelatedChildModelInline(admin.TabularInline):
     model = InlineTestUnrelatedChildModel
 
 
-class InlineTestUnrelatedParentModelAdmin(reversion.VersionAdmin):
+class InlineTestUnrelatedParentModelAdmin(VersionAdmin):
 
     inlines = (InlineTestUnrelatedChildModelInline,)
 

@@ -11,9 +11,10 @@ from django.conf import settings
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, IntegrityError, transaction
-from django.dispatch.dispatcher import Signal
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text, python_2_unicode_compatible
+
+from reversion.errors import RevertError
 
 
 def safe_revert(versions):
@@ -34,11 +35,6 @@ def safe_revert(versions):
         raise RevertError("Could not revert revision, due to database integrity errors.")
     if unreverted_versions:  # pragma: no cover
         safe_revert(unreverted_versions)
-
-
-class RevertError(Exception):
-
-    """Exception thrown when something goes wrong with reverting a model."""
 
 
 UserModel = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
@@ -215,8 +211,3 @@ class Version(models.Model):
     #Meta
     class Meta:
         app_label = 'reversion'
-
-
-# Version management signals.
-pre_revision_commit = Signal(providing_args=["instances", "revision", "versions"])
-post_revision_commit = Signal(providing_args=["instances", "revision", "versions"])

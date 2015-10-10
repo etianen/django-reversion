@@ -1,7 +1,7 @@
 import sys
-sys.path.insert(0, 'src/reversion')
+sys.path.insert(0, "src")
 from setuptools import setup, find_packages
-from version import __version__
+from reversion import __version__
 
 
 # Load in babel support, if available.

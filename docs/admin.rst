@@ -7,19 +7,19 @@ django-reversion can be used to add a powerful rollback and recovery facility to
 
 ::
 
-    import reversion
+    from reversion.admin import VersionAdmin
 
-    class YourModelAdmin(reversion.VersionAdmin):
+    class YourModelAdmin(VersionAdmin):
 
         pass
 
     admin.site.register(YourModel, YourModelAdmin)
 
-You can also use ``reversion.VersionAdmin`` as a mixin with another specialized admin class.
+You can also use ``VersionAdmin`` as a mixin with another specialized admin class.
 
 ::
 
-    class YourModelAdmin(reversion.VersionAdmin, YourBaseModelAdmin):
+    class YourModelAdmin(VersionAdmin, YourBaseModelAdmin):
 
         pass
 
@@ -35,11 +35,11 @@ If you're using an existing third party app, then you can add patch django-rever
 Admin customizations
 --------------------
 
-It's possible to customize the way django-reversion integrates with your admin site by specifying options on the subclass of ``reversion.VersionAdmin`` as follows:
+It's possible to customize the way django-reversion integrates with your admin site by specifying options on the subclass of ``VersionAdmin`` as follows:
 
 ::
 
-    class YourModelAdmin(reversion.VersionAdmin):
+    class YourModelAdmin(VersionAdmin):
 
         option_name = option_value
 
