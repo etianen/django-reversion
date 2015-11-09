@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 from contextlib import contextmanager
 
 from django.db import models, transaction, connection
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 from django.contrib import admin
 from django.contrib.admin import options
 try:
@@ -163,10 +163,10 @@ class VersionAdmin(admin.ModelAdmin):
         admin_site = self.admin_site
         opts = self.model._meta
         info = opts.app_label, opts.model_name,
-        reversion_urls = patterns("",
+        reversion_urls = [
                                   url("^recover/$", admin_site.admin_view(self.recoverlist_view), name='%s_%s_recoverlist' % info),
                                   url("^recover/([^/]+)/$", admin_site.admin_view(self.recover_view), name='%s_%s_recover' % info),
-                                  url("^([^/]+)/history/([^/]+)/$", admin_site.admin_view(self.revision_view), name='%s_%s_revision' % info),)
+                                  url("^([^/]+)/history/([^/]+)/$", admin_site.admin_view(self.revision_view), name='%s_%s_revision' % info),]
         return reversion_urls + urls
 
     # Views.
