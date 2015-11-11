@@ -54,3 +54,5 @@ Admin Integration
 The admin integration for django-reversion does not currently support diff generation.  This is a deliberate design decision, as it would make the framework a lot more heavyweight, as well as carrying the risk of confusing non-technical end users.
 
 While future versions may support a more advanced admin class, for the time being it is left up to your own imagination for ways in which to integrate diffs with your project.
+
+One example might be to use django-reversion-compare, see `django-reversion-compare <https://github.com/jedie/django-reversion-compare>`_.
