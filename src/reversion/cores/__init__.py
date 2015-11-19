@@ -2,7 +2,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text
 from django.utils.safestring import mark_safe
 
-from is_core.main import UIRestModelISCore
+from is_core.main import UIRESTModelISCore
 from is_core.generic_views.inlines.inline_objects_views import TabularInlineObjectsView
 
 from reversion.models import Revision, Version
@@ -10,7 +10,7 @@ from reversion.models import Revision, Version
 from .views import ReversionEditView, ReversionHistoryView
 
 
-class DataRevisionIsCore(UIRestModelISCore):
+class DataRevisionIsCore(UIRESTModelISCore):
     abstract = True
 
     model = Revision
@@ -64,11 +64,11 @@ class DataRevisionIsCore(UIRestModelISCore):
     form_inline_views = [VersionInlineFormView]
 
 
-class ReversionUIRestModelISCore(UIRestModelISCore):
+class ReversionUIRESTModelISCore(UIRESTModelISCore):
     abstract = True
 
     def get_view_classes(self):
-        view_classes = super(ReversionUIRestModelISCore, self).get_view_classes()
+        view_classes = super(ReversionUIRESTModelISCore, self).get_view_classes()
         view_classes['history'] = (r'^/(?P<pk>\d+)/history/?$', ReversionHistoryView)
         view_classes['edit'] = (r'^/(?P<pk>\d+)/$', ReversionEditView)
         return view_classes
