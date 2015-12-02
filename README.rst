@@ -25,7 +25,7 @@ Documentation
 
 Please read the `Getting Started <http://django-reversion.readthedocs.org/en/latest/>`_
 guide for more information.
-    
+
 Download instructions, bug reporting and links to full documentation can be
 found at the `main project website <http://github.com/etianen/django-reversion>`_.
 
@@ -42,7 +42,7 @@ documentation for information on any database changes and how to upgrade. If you
 South to manage database migrations in your project, then upgrading is as easy as running
 a few django management commands.
 
-It's always worth checking the `CHANGELOG <https://github.com/etianen/django-reversion/blob/master/CHANGELOG.rst>`_
+It's always worth checking the `CHANGELOG <https://github.com/etianen/django-reversion/blob/master/CHANGELOG.md>`_
 before upgrading too, just in case you get caught off-guard by a minor upgrade to the library.
 
 
@@ -66,13 +66,13 @@ The django-reversion project is built on every push with `Travis CI <https://tra
 .. image:: https://travis-ci.org/etianen/django-reversion.svg?branch=master
     :target: https://travis-ci.org/etianen/django-reversion
 
-    
+
 More information
 ----------------
 
 The django-reversion project was developed by Dave Hall. You can get the code
 from the `django-reversion project site <http://github.com/etianen/django-reversion>`_.
-    
+
 Dave Hall is a freelance web developer, based in Cambridge, UK. You can usually
 find him on the Internet in a number of different places:
 

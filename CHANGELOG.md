@@ -3,7 +3,7 @@
 
 ## 1.10 - 02/12/2015
 
-- **Breaking:** Updated the location of admin classes.
+- **Breaking:** Updated the location of [admin classes]((http://django-reversion.readthedocs.org/en/latest/admin.html).).
 
     Prior to this change, you could access the `VersionAdmin` class using the following import:
 
@@ -41,8 +41,8 @@
         ...
     ```
 
-    In order to support Django 1.9, the low-level API methods have been moved to the following
-    import:
+    In order to support Django 1.9, the [low-level API](http://django-reversion.readthedocs.org/en/latest/api.html)
+    methods have been moved to the following import:
 
     ```py
     # New-style import for accesssing the low-level API.
@@ -54,9 +54,7 @@
         ...
     ```
 
-    More information can be found on the [low-level API docs](http://django-reversion.readthedocs.org/en/latest/api.html).
-
-- **Breaking:** Updated the location of reversion signals.
+- **Breaking:** Updated the location of [reversion signals]((http://django-reversion.readthedocs.org/en/latest/signals.html).).
     Prior to this change, you could access the reversion signals using the following import:
 
     ```py
