@@ -21,11 +21,11 @@ matrix:
   fast_finish: true
   exclude:
     - python: 3.5
-      env: DJANGO=django==1.7.10
+      env: DJANGO=django==1.7.11
     - python: 3.5
-      env: DJANGO=django==1.7.10 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
+      env: DJANGO=django==1.7.11 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
     - python: 3.5
-      env: DJANGO=django==1.7.10 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+      env: DJANGO=django==1.7.11 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
 services:
   - postgresql
   - mysql
