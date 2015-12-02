@@ -28,7 +28,7 @@
         ...
     ```
 
-- **Breaking:** Updated the location of low-level API methods.
+- **Breaking:** Updated the location of [low-level API](http://django-reversion.readthedocs.org/en/latest/api.html) methods.
     Prior to this change, you could access the low-level API using the following import:
 
     ```py
@@ -41,7 +41,7 @@
         ...
     ```
 
-    In order to support Django 1.9, the [low-level API](http://django-reversion.readthedocs.org/en/latest/api.html)
+    In order to support Django 1.9, the low-level API
     methods have been moved to the following import:
 
     ```py
