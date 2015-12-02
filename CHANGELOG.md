@@ -3,7 +3,7 @@
 
 ## 1.10 - 02/12/2015
 
-- **Breaking:** Updated the location of [admin classes]((http://django-reversion.readthedocs.org/en/latest/admin.html).).
+- **Breaking:** Updated the location of [admin classes](http://django-reversion.readthedocs.org/en/latest/admin.html).
 
     Prior to this change, you could access the `VersionAdmin` class using the following import:
 
@@ -54,7 +54,7 @@
         ...
     ```
 
-- **Breaking:** Updated the location of [reversion signals]((http://django-reversion.readthedocs.org/en/latest/signals.html).).
+- **Breaking:** Updated the location of [reversion signals](http://django-reversion.readthedocs.org/en/latest/signals.html).
     Prior to this change, you could access the reversion signals using the following import:
 
     ```py
