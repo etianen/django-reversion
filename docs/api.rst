@@ -13,39 +13,35 @@ Import the low-level API as follows:
 
 ::
 
-    from reversion import revisions
+    from reversion import revisions as reversion
 
-**Note:** If using django-reversion < 1.10, import the low-level API using ``import reversion as revisions``.
+**Note:** If using django-reversion < 1.10, import the low-level API using ``import reversion``.
 
 
 Registering models with django-reversion
 ----------------------------------------
 
-If you're already using the :ref:`admin integration <admin>` for a model, then there's no need to register it. However, if you want to register a model without using the admin integration, then you need to use the ``revisions.register()`` method.
+If you're already using the :ref:`admin integration <admin>` for a model, then there's no need to register it. However, if you want to register a model without using the admin integration, then you need to use the ``reversion.register()`` method.
 
 ::
 
-    from reversion import revisions
+    reversion.register(YourModel)
 
-    revisions.register(YourModel)
-
-``revisions.register`` can also be used as a class decorator, with or without arguments.
+``reversion.register`` can also be used as a class decorator, with or without arguments.
 
 ::
 
-    from reversion import revisions
-
-    @revisions.register
+    @from reversion import revisions as reversion.register
     class YourModel(models.Model):
         ...
 
-    @revisions.register(format='yaml')
+    @from reversion import revisions as reversion.register(format='yaml')
     class YourOtherModel(models.Model):
         ...
 
 **Warning:** If you’re using django-reversion in a management command, and are using the automatic ``VersionAdmin`` registration method, then you’ll need to import the relevant ``admin.py`` file at the top of your management command file.
 
-**Warning:** When Django starts up, some python scripts get loaded twice, which can cause 'already registered' errors to be thrown. If you place your calls to ``revisions.register()`` in the ``models.py`` file, immediately after the model definition, this problem will go away.
+**Warning:** When Django starts up, some python scripts get loaded twice, which can cause 'already registered' errors to be thrown. If you place your calls to ``reversion.register()`` in the ``models.py`` file, immediately after the model definition, this problem will go away.
 
 
 Creating revisions
@@ -58,27 +54,27 @@ A revision represents one or more changes made to your models, grouped together 
 There are several ways to create revisions, as explained below. Although there is nothing stopping you from mixing and matching these approaches, it is recommended that you pick one of the methods and stick with it throughout your project.
 
 
-revisions.create_revision() decorator
+reversion.create_revision() decorator
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can decorate any function with the ``revisions.create_revision()`` decorator. Any changes to your models that occur during this function will be grouped together into a revision.
+You can decorate any function with the ``reversion.create_revision()`` decorator. Any changes to your models that occur during this function will be grouped together into a revision.
 
 ::
 
     @transaction.atomic()
-    @revisions.create_revision()
+    @reversion.create_revision()
     def you_view_func(request):
         your_model.save()
 
 
-revisions.create_revision() context manager
+reversion.create_revision() context manager
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can use a context manager to mark up a block of code. Once the block terminates, any changes made to your models will be grouped together into a revision.
 
 ::
 
-    with transaction.atomic(), revisions.create_revision():
+    with transaction.atomic(), reversion.create_revision():
         your_model.save()
 
 
@@ -94,7 +90,7 @@ To enable the revision middleware, simply add it to your ``MIDDLEWARE_CLASSES`` 
         # Other middleware goes here...
     )
 
-**Warning**: Due to changes in the Django 1.6 transaction handling, revision data will be saved in a separate database transaction to the one used to save your models, even if you set ``ATOMIC_REQUESTS = True``. If you need to ensure that your models and revisions are saved in the save transaction, please use the ``revisions.create_revision()`` context manager or decorator in combination with ``transaction.atomic()``.
+**Warning**: Due to changes in the Django 1.6 transaction handling, revision data will be saved in a separate database transaction to the one used to save your models, even if you set ``ATOMIC_REQUESTS = True``. If you need to ensure that your models and revisions are saved in the save transaction, please use the ``reversion.create_revision()`` context manager or decorator in combination with ``transaction.atomic()``.
 
 
 Version meta data
@@ -102,10 +98,10 @@ Version meta data
 
 It is possible to attach a comment and a user reference to an active revision using the following method::
 
-    with transaction.atomic(), revisions.create_revision():
+    with transaction.atomic(), reversion.create_revision():
         your_model.save()
-        revisions.set_user(user)
-        revisions.set_comment("Comment text...")
+        reversion.set_user(user)
+        reversion.set_comment("Comment text...")
 
 If you use ``RevisionMiddleware``, then the user will automatically be added to the revision from the incoming request.
 
@@ -123,7 +119,7 @@ You can attach custom meta data to a revision by creating a separate django mode
 
 You can then attach this meta class to a revision using the following method::
 
-    revisions.add_meta(VersionRating, rating=5)
+    reversion.add_meta(VersionRating, rating=5)
 
 
 Reverting to previous revisions
@@ -134,13 +130,13 @@ To revert a model to a previous version, use the following method::
     your_model = YourModel.objects.get(pk=1)
 
     # Build a list of all previous versions, latest versions first:
-    version_list = revisions.get_for_object(your_model)
+    version_list = reversion.get_for_object(your_model)
 
     # Build a list of all previous versions, latest versions first, duplicates removed:
-    version_list = revisions.get_for_object(your_model).get_unique()
+    version_list = reversion.get_for_object(your_model).get_unique()
 
     # Find the most recent version for a given date:
-    version = revisions.get_for_date(your_model, datetime.datetime(2008, 7, 10))
+    version = reversion.get_for_date(your_model, datetime.datetime(2008, 7, 10))
 
     # Access the model data stored within the version:
     version_data = version.field_dict
@@ -161,7 +157,7 @@ Recovering Deleted Objects
 To recover a deleted object, use the following method::
 
     # Built a list of all deleted objects, latest deletions first.
-    deleted_list = revisions.get_deleted(YourModel)
+    deleted_list = reversion.get_deleted(YourModel)
 
     # Access a specific deleted object.
     delete_version = deleted_list.get(id=5)
@@ -179,11 +175,11 @@ Advanced model registration
 Following foreign key relationships
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Normally, when you save a model it will only save the primary key of any ForeignKey or ManyToMany fields. If you also wish to include the data of the foreign key in your revisions, pass a list of relationship names to the ``revisions.register()`` method.
+Normally, when you save a model it will only save the primary key of any ForeignKey or ManyToMany fields. If you also wish to include the data of the foreign key in your revisions, pass a list of relationship names to the ``reversion.register()`` method.
 
 ::
 
-    revisions.register(YourModel, follow=["your_foreign_key_field"])
+    reversion.register(YourModel, follow=["your_foreign_key_field"])
 
 **Please note:** If you use the follow parameter, you must also ensure that the related model has been registered with django-reversion.
 
@@ -195,8 +191,8 @@ In addition to ForeignKey and ManyToMany relationships, you can also specify rel
     class Pet(models.Model):
         person = models.ForeignKey(Person)
 
-    revisions.register(Person, follow=["pet_set"])
-    revisions.register(Pet)
+    reversion.register(Person, follow=["pet_set"])
+    reversion.register(Pet)
 
 Now whenever you save a revision containing a ``Person``, all related ``Pet`` instances will be automatically saved to the same revision.
 
@@ -213,19 +209,19 @@ For example::
     class Restaurant(Place):
         pass
 
-    revisions.register(Place)
-    revisions.register(Restaurant, follow=["place_ptr"])
+    reversion.register(Place)
+    reversion.register(Restaurant, follow=["place_ptr"])
 
 
 Saving a subset of fields
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you only want a subset of fields to be saved to a revision, you can specify a ``fields`` or ``exclude`` argument to the ``revisions.register()`` method.
+If you only want a subset of fields to be saved to a revision, you can specify a ``fields`` or ``exclude`` argument to the ``reversion.register()`` method.
 
 ::
 
-    revisions.register(YourModel, fields=["pk", "foo", "bar"])
-    revisions.register(YourModel, exclude=["foo"])
+    reversion.register(YourModel, fields=["pk", "foo", "bar"])
+    reversion.register(YourModel, exclude=["foo"])
 
 **Please note:** If you are not careful, then it is possible to specify a combination of fields that will make the model impossible to recover. As such, approach this option with caution.
 
@@ -237,7 +233,7 @@ By default, django-reversion will serialize model data using the ``'json'`` seri
 
 ::
 
-    revisions.register(YourModel, format="yaml")
+    reversion.register(YourModel, format="yaml")
 
 **Please note:** The named serializer must serialize model data to a utf-8 encoded character string. Please verify that your serializer is compatible before using it with django-reversion.
 
@@ -252,15 +248,15 @@ By default, django-reversion saves a new revision whenever a model is saved, usi
     from django.db.models.signals import post_save
     from your_app.signals import custom_signal
 
-    revisions.register(YourModel, signals=[post_save, custom_signal])
+    reversion.register(YourModel, signals=[post_save, custom_signal])
 
-By default, revision data is serialized at the end of the ``revisions.create_revision()`` block, allowing foreign key references to be updated in the same block before the revision data is prepared. However, in some cases you might want to serialize the revision data immediately, such as times when the model is shortly going to be deleted.
+By default, revision data is serialized at the end of the ``reversion.create_revision()`` block, allowing foreign key references to be updated in the same block before the revision data is prepared. However, in some cases you might want to serialize the revision data immediately, such as times when the model is shortly going to be deleted.
 
 ::
 
     from django.db.models.signals import post_save, pre_delete
 
-    revisions.register(YourModel, signals=[post_save], eager_signals=[pre_delete])
+    reversion.register(YourModel, signals=[post_save], eager_signals=[pre_delete])
 
 **Important:** Creating revisions using the `pre_delete` signal is not recommended, as it alters the semantics of revision recovery. Only do this if you have a good understanding of the django-reversion internals.
 
@@ -268,14 +264,14 @@ By default, revision data is serialized at the end of the ``revisions.create_rev
 Really advanced registration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-It's possible to customize almost every aspect of model registration by registering your model with a subclass of ``revisions.VersionAdapter``. Behind the scenes, ``revisions.register()`` does this anyway, but you can explicitly provide your own VersionAdapter if you need to perform really advanced customization.
+It's possible to customize almost every aspect of model registration by registering your model with a subclass of ``VersionAdapter``. Behind the scenes, ``reversion.register()`` does this anyway, but you can explicitly provide your own VersionAdapter if you need to perform really advanced customization.
 
 ::
 
-    class MyVersionAdapter(revisions.VersionAdapter):
+    class MyVersionAdapter(reversion.VersionAdapter):
         pass  # Please see the reversion source code for available methods to override.
 
-    revisions.register(MyModel, adapter_cls=MyVersionAdapter)
+    reversion.register(MyModel, adapter_cls=MyVersionAdapter)
 
 
 Automatic Registration by the Admin Interface
@@ -308,8 +304,8 @@ For example::
 
 Since ``Restaurant`` has been registered with a subclass of ``VersionAdmin``, the following registration calls will be made automatically::
 
-    revisions.register(Place)
-    revisions.register(Restaurant, follow=("place_ptr", "meal_set"))
-    revisions.register(Meal)
+    reversion.register(Place)
+    reversion.register(Restaurant, follow=("place_ptr", "meal_set"))
+    reversion.register(Meal)
 
 It is only necessary to manually register these models if you wish to override the default registration parameters. In most cases, however, the defaults will suit just fine.

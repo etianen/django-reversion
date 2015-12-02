@@ -46,10 +46,10 @@
 
     ```py
     # New-style import for accesssing the low-level API.
-    from reversion import revisions
+    from reversion import revisions as reversion
 
     # Use low-level API methods from the revisions namespace.
-    @revisions.register
+    @reversion.register
     class YourModel(models.Model):
         ...
     ```

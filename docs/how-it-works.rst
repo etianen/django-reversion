@@ -6,19 +6,19 @@ How it works
 Saving Revisions
 ----------------
 
-Enabling version control for a model is achieved using the ``revisions.register`` method. This registers the version control machinery with the ``post_save`` signal for that model, allowing new changes to the model to be caught.
+Enabling version control for a model is achieved using the ``reversion.register`` method. This registers the version control machinery with the ``post_save`` signal for that model, allowing new changes to the model to be caught.
 
 ::
 
-    from reversion import revisions
+    from reversion import revisions as reversion
 
-    revisions.register(YourModel)
+    reversion.register(YourModel)
 
 Any models that use subclasses of ``VersionAdmin`` in the admin interface will be automatically registered with django-reversion. As such, it is only necessary to manually register these models if you wish to override the default registration settings.
 
 Whenever you save changes to a model, it is serialized using the Django serialization framework into a JSON string. This is saved to the database as a ``reversion.models.Version`` model. Each ``Version`` model is linked to a model instance using a ``GenericForeignKey``.
 
-Foreign keys and many-to-many relationships are normally saved as their primary keys only. However, the ``revisions.register`` method takes an optional follow clause allowing these relationships to be automatically added to revisions. Please see :ref:`Low Level API <api>` for more information.
+Foreign keys and many-to-many relationships are normally saved as their primary keys only. However, the ``reversion.register`` method takes an optional follow clause allowing these relationships to be automatically added to revisions. Please see :ref:`Low Level API <api>` for more information.
 
 Reverting Versions
 ------------------
