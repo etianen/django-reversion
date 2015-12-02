@@ -5,7 +5,6 @@ Signals sent by django-reversion
 
 django-reversion provides a number of custom signals that can be used to tie-in additional functionality to the version creation mechanism.
 
-**Important:** Don't connect to the pre_save or post_save signals of the Version or Revision models directly, use the signals outlined below instead. The pre_save and post_save signals are no longer sent by the Version or Revision models since django-reversion 1.7.
 
 reversion.signals.pre_revision_commit
 -------------------------------------

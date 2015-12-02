@@ -9,17 +9,13 @@ You can use django-reversion's API to build powerful version-controlled views ou
 Importing the low-level API
 ---------------------------
 
-If you're using Django <= 1.8, with the latest release of django-reversion, import the low-level API as follows:
-
-::
-
-    import reversion as revisions
-
-If you're using Django >= 1.9, then use the master branch of django-reversion, and import the low-level API as follows:
+Import the low-level API as follows:
 
 ::
 
     from reversion import revisions
+
+**Note:** If using django-reversion < 1.10, import the low-level API using ``import reversion as revisions``.
 
 
 Registering models with django-reversion
