@@ -164,3 +164,9 @@ class InlineTestUnrelatedParentModel(models.Model):
 class InlineTestUnrelatedChildModel(models.Model):
 
     parent = models.ForeignKey(InlineTestUnrelatedParentModel)
+
+
+# Issue #465
+class TestFollowModelProxy(TestFollowModel):
+    class Meta:
+        proxy = True
