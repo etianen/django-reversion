@@ -206,17 +206,21 @@ class VersionAdmin(admin.ModelAdmin):
             raise PermissionDenied
         # Render the recover view.
         version = get_object_or_404(Version, pk=version_id)
-        return self.revisionform_view(request, version, self.recover_form_template or self._get_template_list("recover_form.html"), {
+        context = {
             "title": _("Recover %(name)s") % {"name": version.object_repr},
-        })
+        }
+        context.update(extra_context or {})
+        return self.revisionform_view(request, version, self.recover_form_template or self._get_template_list("recover_form.html"), context)
 
     def revision_view(self, request, object_id, version_id, extra_context=None):
         """Displays the contents of the given revision."""
         object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
         version = get_object_or_404(Version, pk=version_id, object_id=object_id)
-        return self.revisionform_view(request, version, self.revision_form_template or self._get_template_list("revision_form.html"), {
+        context = {
             "title": _("Revert %(name)s") % {"name": version.object_repr},
-        })
+        }
+        context.update(extra_context or {})
+        return self.revisionform_view(request, version, self.revision_form_template or self._get_template_list("revision_form.html"), context)
 
     def changelist_view(self, request, extra_context=None):
         """Renders the change view."""
