@@ -136,7 +136,13 @@ class VersionAdmin(admin.ModelAdmin):
                         fk_name = field.name
                         break
             if fk_name and not inline_model._meta.get_field(fk_name).rel.is_hidden():
-                accessor = inline_model._meta.get_field(fk_name).related.get_accessor_name()
+                field = inline_model._meta.get_field(fk_name)
+                try:
+                    # >=django1.9
+                    remote_field = field.remote_field
+                except AttributeError:
+                    remote_field = field.related
+                accessor = remote_field.get_accessor_name()
                 follow_field = accessor
         return inline_model, follow_field, fk_name
 
