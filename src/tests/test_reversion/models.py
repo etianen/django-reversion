@@ -154,6 +154,16 @@ class InlineTestChildModel(models.Model):
         return self.name
 
 
+@python_2_unicode_compatible
+class InlineTestChildModelProxy(InlineTestChildModel):
+
+    def __str__(self):
+        return self.name.upper()
+
+    class Meta:
+        proxy = True
+
+
 # Test that reversion handles unrelated inlines.
 # Issue https://github.com/etianen/django-reversion/issues/277
 class InlineTestUnrelatedParentModel(models.Model):

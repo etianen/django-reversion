@@ -9,6 +9,7 @@ from reversion.admin import VersionAdmin
 from test_reversion.models import (
     ChildTestAdminModel,
     InlineTestChildModel,
+    InlineTestChildModelProxy,
     InlineTestParentModel,
     InlineTestUnrelatedChildModel,
     InlineTestUnrelatedParentModel,
@@ -22,6 +23,17 @@ class ChildTestAdminModelAdmin(VersionAdmin):
 
 
 admin.site.register(ChildTestAdminModel, ChildTestAdminModelAdmin)
+
+
+class InlineTestChildModelProxyInline(admin.TabularInline):
+
+    model = InlineTestChildModelProxy
+
+    extra = 0
+
+    verbose_name = "Proxy child"
+
+    verbose_name_plural = "Proxy children"
 
 
 class InlineTestChildModelInline(admin.TabularInline):
