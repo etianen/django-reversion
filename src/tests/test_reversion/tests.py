@@ -6,7 +6,8 @@ These tests require Python 2.5 to run.
 
 from __future__ import unicode_literals
 
-import datetime, os
+import datetime
+import os
 from unittest import skipUnless
 
 from django.db import models
@@ -15,6 +16,7 @@ from django.core.management import call_command
 from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 from django.contrib import admin
+
 try:
     from django.contrib.auth import get_user_model
 except ImportError: # django < 1.5  pragma: no cover
@@ -970,3 +972,54 @@ class DeleteUserTest(RevisionTestBase):
         self.user.delete()
         self.assertEqual(Revision.objects.count(), 1)
         self.assertEqual(Version.objects.count(), 4)
+
+
+# Issue 465
+class TestFollowProxy(TestCase):
+    def setUp(self):
+        # copy from VersionTest
+        self.old_TEMPLATE_DIRS = settings.TEMPLATE_DIRS
+        settings.TEMPLATE_DIRS = (
+            os.path.join(os.path.dirname(admin.__file__), "templates"),
+        )
+        self.user = User(
+            username = "foo",
+            is_staff = True,
+            is_superuser = True,
+        )
+        self.user.set_password("bar")
+        self.user.save()
+        # Log the user in.
+        self.client.login(
+            username = "foo",
+            password = "bar",
+        )
+    def test_initial_version(self):
+
+        self.client.post(reverse('admin:test_reversion_reversiontestmodel1proxy_add'),{
+            'testfollowmodelproxy_set-TOTAL_FORMS': 3,
+            'testfollowmodelproxy_set-INITIAL_FORMS': 0,
+            'name': 'initial parent',
+            'testfollowmodelproxy_set-0-name': 'initial child'
+        })
+
+        # Make an edit
+        self.client.post(reverse('admin:test_reversion_reversiontestmodel1proxy_change', args=(1,)), {
+            'testfollowmodelproxy_set-TOTAL_FORMS': 4,
+            'testfollowmodelproxy_set-INITIAL_FORMS': 1,
+            'name': 'initial parent version',
+            'testfollowmodelproxy_set-0-id': 1,
+            'testfollowmodelproxy_set-0-name': 'initial child version (edited)',
+            'testfollowmodelproxy_set-1-name': 'Added Row on second save'
+        })
+
+        url = '/admin/test_reversion/reversiontestmodel1proxy/1/history/1/'
+        response = self.client.get(url)
+        print response.content
+        self.assertNotContains(response, 'Added Row on second save')
+
+        # todo after fix: Test right recovery of changed and deleted childs
+
+
+
+
