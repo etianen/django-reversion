@@ -138,6 +138,12 @@ class InlineTestParentModel(models.Model):
         return self.name
 
 
+class InlineTestParentModelProxy(InlineTestParentModel):
+
+    class Meta:
+        proxy = True
+
+
 @python_2_unicode_compatible
 class InlineTestChildModel(models.Model):
 
@@ -154,11 +160,7 @@ class InlineTestChildModel(models.Model):
         return self.name
 
 
-@python_2_unicode_compatible
 class InlineTestChildModelProxy(InlineTestChildModel):
-
-    def __str__(self):
-        return self.name.upper()
 
     class Meta:
         proxy = True

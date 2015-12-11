@@ -63,8 +63,10 @@ from test_reversion.models import (
     ParentTestAdminModel,
     ChildTestAdminModel,
     InlineTestParentModel,
+    InlineTestParentModelProxy,
     InlineTestChildModel,
-    InlineTestChildGenericModel
+    InlineTestChildGenericModel,
+    InlineTestChildModelProxy,
 )
 from test_reversion import admin  # Force early registration of all admin models.
 
@@ -859,13 +861,11 @@ class VersionAdminTest(TestCase):
         response = self.client.get(reverse("admin:test_reversion_inlinetestparentmodel_revision", args=(parent_pk, versions[0].pk)))
         self.assertContains(response, "parent version2")  # Check parent model.
         self.assertContains(response, "non-generic child version 1")  # Check inline child model.
-        self.assertContains(response, "non-generic child version 1")  # Check inline proxy child model.
         self.assertContains(response, "generic child version 1")  # Check inline generic child model.
         # Check that the first version does not include the inlines.
         response = self.client.get(reverse("admin:test_reversion_inlinetestparentmodel_revision", args=(parent_pk, versions[1].pk)))
         self.assertContains(response, "parent version1")  # Check parent model.
         self.assertNotContains(response, "non-generic child version 1")  # Check inline child model.
-        self.assertNotContains(response, "non-generic child version 1")  # Check inline proxy child model.
         self.assertNotContains(response, "generic child version 1")  # Check inline generic child model.
 
     def testInlineAdminExplicitRegistrationIgnoresFollow(self):
@@ -878,6 +878,49 @@ class VersionAdminTest(TestCase):
         # make sure model is NOT following the child FK
         self.assertFalse('children' in get_adapter(InlineTestParentModel).follow)
         self.createInlineObjects()
+
+    def createInlineProxyObjects(self):
+        # Create an instance via the admin without a child.
+        response = self.client.post(reverse("admin:test_reversion_inlinetestparentmodelproxy_add"), {
+            "name": "parent version1",
+            "children-TOTAL_FORMS": "0",
+            "children-INITIAL_FORMS": "0",
+            "_continue": 1,
+            })
+        self.assertEqual(response.status_code, 302)
+        parent_pk = resolve(response["Location"].replace("http://testserver", "")).args[0]
+        parent = InlineTestParentModelProxy.objects.get(id=parent_pk)
+        # Update  instance via the admin to add a child
+        response = self.client.post(reverse("admin:test_reversion_inlinetestparentmodelproxy_change", args=(parent_pk,)), {
+            "name": "parent version2",
+            "children-TOTAL_FORMS": "1",
+            "children-INITIAL_FORMS": "0",
+            "children-0-name": "non-generic child version 1",
+            "_continue": 1,
+            })
+        self.assertEqual(response.status_code, 302)
+        children = InlineTestChildModelProxy.objects.filter(parent=parent_pk)
+        self.assertEqual(children.count(), 1)
+        # get list of versions
+        version_list = get_for_object(parent)
+        self.assertEqual(len(version_list), 2)
+        # All done!
+        return parent_pk
+
+    def testInlineProxyAdmin(self):
+        self.assertTrue(is_registered(InlineTestParentModelProxy))
+        # make sure model is following the child FK
+        self.assertTrue('children' in get_adapter(InlineTestParentModelProxy).follow)
+        parent_pk = self.createInlineObjects()
+        # Check that the current version includes the inlines.
+        versions = list(get_for_object_reference(InlineTestParentModelProxy, parent_pk))
+        response = self.client.get(reverse("admin:test_reversion_inlinetestparentmodelproxy_revision", args=(parent_pk, versions[0].pk)))
+        self.assertContains(response, "parent version2")  # Check parent model.
+        self.assertContains(response, "non-generic child version 1")  # Check inline child model.
+        # Check that the first version does not include the inlines.
+        response = self.client.get(reverse("admin:test_reversion_inlinetestparentmodelproxy_revision", args=(parent_pk, versions[1].pk)))
+        self.assertContains(response, "parent version1")  # Check parent model.
+        self.assertNotContains(response, "non-generic child version 1")  # Check inline child model.
 
     def tearDown(self):
         self.client.logout()

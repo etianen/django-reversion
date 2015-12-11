@@ -11,6 +11,7 @@ from test_reversion.models import (
     InlineTestChildModel,
     InlineTestChildModelProxy,
     InlineTestParentModel,
+    InlineTestParentModelProxy,
     InlineTestUnrelatedChildModel,
     InlineTestUnrelatedParentModel,
     InlineTestChildGenericModel,
@@ -60,10 +61,18 @@ class InlineTestChildGenericModelInline(GenericTabularInline):
 
 class InlineTestParentModelAdmin(VersionAdmin):
 
-    inlines = (InlineTestChildModelInline, InlineTestChildGenericModelInline)
+    inlines = (InlineTestChildModelInline, InlineTestChildGenericModelInline,)
 
 
 admin.site.register(InlineTestParentModel, InlineTestParentModelAdmin)
+
+
+class InlineTestParentModelProxyAdmin(VersionAdmin):
+
+    inlines = (InlineTestChildModelProxyInline,)
+
+
+admin.site.register(InlineTestParentModelProxy, InlineTestParentModelProxyAdmin)
 
 
 class InlineTestUnrelatedChildModelInline(admin.TabularInline):
