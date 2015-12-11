@@ -15,6 +15,10 @@ django-reversion can be used to add a powerful rollback and recovery facility to
 
     admin.site.register(YourModel, YourModelAdmin)
 
+**Note:** If you've registered your models explicitly using the :ref:`low level API <api>`, then the admin class will honour the
+configuration you specify there. Otherwise, the admin class will auto-register your model, following all inline model relations
+and parent superclasses.
+
 You can also use ``VersionAdmin`` as a mixin with another specialized admin class.
 
 ::
