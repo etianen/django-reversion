@@ -868,17 +868,6 @@ class VersionAdminTest(TestCase):
         self.assertNotContains(response, "non-generic child version 1")  # Check inline child model.
         self.assertNotContains(response, "generic child version 1")  # Check inline generic child model.
 
-    def testInlineAdminExplicitRegistrationIgnoresFollow(self):
-        # unregister model
-        unregister(InlineTestParentModel)
-        self.assertFalse(is_registered(InlineTestParentModel))
-        # re-register without following
-        register(InlineTestParentModel)
-        self.assertTrue(is_registered(InlineTestParentModel))
-        # make sure model is NOT following the child FK
-        self.assertFalse('children' in get_adapter(InlineTestParentModel).follow)
-        self.createInlineObjects()
-
     def createInlineProxyObjects(self):
         # Create an instance via the admin without a child.
         response = self.client.post(reverse("admin:test_reversion_inlinetestparentmodelproxy_add"), {
@@ -911,7 +900,7 @@ class VersionAdminTest(TestCase):
         self.assertTrue(is_registered(InlineTestParentModelProxy))
         # make sure model is following the child FK
         self.assertTrue('children' in get_adapter(InlineTestParentModelProxy).follow)
-        parent_pk = self.createInlineObjects()
+        parent_pk = self.createInlineProxyObjects()
         # Check that the current version includes the inlines.
         versions = list(get_for_object_reference(InlineTestParentModelProxy, parent_pk))
         response = self.client.get(reverse("admin:test_reversion_inlinetestparentmodelproxy_revision", args=(parent_pk, versions[0].pk)))
