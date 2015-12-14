@@ -104,7 +104,7 @@ class VersionAdapter(object):
     def get_version_data(self, obj, db=None):
         """Creates the version data to be saved to the version model."""
         object_id = force_text(obj.pk)
-        content_type = ContentType.objects.db_manager(db).get_for_model(obj)
+        content_type = ContentType.objects.db_manager(db).get_for_model(obj, for_concrete_model=False)
         if has_int_pk(obj.__class__):
             object_id_int = int(obj.pk)
         else:
@@ -529,9 +529,15 @@ class RevisionManager(object):
 
         The results are returned with the most recent versions first.
         """
+
         content_type = ContentType.objects.db_manager(db).get_for_model(model)
+        contenttype_ids = [content_type.pk]
+        if model._meta.proxy:
+            proxy_contenttype = ContentType.objects.db_manager(db).get_for_model(model, for_concrete_model=False)
+            contenttype_ids.append(proxy_contenttype.pk)
+
         versions = self._get_versions(db).filter(
-            content_type = content_type,
+            content_type__in = contenttype_ids,
         ).select_related("revision")
         if has_int_pk(model):
             # We can do this as a fast, indexed lookup.
