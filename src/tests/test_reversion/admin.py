@@ -15,6 +15,9 @@ from test_reversion.models import (
     InlineTestUnrelatedChildModel,
     InlineTestUnrelatedParentModel,
     InlineTestChildGenericModel,
+    ReversionTestModel1Proxy,
+    TestFollowModel,
+    TestFollowModelProxy
 )
 
 
@@ -86,3 +89,19 @@ class InlineTestUnrelatedParentModelAdmin(VersionAdmin):
 
 
 admin.site.register(InlineTestUnrelatedParentModel, InlineTestUnrelatedParentModelAdmin)
+
+
+# Issue 465
+from reversion import revisions
+revisions.register(TestFollowModel)
+
+
+class TestFollowModelProxyAdmin(admin.TabularInline):
+    model = TestFollowModelProxy
+    fields = ('name',)
+
+
+class ReversionTestModel1ProxyAdmin(VersionAdmin):
+    inlines = [TestFollowModelProxyAdmin]
+
+admin.site.register(ReversionTestModel1Proxy, ReversionTestModel1ProxyAdmin)
