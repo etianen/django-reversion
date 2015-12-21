@@ -31,8 +31,8 @@ setup(
         'reversion': ['locale/*/LC_MESSAGES/django.*', 'templates/reversion/*.html']},
     cmdclass = cmdclass,
     install_requires = [
-        'django>=1.7',
-        'django-chamber>=0.1.2'
+        'django>=1.6',
+        'django-chamber>=0.0.17'
     ],
     extras_require = {
         'diff': [
@@ -57,7 +57,7 @@ setup(
         'Framework :: Django',
     ],
     dependency_links=[
-        'https://github.com/matllubos/django-chamber/tarball/0.1.2#egg=django-chamber-0.1.2',
+        'https://github.com/matllubos/django-chamber/tarball/0.0.17#egg=django-chamber-0.0.17',
     ],
 
 )

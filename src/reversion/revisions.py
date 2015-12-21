@@ -630,10 +630,14 @@ class RevisionManager(object):
 
         The results are returned with the most recent versions first.
         """
-        warnings.warn(
-            'Use get_for_object().get_unique() instead of get_unique_for_object().',
-            PendingDeprecationWarning)
-        return list(self.get_for_object(obj, db).get_unique())
+        versions = self.get_for_object(obj, db)
+        changed_versions = []
+        last_serialized_data = None
+        for version in versions:
+            if last_serialized_data != version.serialized_data:
+                changed_versions.append(version)
+            last_serialized_data = version.serialized_data
+        return changed_versions
 
     def get_for_date(self, object, date, db=None):
         """Returns the latest version of an object for the given date."""

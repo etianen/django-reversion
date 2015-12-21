@@ -111,19 +111,6 @@ def has_int_pk(model):
     )
 
 
-class VersionQuerySet(models.QuerySet):
-
-    def get_unique(self):
-        """
-        Returns a generator of unique version data.
-        """
-        last_serialized_data = None
-        for version in self.iterator():
-            if last_serialized_data != version.serialized_data:
-                yield version
-            last_serialized_data = version.serialized_data
-
-
 @python_2_unicode_compatible
 class Version(models.Model):
 
@@ -135,8 +122,6 @@ class Version(models.Model):
         ('DELETED', _('Deleted'), 3),
         ('FOLLOW', _('Follow'), 4),
     )
-
-    objects = VersionQuerySet.as_manager()
 
     revision = models.ForeignKey(Revision, verbose_name=_('revision'),
                                  help_text=_('The revision that contains this version.'), related_name='versions')
@@ -168,16 +153,16 @@ class Version(models.Model):
 
     @property
     def flat_field_dict(self):
-        object_version = self.object_version
-        obj = object_version.object
-        result = {}
-
-        not_parent_fields = obj._meta.get_fields(include_parents=False)
-        for field in obj._meta.fields:
-            if field in not_parent_fields:
+        try:
+            object_version = self.object_version
+            obj = object_version.object
+            result = {}
+            for field in obj._meta.fields:
                 result[field.name] = field.value_from_object(obj)
-        result.update(object_version.m2m_data)
-        return result
+            result.update(object_version.m2m_data)
+            return result
+        except Exception as ex:
+            print ex
 
     @property
     def field_dict(self):

@@ -2,15 +2,15 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text
 from django.utils.safestring import mark_safe
 
-from is_core.main import UIRESTModelISCore
+from is_core.main import UIRestModelISCore
 from is_core.generic_views.inlines.inline_objects_views import TabularInlineObjectsView
 
 from reversion.models import Revision, Version
 
-from .views import ReversionEditView, ReversionHistoryView
+from .views import ReversionEditView
 
 
-class DataRevisionIsCore(UIRESTModelISCore):
+class DataRevisionIsCore(UIRestModelISCore):
     abstract = True
 
     model = Revision
@@ -23,7 +23,7 @@ class DataRevisionIsCore(UIRESTModelISCore):
         (None, {'fields': ('created_at', 'user', 'comment')}),
         (_('Versions'), {'inline_view': 'VersionInlineFormView'}),
     )
-    form_readonly_fields = ('V', 'user', 'comment', 'serialized_data')
+    form_readonly_fields = ('user', 'comment', 'serialized_data')
 
     def has_create_permission(self, request, obj=None):
         return False
@@ -48,33 +48,14 @@ class DataRevisionIsCore(UIRESTModelISCore):
                     'data': ', '.join(('%s: %s' % (k, v if v != '' else '--') for k, v in obj.flat_field_dict.items()))}
 
         def get_object(self, version):
-            from is_core.utils import get_obj_url
+            from is_core.utils import render_model_object_with_link
 
             obj = version.object
-            obj_url = get_obj_url(self.request, obj)
-
-            if (obj_url):
-                return mark_safe('<a href="%s">%s</a>' % (obj_url, force_text(obj)))
+            if obj:
+                return render_model_object_with_link(self.request, obj)
             return obj
 
         def get_objects(self):
             return self.parent_instance.versions.all()
 
-
     form_inline_views = [VersionInlineFormView]
-
-
-class ReversionUIRESTModelISCore(UIRESTModelISCore):
-    abstract = True
-
-    def get_view_classes(self):
-        view_classes = super(ReversionUIRESTModelISCore, self).get_view_classes()
-        view_classes['history'] = (r'^/(?P<pk>\d+)/history/?$', ReversionHistoryView)
-        view_classes['edit'] = (r'^/(?P<pk>\d+)/$', ReversionEditView)
-        return view_classes
-
-    def has_create_permission(self, *args, **kwargs):
-        return False
-
-    def has_delete_permission(self, *args, **kwargs):
-        return False
