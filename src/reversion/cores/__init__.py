@@ -7,10 +7,10 @@ from is_core.generic_views.inlines.inline_objects_views import TabularInlineObje
 
 from reversion.models import Revision, Version
 
-from .views import ReversionEditView
+from .views import ReversionEditView, ReversionHistoryView
 
 
-class DataRevisionIsCore(UIRestModelISCore):
+class DataRevisionISCore(UIRestModelISCore):
     abstract = True
 
     model = Revision
@@ -59,3 +59,19 @@ class DataRevisionIsCore(UIRestModelISCore):
             return self.parent_instance.versions.all()
 
     form_inline_views = [VersionInlineFormView]
+
+
+class ReversionUIRESTModelISCore(UIRestModelISCore):
+    abstract = True
+
+    def get_view_classes(self):
+        view_classes = super(ReversionUIRESTModelISCore, self).get_view_classes()
+        view_classes['history'] = (r'^/(?P<pk>\d+)/history/?$', ReversionHistoryView)
+        view_classes['edit'] = (r'^/(?P<pk>\d+)/$', ReversionEditView)
+        return view_classes
+
+    def has_create_permission(self, *args, **kwargs):
+        return False
+
+    def has_delete_permission(self, *args, **kwargs):
+        return False
