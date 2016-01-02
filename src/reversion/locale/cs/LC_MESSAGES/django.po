@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-08-06 23:05+0200\n"
+"POT-Creation-Date: 2016-01-03 22:04+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -43,95 +43,113 @@ msgstr "Navrátit se k předchozí verzi %(name)s"
 msgid "Recover deleted %(name)s"
 msgstr "Obnovit smazané %(name)s"
 
-#: cores.py:21
+#: cores/__init__.py:26
 msgid "Versions"
 msgstr "Verze"
 
-#: cores.py:37
+#: cores/__init__.py:42
 msgid "type"
 msgstr "typ"
 
-#: cores.py:38
+#: cores/__init__.py:43
 msgid "content type"
 msgstr "typ objektu"
 
-#: cores.py:39
+#: cores/__init__.py:44
 msgid "object"
 msgstr "objekt"
 
-#: cores.py:40
+#: cores/__init__.py:45
 msgid "data"
 msgstr "data"
 
-#: models.py:59
-msgid "created at"
-msgstr "vytvořeno"
+#: cores/views.py:17
+msgid "Details"
+msgstr ""
 
-#: models.py:60
-msgid "The date and time this revision was created."
-msgstr "Datum a čas kdy byla tato změna dat vytvořena"
+#: cores/views.py:18 templates/reversion/revision_form.html:11
+msgid "History"
+msgstr "Historie"
 
-#: models.py:61
+#: cores/views.py:61 models.py:63
 msgid "user"
 msgstr "uživatel"
 
+#: cores/views.py:75 cores/views.py:79
+#, python-format
+#| msgid "History"
+msgid "History of %s"
+msgstr "Historie %s"
+
+#: models.py:61 models.py:258
+msgid "created at"
+msgstr "vytvořeno"
+
 #: models.py:62
+msgid "The date and time this revision was created."
+msgstr "Datum a čas kdy byla tato změna dat vytvořena"
+
+#: models.py:64
 msgid "The user who created this revision."
 msgstr "Uživatel který vytvořil tuto změnu dat."
 
-#: models.py:63
+#: models.py:65 models.py:260
 msgid "comment"
 msgstr "komentář"
 
-#: models.py:63
+#: models.py:65 models.py:260
 msgid "A text comment on this revision."
 msgstr "Textový komentář změny dat."
 
-#: models.py:98
+#: models.py:99
 msgid "data revision"
 msgstr "datová změna"
 
-#: models.py:99
+#: models.py:100
 msgid "data revisions"
 msgstr "datové změny"
 
-#: models.py:134
+#: models.py:122
 msgid "Created"
 msgstr "Vytvořeno"
 
-#: models.py:135
+#: models.py:123
 msgid "Changed"
 msgstr "Změněno"
 
-#: models.py:136
+#: models.py:124
 msgid "Deleted"
 msgstr "Smazáno"
 
-#: models.py:137
+#: models.py:125
 msgid "Follow"
 msgstr "Následovník"
 
-#: models.py:142
+#: models.py:126
+msgid "Audit"
+msgstr "Audit"
+
+#: models.py:129
 msgid "revision"
 msgstr "datová změna"
 
-#: models.py:143
+#: models.py:130
 msgid "The revision that contains this version."
 msgstr "Datová změna která obsahuje tuto verzi."
 
-#: models.py:144
+#: models.py:131
 msgid "object id"
 msgstr "id objektu"
 
-#: models.py:145
+#: models.py:132
 msgid "Primary key of the model under version control."
 msgstr "Primární klíč modelu,. který je verzovaný."
 
-#: models.py:147
+#: models.py:134
 msgid "object id int"
 msgstr "identifikátor objektu ve formátu integer"
 
-#: models.py:148
+#: models.py:135
 msgid ""
 "An indexed, integer version of the stored model's primary key, used for "
 "faster lookups."
@@ -139,45 +157,71 @@ msgstr ""
 "Indexovaný integer primárního klíče verze uloženého modelu, je použit pro "
 "rychlejší vyhledávání."
 
-#: models.py:150
+#: models.py:137
 msgid "Content type of the model under version control."
 msgstr "Datový typ verzovaného modelu."
 
-#: models.py:155
+#: models.py:142
 msgid "format"
 msgstr "formát"
 
-#: models.py:156
+#: models.py:143
 msgid "The serialization format used by this model."
 msgstr "Formát serializace použitý pro tento model."
 
-#: models.py:157
+#: models.py:144
 msgid "serialized data"
 msgstr "serializovaná data"
 
-#: models.py:158
+#: models.py:145
 msgid "The serialized form of this version of the model."
 msgstr "Serializovaná data verzovaného modelu."
 
-#: models.py:159
+#: models.py:146
 msgid "object representation"
 msgstr "reprezentace objektu"
 
-#: models.py:160
+#: models.py:147
 msgid "A string representation of the object."
 msgstr "Textová reprezentace objektu."
 
-#: models.py:161
+#: models.py:148
 msgid "version type"
 msgstr "typ verze"
 
-#: models.py:266
+#: models.py:252
 msgid "data version"
 msgstr "verze objektu"
 
-#: models.py:267
+#: models.py:253
 msgid "data versions"
 msgstr "verze objektů"
+
+#: models.py:259
+#| msgid "Versions"
+msgid "versions"
+msgstr "verze"
+
+#: models.py:264 templates/reversion/object_history.html:17
+msgid "Comment"
+msgstr "Komentář"
+
+#: models.py:273
+#| msgid "content type"
+msgid "related content types"
+msgstr "typy vztažených objektů"
+
+#: models.py:278
+msgid "related object pks"
+msgstr "primární klíče vztažených objektů"
+
+#: models.py:287
+msgid "audit log"
+msgstr "auditní log"
+
+#: models.py:288
+msgid "audit logs"
+msgstr "auditní log"
 
 #: templates/reversion/object_history.html:8
 msgid ""
@@ -194,10 +238,6 @@ msgstr "Datum/čas"
 #: templates/reversion/object_history.html:16
 msgid "User"
 msgstr "Uživatel"
-
-#: templates/reversion/object_history.html:17
-msgid "Comment"
-msgstr "Komentář"
 
 #: templates/reversion/object_history.html:38
 msgid ""
@@ -225,10 +265,6 @@ msgstr "Zvolte datum ze seznamu níže pro obnovení smazané verze objektu."
 #: templates/reversion/recover_list.html:37
 msgid "There are no deleted objects to recover."
 msgstr "Žádné smazané objekty k obnovení."
-
-#: templates/reversion/revision_form.html:11
-msgid "History"
-msgstr "Historie"
 
 #: templates/reversion/revision_form.html:12
 #, python-format

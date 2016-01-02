@@ -17,8 +17,11 @@ from django.db import models, IntegrityError, transaction
 from django.dispatch.dispatcher import Signal
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text, python_2_unicode_compatible
+from django.template.defaultfilters import truncatechars
 
 from chamber.utils.datastructures import ChoicesNumEnum
+
+from reversion.filters import VersionIDFilter, VersionContextTypeFilter
 
 
 def safe_revert(versions):
@@ -90,7 +93,6 @@ class Revision(models.Model):
         """Returns a unicode representation."""
         return '#%s' % self.pk
 
-    #Meta
     class Meta:
         app_label = 'reversion'
         ordering = ('-created_at',)
@@ -121,6 +123,7 @@ class Version(models.Model):
         ('CHANGED', _('Changed'), 2),
         ('DELETED', _('Deleted'), 3),
         ('FOLLOW', _('Follow'), 4),
+        ('AUDIT', _('Audit'), 5),
     )
 
     revision = models.ForeignKey(Revision, verbose_name=_('revision'),
@@ -244,12 +247,46 @@ class Version(models.Model):
         """Returns a unicode representation."""
         return self.object_repr
 
-    #Meta
     class Meta:
         app_label = 'reversion'
         verbose_name = _('data version')
         verbose_name_plural = _('data versions')
 
+
+@python_2_unicode_compatible
+class AuditLog(models.Model):
+    created_at = models.DateTimeField(verbose_name=_('created at'), auto_now_add=True, db_index=True)
+    versions = models.ManyToManyField(Version, verbose_name=_('versions'))
+    comment = models.TextField(verbose_name=_('comment'), blank=True, help_text=_('A text comment on this revision.'))
+
+    def short_comment(self):
+        return truncatechars(self.comment, 50)
+    short_comment.short_description = _('Comment')
+    short_comment.filter_by = 'comment'
+    short_comment.order_by = 'comment'
+
+    def content_types(self):
+        return ', '.join([
+            force_text(content_type)
+            for content_type in ContentType.objects.filter(pk__in=self.versions.all().values('content_type').distinct())
+        ])
+    content_types.short_description = _('related content types')
+    content_types.filter = VersionContextTypeFilter
+
+    def object_pks(self):
+        return ', '.join(self.versions.all().values_list('object_id', flat=True).distinct())
+    object_pks.short_description = _('related object pks')
+    object_pks.filter = VersionIDFilter
+
+    def __str__(self):
+        """Returns a unicode representation."""
+        return self.comment
+
+    class Meta:
+        app_label = 'reversion'
+        verbose_name = _('audit log')
+        verbose_name_plural = _('audit logs')
+        ordering = ('-created_at',)
 
 # Version management signals.
 pre_revision_commit = Signal(providing_args=['instances', 'revision', 'versions'])

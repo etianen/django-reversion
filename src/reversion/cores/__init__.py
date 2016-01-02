@@ -1,11 +1,12 @@
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text
 from django.utils.safestring import mark_safe
+from django.contrib.contenttypes.models import ContentType
 
 from is_core.main import UIRestModelISCore
 from is_core.generic_views.inlines.inline_objects_views import TabularInlineObjectsView
 
-from reversion.models import Revision, Version
+from reversion.models import Revision, Version, AuditLog
 
 from .views import ReversionEditView, ReversionHistoryView
 
@@ -71,6 +72,22 @@ class ReversionUIRESTModelISCore(UIRestModelISCore):
         return view_classes
 
     def has_create_permission(self, *args, **kwargs):
+        return False
+
+    def has_delete_permission(self, *args, **kwargs):
+        return False
+
+
+class AuditLogUIRESTModelISCore(UIRestModelISCore):
+    abstract = True
+    model = AuditLog
+    list_display = ('created_at', 'content_types', 'object_pks', 'short_comment')
+    menu_group = 'audit-log'
+
+    def has_create_permission(self, *args, **kwargs):
+        return False
+
+    def has_update_permission(self, request, obj=None):
         return False
 
     def has_delete_permission(self, *args, **kwargs):

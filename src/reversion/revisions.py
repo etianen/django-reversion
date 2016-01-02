@@ -36,7 +36,7 @@ try:
 except ImportError:  # Django < 1.9 pragma: no cover
     from django.contrib.contenttypes.generic import GenericRelation
 
-from reversion.models import Revision, Version, has_int_pk, pre_revision_commit, post_revision_commit
+from reversion.models import Revision, Version, has_int_pk, pre_revision_commit, post_revision_commit, AuditLog
 
 
 class VersionTypeOperator(object):
@@ -46,18 +46,27 @@ class VersionTypeOperator(object):
         (Version.TYPE.CREATED, Version.TYPE.CHANGED, Version.TYPE.CREATED),
         (Version.TYPE.CREATED, Version.TYPE.DELETED, Version.TYPE.DELETED),
         (Version.TYPE.CREATED, Version.TYPE.FOLLOW, Version.TYPE.CREATED),
+        (Version.TYPE.CREATED, Version.TYPE.AUDIT, Version.TYPE.CREATED),
         (Version.TYPE.CHANGED, Version.TYPE.CREATED, Version.TYPE.CHANGED),
         (Version.TYPE.CHANGED, Version.TYPE.CHANGED, Version.TYPE.CHANGED),
         (Version.TYPE.CHANGED, Version.TYPE.DELETED, Version.TYPE.DELETED),
         (Version.TYPE.CHANGED, Version.TYPE.FOLLOW, Version.TYPE.CHANGED),
+        (Version.TYPE.CHANGED, Version.TYPE.AUDIT, Version.TYPE.CHANGED),
         (Version.TYPE.DELETED, Version.TYPE.CREATED, Version.TYPE.CHANGED),
         (Version.TYPE.DELETED, Version.TYPE.CHANGED, Version.TYPE.CHANGED),
         (Version.TYPE.DELETED, Version.TYPE.DELETED, Version.TYPE.DELETED),
         (Version.TYPE.DELETED, Version.TYPE.FOLLOW, Version.TYPE.DELETED),
+        (Version.TYPE.DELETED, Version.TYPE.AUDIT, Version.TYPE.DELETED),
         (Version.TYPE.FOLLOW, Version.TYPE.CREATED, Version.TYPE.CREATED),
         (Version.TYPE.FOLLOW, Version.TYPE.CHANGED, Version.TYPE.CHANGED),
         (Version.TYPE.FOLLOW, Version.TYPE.DELETED, Version.TYPE.DELETED),
         (Version.TYPE.FOLLOW, Version.TYPE.FOLLOW, Version.TYPE.FOLLOW),
+        (Version.TYPE.FOLLOW, Version.TYPE.AUDIT, Version.TYPE.FOLLOW),
+        (Version.TYPE.AUDIT, Version.TYPE.CREATED, Version.TYPE.CREATED),
+        (Version.TYPE.AUDIT, Version.TYPE.CHANGED, Version.TYPE.CHANGED),
+        (Version.TYPE.AUDIT, Version.TYPE.DELETED, Version.TYPE.DELETED),
+        (Version.TYPE.AUDIT, Version.TYPE.FOLLOW, Version.TYPE.FOLLOW),
+        (Version.TYPE.AUDIT, Version.TYPE.AUDIT, Version.TYPE.AUDIT),
     )
 
     def __init__(self):
@@ -97,7 +106,7 @@ class VersionAdapter(object):
         """Returns an iterable of field names to serialize in the version data."""
         opts = self.model._meta.concrete_model._meta
         fields = self.fields or (field.name for field in opts.local_fields + opts.local_many_to_many)
-        fields = (opts.get_field(field) for field in fields if not field in self.exclude)
+        fields = (opts.get_field(field) for field in fields if field not in self.exclude)
         for field in fields:
             if field.rel:
                 yield field.name
@@ -128,8 +137,7 @@ class VersionAdapter(object):
                     yield related_obj
             elif related is not None:  # pragma: no cover
                 raise TypeError('Cannot follow the relationship {relationship}. Expected a model or QuerySet, found {related}'.format(
-                    relationship = relationship,
-                    related = related,
+                    relationship=relationship, related=related
                 ))
 
     def get_serialization_format(self):
@@ -141,7 +149,7 @@ class VersionAdapter(object):
         return serializers.serialize(
             self.get_serialization_format(),
             (obj,),
-            fields = list(self.get_fields_to_serialize()),
+            fields=list(self.get_fields_to_serialize()),
         )
 
     def get_version_data(self, obj, db=None):
@@ -167,12 +175,16 @@ class RevisionManagementError(Exception):
     """Exception that is thrown when something goes wrong with revision managment."""
 
 
+def objectsType():
+    return (dict(), defaultdict(set))
+
+
 class RevisionContextStackFrame(object):
 
     def __init__(self, is_managing_manually, is_invalid=False):
         self.is_managing_manually = is_managing_manually
         self.is_invalid = is_invalid
-        self.objects = defaultdict(dict)
+        self.objects = defaultdict(objectsType)
         self.meta = []
 
     def fork(self, is_managing_manually):
@@ -180,8 +192,10 @@ class RevisionContextStackFrame(object):
 
     def join(self, other_context):
         if not other_context.is_invalid:
-            for manager_name, object_versions in other_context.objects.items():
-                self.objects[manager_name].update(object_versions)
+            for manager_name, (object_versions, audit_logs) in other_context.objects.items():
+                self.objects[manager_name][0].update(object_versions)
+                for audited_object, object_audit_logs in audit_logs.items():
+                    self.objects[manager_name][1][audited_object].update(audit_logs)
             self.meta.extend(other_context.meta)
 
 
@@ -245,18 +259,15 @@ class RevisionContextManager(local):
             try:
                 if not stack_frame.is_invalid:
                     # Save the revision data.
-                    for manager, manager_context in stack_frame.objects.items():
+                    for manager, (manager_context, audit_logs) in stack_frame.objects.items():
                         revision = manager.save_revision(
                             dict(
                                 (obj, self._prepare_data(type, data))
                                 for obj, (type, data)
                                 in manager_context.items()
                                 if obj.pk is not None
-                            ),
-                            user = self._user,
-                            comment = self._comment,
-                            meta = stack_frame.meta,
-                            db = self._db,
+                            ), audit_logs=audit_logs, user=self._user, comment=self._comment,
+                            meta=stack_frame.meta, db=self._db,
                         )
                         if revision:
                             for callback in self._callbacks:
@@ -299,6 +310,13 @@ class RevisionContextManager(local):
         self._assert_active()
         self._callbacks.append(callback)
 
+    def create_audit_log(self, manager, comment, objects=None):
+        self._assert_active()
+        audit_log = AuditLog.objects.create(comment=comment)
+        if objects:
+            for obj in objects:
+                self._current_frame.objects[manager][1][obj].add(audit_log)
+
     # Revision context properties that apply to the current stack frame.
 
     def is_managing_manually(self):
@@ -315,13 +333,16 @@ class RevisionContextManager(local):
 
     def add_to_context(self, manager, type, obj, version_data):
         """Adds an object to the current revision."""
-        manager_context = self._current_frame.objects[manager]
+        manager_context, _ = self._current_frame.objects[manager]
 
         if obj in manager_context:
+            if type == Version.TYPE.AUDIT:
+                return
+
             prev_type = manager_context[obj][0]
             type = version_type_operator(prev_type, type)
 
-        self._current_frame.objects[manager][obj] = (type, version_data)
+        self._current_frame.objects[manager][0][obj] = (type, version_data)
 
     def add_meta(self, cls, **kwargs):
         """Adds a class of meta information to the current revision."""
@@ -472,7 +493,7 @@ class RevisionManager(object):
         # Prevent multiple registration.
         if self.is_registered(model):
             raise RegistrationError('{model} has already been registered with django-reversion'.format(
-                model = model,
+                model=model
             ))
         # Perform any customization.
         if field_overrides:
@@ -495,14 +516,14 @@ class RevisionManager(object):
         if self.is_registered(model):
             return self._registered_models[self._registration_key_for_model(model)]
         raise RegistrationError('{model} has not been registered with django-reversion'.format(
-            model = model,
+            model=model
         ))
 
     def unregister(self, model):
         """Removes a model from version control."""
         if not self.is_registered(model):
             raise RegistrationError('{model} has not been registered with django-reversion'.format(
-                model = model,
+                model=model
             ))
         del self._registered_models[self._registration_key_for_model(model)]
         all_signals = self._signals[model] + self._eager_signals[model]
@@ -517,6 +538,7 @@ class RevisionManager(object):
     def _follow_relationships(self, objects):
         """Follows all relationships in the given set of objects."""
         followed = set()
+
         def _follow(obj, version_type, exclude_concrete):
             # Check the pk first because objects without a pk are not hashable
             if obj.pk is None or obj in followed or (obj.__class__, obj.pk) == exclude_concrete:
@@ -537,43 +559,49 @@ class RevisionManager(object):
 
     def _get_versions(self, db=None):
         """Returns all versions that apply to this manager."""
-        return Version.objects.using(db).filter(
-            revision__manager_slug = self._manager_slug,
-        ).select_related('revision')
+        return Version.objects.using(db).filter(revision__manager_slug=self._manager_slug).select_related('revision')
 
-    def save_revision(self, objects, user=None, comment='', meta=(), db=None):
+    def save_revision(self, objects, audit_logs, user=None, comment='', meta=(), db=None):
         """Saves a new revision."""
         # Create the revision.
-        if objects:
+
+        if objects or audit_logs:
             # Follow relationships.
-            for obj, follower_type in self._follow_relationships(
-                    ((key, version_data.get('type')) for key, version_data in objects.items())
-                ):
-                if not obj in objects:
+            for obj, follower_type in self._follow_relationships(((key, version_data.get('type'))
+                                                                  for key, version_data in objects.items())):
+                if obj not in objects:
                     adapter = self.get_adapter(obj.__class__)
                     follow_obj_data = adapter.get_version_data(obj)
                     follow_obj_data['type'] = follower_type
                     objects[obj] = follow_obj_data
 
-            # Create all the versions without saving them
+            for obj in audit_logs.keys():
+                if obj not in objects:
+                    adapter = self.get_adapter(obj.__class__)
+                    audit_obj_data = adapter.get_version_data(obj)
+                    audit_obj_data['type'] = Version.TYPE.AUDIT
+                    objects[obj] = audit_obj_data
+
+            # Create all the versions and prepare audit logs without saving them
             ordered_objects = list(objects.keys())
-            new_versions = [Version(**objects[obj]) for obj in ordered_objects]
+            new_versions = []
+            audit_logs_versions = defaultdict(list)
+            for obj in ordered_objects:
+                version = Version(**objects[obj])
+                new_versions.append(version)
+                for audit_log in audit_logs[obj]:
+                    audit_logs_versions[audit_log].append(version)
+
             # Check if there's some change in all the revision's objects.
             save_revision = True
             # Only save if we're always saving, or have changes.
             if save_revision:
                 # Save a new revision.
                 revision = Revision(
-                    manager_slug = self._manager_slug,
-                    user = user,
-                    comment = comment,
+                    manager_slug=self._manager_slug, user=user, comment=comment
                 )
                 # Send the pre_revision_commit signal.
-                pre_revision_commit.send(self,
-                    instances = ordered_objects,
-                    revision = revision,
-                    versions = new_versions,
-                )
+                pre_revision_commit.send(self, instances=ordered_objects, revision=revision, versions=new_versions)
                 # Save the revision.
                 with transaction.atomic(using=db):
                     revision.save(using=db)
@@ -584,12 +612,12 @@ class RevisionManager(object):
                     # Save the meta information.
                     for cls, kwargs in meta:
                         cls._default_manager.db_manager(db).create(revision=revision, **kwargs)
+                for audit_log, versions in audit_logs_versions.items():
+                    audit_log.versions.add(*versions)
+
                 # Send the post_revision_commit signal.
-                post_revision_commit.send(self,
-                    instances = ordered_objects,
-                    revision = revision,
-                    versions = new_versions,
-                )
+                post_revision_commit.send(self, instances=ordered_objects, revision=revision,
+                                          versions=new_versions)
                 # Return the revision.
                 return revision
 
@@ -602,9 +630,7 @@ class RevisionManager(object):
         The results are returned with the most recent versions first.
         """
         content_type = ContentType.objects.db_manager(db).get_for_model(model)
-        versions = self._get_versions(db).filter(
-            content_type = content_type,
-        ).select_related('revision')
+        versions = self._get_versions(db).filter(content_type=content_type).select_related('revision')
         if has_int_pk(model):
             # We can do this as a fast, indexed lookup.
             object_id_int = int(object_id)
@@ -659,21 +685,19 @@ class RevisionManager(object):
         model_db = model_db or db
         content_type = ContentType.objects.db_manager(db).get_for_model(model_class)
         live_pk_queryset = model_class._default_manager.db_manager(model_db).all().values_list('pk', flat=True)
-        versioned_objs = self._get_versions(db).filter(
-            content_type = content_type,
-        )
+        versioned_objs = self._get_versions(db).filter(content_type=content_type)
         if has_int_pk(model_class):
             # If the model and version data are in different databases, decouple the queries.
             if model_db != db:
                 live_pk_queryset = list(live_pk_queryset.iterator())
             # We can do this as a fast, in-database join.
             deleted_version_pks = versioned_objs.exclude(
-                object_id_int__in = live_pk_queryset
+                object_id_int__in=live_pk_queryset
             ).values_list('object_id_int')
         else:
             # This join has to be done as two separate queries.
             deleted_version_pks = versioned_objs.exclude(
-                object_id__in = list(live_pk_queryset.iterator())
+                object_id__in=list(live_pk_queryset.iterator())
             ).values_list('object_id')
         deleted_version_pks = deleted_version_pks.annotate(
             latest_pk=Max('pk')
@@ -684,6 +708,10 @@ class RevisionManager(object):
             deleted_version_pks = list(deleted_version_pks)
         # Return the deleted versions!
         return self._get_versions(db).filter(pk__in=deleted_version_pks).order_by('-pk')
+
+    def create_audit_log(self, comment, objects=None):
+        if self._revision_context_manager.is_active():
+            self._revision_context_manager.create_audit_log(self, comment, objects)
 
     # Signal receivers.
     def _signal_receiver(self, instance, signal, **kwargs):

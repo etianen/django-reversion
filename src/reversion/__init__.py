@@ -52,3 +52,4 @@ get_for_object = default_revision_manager.get_for_object
 get_unique_for_object = default_revision_manager.get_unique_for_object
 get_for_date = default_revision_manager.get_for_date
 get_deleted = default_revision_manager.get_deleted
+create_audit_log = default_revision_manager.create_audit_log
