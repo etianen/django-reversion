@@ -2,8 +2,6 @@
 
 from __future__ import unicode_literals
 
-from compressor.utils.decorators import cached_property
-
 try:
     from django.contrib.contenttypes.fields import GenericForeignKey
 except ImportError:  # Django < 1.9 pragma: no cover
@@ -15,6 +13,7 @@ from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, IntegrityError, transaction
 from django.dispatch.dispatcher import Signal
+from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text, python_2_unicode_compatible
 from django.template.defaultfilters import truncatechars
