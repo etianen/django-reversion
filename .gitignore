@@ -12,3 +12,5 @@ src/django_reversion.egg-info/
 docs/_build
 .coverage
 *.sqlite3
+*.swp
+.directory

@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django import forms
-from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 
 try:
@@ -23,12 +22,13 @@ class VersionContextTypeFilter(DefaultFilter):
     ALL_SLUG = '__all__'
 
     def get_widget(self):
-        print 'ted'
         from reversion.models import AuditLog
+
         if self.widget:
             return self.widget
 
-        formfield = forms.ModelChoiceField(queryset=ContentType.objects.filter(pk__in=AuditLog.objects.all().values('versions__content_type')))
+        formfield = forms.ModelChoiceField(queryset=ContentType.objects.filter(
+            pk__in=AuditLog.objects.all().values('versions__content_type')))
         formfield.choices = list(formfield.choices)
         if not formfield.choices[0][0]:
             del formfield.choices[0]

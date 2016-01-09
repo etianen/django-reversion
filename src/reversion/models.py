@@ -21,7 +21,7 @@ from django.template.defaultfilters import truncatechars
 from chamber.utils.datastructures import ChoicesNumEnum
 
 from reversion.filters import VersionIDFilter, VersionContextTypeFilter
-
+from reversion import config
 
 def safe_revert(versions):
     """
@@ -259,7 +259,7 @@ class AuditLog(models.Model):
     comment = models.TextField(verbose_name=_('comment'), blank=True, help_text=_('A text comment on this revision.'))
 
     def short_comment(self):
-        return truncatechars(self.comment, 50)
+        return truncatechars(self.comment, config.AUDIT_LOG_SHORT_COMMENT_LENGTH)
     short_comment.short_description = _('Comment')
     short_comment.filter_by = 'comment'
     short_comment.order_by = 'comment'
