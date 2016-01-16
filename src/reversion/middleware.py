@@ -30,7 +30,7 @@ class RevisionMiddleware(object):  # pragma: no cover
     def process_response(self, request, response):
         """Closes the revision."""
         if (hasattr(request, 'user') and request.user is not None and request.user.is_authenticated() and
-            revision_context_manager.is_active()):
+                revision_context_manager.is_active()):
             revision_context_manager.set_user(request.user)
 
         if revision_context_manager.is_active():

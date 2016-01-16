@@ -26,11 +26,11 @@ from django.core.management.base import CommandError
 from django.contrib.contenttypes.models import ContentType
 from django.db import reset_queries
 from django.utils.encoding import force_text
+from django.utils import translation
+from django.conf import settings
 
 from reversion import default_revision_manager
 from reversion.models import Version, has_int_pk
-from django.utils import translation
-from django.conf import settings
 
 
 class Command(BaseCommand):

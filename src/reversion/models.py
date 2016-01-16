@@ -16,12 +16,14 @@ from django.dispatch.dispatcher import Signal
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text, python_2_unicode_compatible
+from django.utils.safestring import mark_safe
 from django.template.defaultfilters import truncatechars
 
 from chamber.utils.datastructures import ChoicesNumEnum
 
 from reversion.filters import VersionIDFilter, VersionContextTypeFilter
 from reversion import config
+
 
 def safe_revert(versions):
     """
@@ -264,6 +266,26 @@ class AuditLog(models.Model):
     short_comment.filter_by = 'comment'
     short_comment.order_by = 'comment'
 
+    def related_objects_display(self, request):
+        from is_core.utils import render_model_object_with_link
+
+        rendered_objects = []
+        for version in self.versions.all():
+            obj = version.object
+            if obj:
+                rendered_objects.append(render_model_object_with_link(request, obj))
+        return mark_safe(', '.join(rendered_objects))
+    related_objects_display.short_description = _('related objects')
+
+    def revisions_display(self, request):
+        from is_core.utils import render_model_object_with_link
+
+        rendered_objects = []
+        for revision in Revision.objects.filter(versions=self.versions.all()).distinct():
+            rendered_objects.append(render_model_object_with_link(request, revision))
+        return mark_safe(', '.join(rendered_objects))
+    revisions_display.short_description = _('data revision')
+
     def content_types(self):
         return ', '.join([
             force_text(content_type)
@@ -279,7 +301,7 @@ class AuditLog(models.Model):
 
     def __str__(self):
         """Returns a unicode representation."""
-        return self.comment
+        return '#{}'.format(self.pk)
 
     class Meta:
         app_label = 'reversion'

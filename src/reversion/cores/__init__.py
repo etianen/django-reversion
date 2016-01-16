@@ -82,6 +82,7 @@ class AuditLogUIRESTModelISCore(UIRestModelISCore):
     abstract = True
     model = AuditLog
     list_display = ('created_at', 'content_types', 'object_pks', 'short_comment')
+    form_fields = ('created_at', 'related_objects_display', 'revisions_display', 'comment')
     menu_group = 'audit-log'
 
     def has_create_permission(self, *args, **kwargs):

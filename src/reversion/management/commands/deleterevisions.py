@@ -204,7 +204,6 @@ Examples:
 
         # Delete versions and revisions
         print("Deleting revisions...")
-        
         try:
             revision_query.delete()
         except DatabaseError:
@@ -212,5 +211,4 @@ Examples:
             print("Delete failed. Trying again with slower method.")
             for item in revision_query:
                 item.delete()
-                
         print("Done")

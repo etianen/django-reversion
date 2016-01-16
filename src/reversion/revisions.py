@@ -2,8 +2,6 @@
 
 from __future__ import unicode_literals
 
-import warnings
-
 from functools import wraps, partial
 
 from threading import local

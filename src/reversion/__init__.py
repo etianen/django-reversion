@@ -15,7 +15,7 @@ from reversion.models import pre_revision_commit, post_revision_commit
 from reversion.version import __version__ 
 
 
-VERSION = __version__ 
+VERSION = __version__
 
 
 # Legacy revision reference.

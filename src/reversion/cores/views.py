@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy as _, ugettext
 from django.core.urlresolvers import reverse
 
 from is_core.generic_views.inlines.inline_objects_views import TabularInlineObjectsView
@@ -13,10 +13,10 @@ from is_core.patterns import reverse_pattern
 class ReversionTabsViewMixin(TabsViewMixin):
 
     def get_tabs(self):
-        tabs = []
-        tabs.append((_('Details'), reverse('IS:edit-%s' % self.core.menu_group, args=(self.kwargs.get('pk'),))))
-        tabs.append((_('History'), reverse('IS:history-%s' % self.core.menu_group, args=(self.kwargs.get('pk'),))))
-        return tabs
+        return (
+            (ugettext('Details'), reverse('IS:edit-%s' % self.core.menu_group, args=(self.kwargs.get('pk'),))),
+            (ugettext('History'), reverse('IS:history-%s' % self.core.menu_group, args=(self.kwargs.get('pk'),))),
+        )
 
 
 class ReversionBreadCrumbsTabsViewMixin(ReversionTabsViewMixin):
@@ -26,18 +26,16 @@ class ReversionBreadCrumbsTabsViewMixin(ReversionTabsViewMixin):
 
         return [
             LinkMenuItem(self.core.model._ui_meta.list_verbose_name % {
-                    'verbose_name': self.core.model._meta.verbose_name,
-                    'verbose_name_plural': self.core.model._meta.verbose_name_plural
-                },
-            reverse_pattern('list-%s' % self.core.menu_group).get_url_string(self.request), active=False),
+                'verbose_name': self.core.model._meta.verbose_name,
+                'verbose_name_plural': self.core.model._meta.verbose_name_plural
+            }, reverse_pattern('list-%s' % self.core.menu_group).get_url_string(self.request), active=False),
             LinkMenuItem(self.core.model._ui_meta.edit_verbose_name % {
-                    'verbose_name': self.core.model._meta.verbose_name,
-                    'verbose_name_plural': self.core.model._meta.verbose_name_plural,
-                    'obj': self.core.model.objects.get(pk=self.kwargs.get('pk'))
-                },
-            reverse_pattern('edit-%s' % self.core.menu_group).get_url_string(self.request,
-                                                                             kwargs={'pk':self.kwargs.get('pk')}),
-            active=False)
+                'verbose_name': self.core.model._meta.verbose_name,
+                'verbose_name_plural': self.core.model._meta.verbose_name_plural,
+                'obj': self.core.model.objects.get(pk=self.kwargs.get('pk'))
+            }, reverse_pattern('edit-%s' % self.core.menu_group).get_url_string(self.request,
+                                                                                kwargs={'pk': self.kwargs.get('pk')}),
+                         active=False)
         ]
 
     def bread_crumbs_menu_items(self):
@@ -72,9 +70,9 @@ class ReversionHistoryView(ReversionBreadCrumbsTabsViewMixin, DetailModelFormVie
     inline_views = (ListVersionInlineView,)
 
     def get_title(self):
-        return _('History of %s') % self.get_obj()
+        return ugettext('History of %s') % self.get_obj()
 
     def get_fieldsets(self):
         return (
-            (_('History of %s') % self.get_obj(), {'inline_view': 'ListVersionInlineView'}),
+            (ugettext('History of %s') % self.get_obj(), {'inline_view': 'ListVersionInlineView'}),
         )

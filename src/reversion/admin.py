@@ -204,7 +204,7 @@ class VersionAdmin(admin.ModelAdmin):
 
     def revision_view(self, request, object_id, version_id, extra_context=None):
         """Displays the contents of the given revision."""
-        object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
+        object_id = unquote(object_id)  # Underscores in primary key get quoted to "_5F"
         version = get_object_or_404(Version, pk=version_id, object_id=object_id)
         return self.revisionform_view(request, version, self.revision_form_template or self._get_template_list('revision_form.html'), {
             'title': _('Revert %(name)s') % {'name': version.object_repr},
@@ -249,7 +249,7 @@ class VersionAdmin(admin.ModelAdmin):
         # Check if user has change permissions for model
         if not self.has_change_permission(request):  # pragma: no cover
             raise PermissionDenied
-        object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
+        object_id = unquote(object_id)  # Underscores in primary key get quoted to "_5F"
         opts = self.model._meta
         action_list = [
             {
