@@ -1,6 +1,12 @@
 # django-reversion changelog
 
 
+## 1.10.1 - 27/01/2016
+
+- Fixing some deprecation warnings (@ticosax).
+- Minor tweaks (@claudep, @etianen).
+
+
 ## 1.10 - 02/12/2015
 
 - **Breaking:** Updated the location of [admin classes](http://django-reversion.readthedocs.org/en/latest/admin.html).
