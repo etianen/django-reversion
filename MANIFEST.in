@@ -5,4 +5,5 @@ include README.rst
 include CHANGELOG.md
 include MANIFEST.in
 recursive-include docs *
+recursive-include src/tests *.py
 prune docs/_build
