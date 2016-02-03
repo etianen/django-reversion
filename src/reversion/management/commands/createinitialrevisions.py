@@ -1,12 +1,8 @@
 from __future__ import unicode_literals
 
 from collections import OrderedDict
+from importlib import import_module
 from optparse import make_option
-
-try:
-    from importlib import import_module
-except ImportError:  # For Django < 1.8
-    from django.utils.importlib import import_module
 
 from django.apps import apps
 from django.conf import settings

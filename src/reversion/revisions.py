@@ -9,12 +9,7 @@ from weakref import WeakValueDictionary
 import copy
 from collections import defaultdict
 
-try:
-    from django.apps import apps
-    get_model = apps.get_model
-except ImportError:  # For Django < 1.7  pragma: no cover
-    from django.db.models import get_model
-
+from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
@@ -378,7 +373,7 @@ class RevisionManager(object):
     def get_registered_models(self):
         """Returns an iterable of all registered models."""
         return [
-            get_model(*key)
+            apps.get_model(*key)
             for key
             in self._registered_models.keys()
         ]
