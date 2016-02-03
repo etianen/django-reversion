@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import datetime, operator
+from functools import reduce
 from optparse import make_option
 
 from django.core.management.base import BaseCommand
@@ -203,7 +204,8 @@ Examples:
 
 
         # Delete versions and revisions
-        print("Deleting revisions...")
+        if verbosity > 0:
+            print("Deleting revisions...")
         
         try:
             revision_query.delete()
@@ -213,4 +215,5 @@ Examples:
             for item in revision_query:
                 item.delete()
                 
-        print("Done")
+        if verbosity > 0:
+            return "Done"

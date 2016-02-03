@@ -658,6 +658,15 @@ class CreateInitialRevisionsTest(ReversionTestBase):
         self.assertEqual(Revision.objects.all()[0].comment, "Foo bar")
 
 
+class DeleteRevisionsTest(ReversionTestBase):
+
+    def testDeleteRevisions(self):
+        call_command("createinitialrevisions")
+        self.assertGreater(Version.objects.count(), 4)
+        call_command("deleterevisions", "test_reversion", confirmation=False, verbosity=0)
+        self.assertEqual(Version.objects.count(), 0)
+
+
 # Tests for reversion functionality that's tied to requests.
 
 class RevisionMiddlewareTest(ReversionTestBase):
