@@ -38,9 +38,7 @@ Upgrading
 
 If you're upgrading your existing installation of django-reversion, please check
 the `Schema Migrations <http://django-reversion.readthedocs.org/en/latest/migrations.html>`_
-documentation for information on any database changes and how to upgrade. If you're using
-South to manage database migrations in your project, then upgrading is as easy as running
-a few django management commands.
+documentation for information on any database changes and how to upgrade.
 
 It's always worth checking the `CHANGELOG <https://github.com/etianen/django-reversion/blob/master/CHANGELOG.md>`_
 before upgrading too, just in case you get caught off-guard by a minor upgrade to the library.

@@ -1,12 +1,7 @@
 from __future__ import unicode_literals
 
 from collections import OrderedDict
-from optparse import make_option
-
-try:
-    from importlib import import_module
-except ImportError:  # For Django < 1.8
-    from django.utils.importlib import import_module
+from importlib import import_module
 
 from django.apps import apps
 from django.conf import settings
@@ -25,23 +20,22 @@ get_app = lambda app_label: apps.get_app_config(app_label).models_module
 
 
 class Command(BaseCommand):
-    option_list = BaseCommand.option_list + (
-        make_option("--comment",
+    help = "Creates initial revisions for a given app [and model]."
+
+    def add_arguments(self, parser):
+        parser.add_argument('args', metavar='app_label', nargs='*',
+            help="Optional apps or app.Model list.")
+        parser.add_argument("--comment",
             action="store",
-            dest="comment",
             default="Initial version.",
-            help='Specify the comment to add to the revisions. Defaults to "Initial version.".'),
-        make_option("--batch-size",
+            help='Specify the comment to add to the revisions. Defaults to "Initial version.".')
+        parser.add_argument("--batch-size",
             action="store",
-            dest="batch_size",
             type=int,
             default=500,
-            help="For large sets of data, revisions will be populated in batches. Defaults to 500"),
-        make_option('--database', action='store', dest='database',
-            help='Nominates a database to create revisions in.'),
-        )
-    args = '[appname, appname.ModelName, ...] [--comment="Initial version."]'
-    help = "Creates initial revisions for a given app [and model]."
+            help="For large sets of data, revisions will be populated in batches. Defaults to 500.")
+        parser.add_argument("--database",
+            help='Nominates a database to create revisions in.')
 
     def handle(self, *app_labels, **options):
 

@@ -31,7 +31,7 @@ setup(
         "reversion": ["locale/*/LC_MESSAGES/django.*", "templates/reversion/*.html"]},
     cmdclass = cmdclass,
     install_requires = [
-        "django>=1.7",
+        "django>=1.8",
     ],
     extras_require = {
         "diff": [
@@ -48,7 +48,6 @@ setup(
         "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',

@@ -8,10 +8,7 @@ from django.db import models, transaction, connection
 from django.conf.urls import url
 from django.contrib import admin
 from django.contrib.admin import options
-try:
-    from django.contrib.admin.utils import unquote, quote
-except ImportError:  # Django < 1.7  pragma: no cover
-    from django.contrib.admin.util import unquote, quote
+from django.contrib.admin.utils import unquote, quote
 try:
     from django.contrib.contenttypes.admin import GenericInlineModelAdmin
     from django.contrib.contenttypes.fields import GenericRelation

@@ -1,7 +1,5 @@
 """
 Tests for the django-reversion API.
-
-These tests require Python 2.5 to run.
 """
 
 from __future__ import unicode_literals
@@ -15,12 +13,7 @@ from django.core.management import call_command
 from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 from django.contrib import admin
-try:
-    from django.contrib.auth import get_user_model
-except ImportError: # django < 1.5  pragma: no cover
-    from django.contrib.auth.models import User
-else:
-    User = get_user_model()
+from django.contrib.auth import get_user_model
 from django.db.models.signals import pre_delete
 from django.utils import timezone
 from django.core.urlresolvers import reverse, resolve
@@ -70,6 +63,7 @@ from test_reversion.models import (
 )
 from test_reversion import admin  # Force early registration of all admin models.
 
+User = get_user_model()
 
 ZERO = datetime.timedelta(0)
 
@@ -174,20 +168,6 @@ class ReversionTestBase(TestCase):
         unregister(ReversionTestModel1)
         unregister(ReversionTestModel2)
         unregister(ReversionTestModel3)
-        # Delete the test models.
-        ReversionTestModel1.objects.all().delete()
-        ReversionTestModel2.objects.all().delete()
-        ReversionTestModel3.objects.all().delete()
-        User.objects.all().delete()
-        del self.test11
-        del self.test12
-        del self.test21
-        del self.test22
-        del self.test31
-        del self.test32
-        del self.user
-        # Delete the revisions index.
-        Revision.objects.all().delete()
         # Unregister all remaining models.
         for registered_model in get_registered_models():
             unregister(registered_model)
@@ -472,10 +452,6 @@ class MultiTableInheritanceApiTest(RevisionTestBase):
     def testCanRetreiveFullFieldDict(self):
         self.assertEqual(get_for_object(self.testchild1)[0].field_dict["name"], "modelchild1 instance1 version 1")
 
-    def tearDown(self):
-        super(MultiTableInheritanceApiTest, self).tearDown()
-        del self.testchild1
-
 
 class ReversionTestModel1ChildProxy(ReversionTestModel1Child):
     class Meta:
@@ -622,8 +598,6 @@ class FollowModelsTest(ReversionTestBase):
 
     def tearDown(self):
         unregister(TestFollowModel)
-        TestFollowModel.objects.all().delete()
-        del self.follow1
         super(FollowModelsTest, self).tearDown()
 
 
@@ -684,6 +658,15 @@ class CreateInitialRevisionsTest(ReversionTestBase):
         self.assertEqual(Revision.objects.all()[0].comment, "Foo bar")
 
 
+class DeleteRevisionsTest(ReversionTestBase):
+
+    def testDeleteRevisions(self):
+        call_command("createinitialrevisions")
+        self.assertGreater(Version.objects.count(), 4)
+        call_command("deleterevisions", "test_reversion", confirmation=False, verbosity=0)
+        self.assertEqual(Version.objects.count(), 0)
+
+
 # Tests for reversion functionality that's tied to requests.
 
 class RevisionMiddlewareTest(ReversionTestBase):
@@ -709,10 +692,6 @@ class RevisionMiddlewareTest(ReversionTestBase):
 class VersionAdminTest(TestCase):
 
     def setUp(self):
-        self.old_TEMPLATE_DIRS = settings.TEMPLATE_DIRS
-        settings.TEMPLATE_DIRS = (
-            os.path.join(os.path.dirname(admin.__file__), "templates"),
-        )
         self.user = User(
             username = "foo",
             is_staff = True,
@@ -725,6 +704,9 @@ class VersionAdminTest(TestCase):
             username = "foo",
             password = "bar",
         )
+
+    def tearDown(self):
+        self.client.logout()
 
     def testAutoRegisterWorks(self):
         self.assertTrue(is_registered(ChildTestAdminModel))
@@ -911,13 +893,6 @@ class VersionAdminTest(TestCase):
         self.assertContains(response, "parent version1")  # Check parent model.
         self.assertNotContains(response, "non-generic child version 1")  # Check inline child model.
 
-    def tearDown(self):
-        self.client.logout()
-        self.user.delete()
-        del self.user
-        ChildTestAdminModel.objects.all().delete()
-        settings.TEMPLATE_DIRS = self.old_TEMPLATE_DIRS
-
 
 # Tests for optional patch generation methods.
 
@@ -951,11 +926,6 @@ class PatchTest(RevisionTestBase):
             generate_patch_html(self.version1, self.version2, "name"),
             '<span>model1 instance1 version</span><del style="background:#ffe6e6;">1</del><ins style="background:#e6ffe6;">2</ins>',
         )
-
-    def tearDown(self):
-        super(PatchTest, self).tearDown()
-        del self.version1
-        del self.version2
 
 
 # test preserve deleted User Revisions

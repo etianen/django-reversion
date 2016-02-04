@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 import datetime, operator
-from optparse import make_option
+from functools import reduce
 
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
@@ -14,36 +14,6 @@ from django.db.utils import DatabaseError
 
 
 class Command(BaseCommand):
-    option_list = BaseCommand.option_list + (
-        make_option("--date", "-t",
-            dest="date",
-            help="Delete only revisions older than the specify date. The date should be a valid date given in the ISO format (YYYY-MM-DD)"),
-        make_option("--days", "-d",
-            dest="days",
-            default=0,
-            type="int",
-            help="Delete only revisions older than the specify number of days."),
-        make_option("--keep-revision", "-k",
-            dest="keep",
-            default=0,
-            type="int",
-            help="Keep the specified number of revisions (most recent) for each object."),
-        make_option("--force", "-f",
-            action="store_true",
-            dest="force",
-            default=False,
-            help="Force the deletion of revisions even if an other app/model is involved"),
-        make_option("--no-confirmation", "-c",
-            action="store_false",
-            dest="confirmation",
-            default=True,
-            help="Disable the confirmation before deleting revisions"),
-        make_option('--manager', '-m', dest='manager',
-            help='Delete revisions only from specified manager. Defaults from all managers.'),
-        make_option('--database', action='store', dest='database',
-            help='Nominates a database to delete revisions from.'),
-        )
-    args = "[appname, appname.ModelName, ...] [--date=YYYY-MM-DD | days=0] [--keep=0] [--force] [--no-confirmation]"
     help = """Deletes revisions for a given app [and model] and/or before a specified delay or date.
     
 If an app or a model is specified, revisions that have an other app/model involved will not be deleted. Use --force to avoid that.
@@ -68,6 +38,34 @@ Examples:
         
     That will delete only revisions of myapp.model if there's more than 10 revisions for an object, keeping the 10 most recent revisons.
 """
+
+    def add_arguments(self, parser):
+        parser.add_argument('args', metavar='app_label', nargs='*',
+            help="Optional apps or app.Model list.")
+        parser.add_argument("-t", "--date",
+            help="Delete only revisions older than the specify date. The date should be a valid date given in the ISO format (YYYY-MM-DD)")
+        parser.add_argument("-d", "--days",
+            default=0,
+            type=int,
+            help="Delete only revisions older than the specify number of days.")
+        parser.add_argument("-k", "--keep-revision",
+            dest="keep",
+            default=0,
+            type=int,
+            help="Keep the specified number of revisions (most recent) for each object.")
+        parser.add_argument("-f", "--force",
+            action="store_true",
+            default=False,
+            help="Force the deletion of revisions even if an other app/model is involved")
+        parser.add_argument("-c", "--no-confirmation",
+            action="store_false",
+            dest="confirmation",
+            default=True,
+            help="Disable the confirmation before deleting revisions")
+        parser.add_argument("-m", "--manager",
+            help="Delete revisions only from specified manager. Defaults from all managers.")
+        parser.add_argument("--database",
+            help='Nominates a database to delete revisions from.')
 
     def handle(self, *app_labels, **options):
         days = options["days"]
@@ -203,7 +201,8 @@ Examples:
 
 
         # Delete versions and revisions
-        print("Deleting revisions...")
+        if verbosity > 0:
+            print("Deleting revisions...")
         
         try:
             revision_query.delete()
@@ -213,4 +212,5 @@ Examples:
             for item in revision_query:
                 item.delete()
                 
-        print("Done")
+        if verbosity > 0:
+            return "Done"
