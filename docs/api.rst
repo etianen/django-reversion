@@ -31,11 +31,11 @@ If you're already using the :ref:`admin integration <admin>` for a model, then t
 
 ::
 
-    @from reversion import revisions as reversion.register
+    @reversion.register()
     class YourModel(models.Model):
         ...
 
-    @from reversion import revisions as reversion.register(format='yaml')
+    @reversion.register(format='yaml')
     class YourOtherModel(models.Model):
         ...
 
