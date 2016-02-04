@@ -20,7 +20,6 @@ from django.db.models.query import QuerySet
 from django.db.models.signals import post_save
 from django.utils.encoding import force_text
 
-from reversion.models import Revision, Version, has_int_pk
 from reversion.signals import pre_revision_commit, post_revision_commit
 from reversion.errors import RevisionManagementError, RegistrationError
 
@@ -98,6 +97,7 @@ class VersionAdapter(object):
 
     def get_version_data(self, obj, db=None):
         """Creates the version data to be saved to the version model."""
+        from reversion.models import has_int_pk
         object_id = force_text(obj.pk)
         content_type = ContentType.objects.db_manager(db).get_for_model(obj)
         if has_int_pk(obj.__class__):
@@ -447,12 +447,14 @@ class RevisionManager(object):
 
     def _get_versions(self, db=None):
         """Returns all versions that apply to this manager."""
+        from reversion.models import Version
         return Version.objects.using(db).filter(
             revision__manager_slug = self._manager_slug,
         ).select_related("revision")
 
     def save_revision(self, objects, ignore_duplicates=False, user=None, comment="", meta=(), db=None):
         """Saves a new revision."""
+        from reversion.models import Revision, Version, has_int_pk
         # Adapt the objects to a dict.
         if isinstance(objects, (list, tuple)):
             objects = dict(
@@ -463,7 +465,7 @@ class RevisionManager(object):
         if objects:
             # Follow relationships.
             for obj in self._follow_relationships(objects.keys()):
-                if not obj in objects:
+                if obj not in objects:
                     adapter = self.get_adapter(obj.__class__)
                     objects[obj] = adapter.get_version_data(obj)
             # Create all the versions without saving them
@@ -524,6 +526,7 @@ class RevisionManager(object):
 
         The results are returned with the most recent versions first.
         """
+        from reversion.models import has_int_pk
         content_type = ContentType.objects.db_manager(db).get_for_model(model)
         versions = self._get_versions(db).filter(
             content_type = content_type,
@@ -560,6 +563,7 @@ class RevisionManager(object):
 
     def get_for_date(self, object, date, db=None):
         """Returns the latest version of an object for the given date."""
+        from reversion.models import Version
         versions = self.get_for_object(object, db)
         versions = versions.filter(revision__date_created__lte=date)
         try:
@@ -575,6 +579,7 @@ class RevisionManager(object):
 
         The results are returned with the most recent versions first.
         """
+        from reversion.models import has_int_pk
         model_db = model_db or db
         content_type = ContentType.objects.db_manager(db).get_for_model(model_class)
         live_pk_queryset = model_class._default_manager.db_manager(model_db).all().values_list("pk", flat=True)
