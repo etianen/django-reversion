@@ -67,7 +67,7 @@ class Revision(models.Model):
 
     def revert(self, delete=False):
         """Reverts all objects in this revision."""
-        version_set = self.version_set.all()
+        version_set = self.versions.filter(type__in=(Version.TYPE.CREATED, Version.TYPE.CHANGED, Version.TYPE.FOLLOW))
         # Optionally delete objects no longer in the current revision.
         if delete:
             # Get a dict of all objects in this revision.
@@ -82,7 +82,7 @@ class Revision(models.Model):
             # Calculate the set of all objects that are in the revision now.
             from reversion.revisions import RevisionManager
             current_revision = RevisionManager.get_manager(self.manager_slug)._follow_relationships(
-                obj for obj in old_revision if obj is not None)
+                (obj for obj in old_revision if obj is not None), False)
             # Delete objects that are no longer in the current revision.
             for item in current_revision:
                 if item not in old_revision:

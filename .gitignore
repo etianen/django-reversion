@@ -6,7 +6,6 @@
 *.pyc
 *.pyo
 dist
-build
 MANIFEST
 src/django_reversion.egg-info/
 docs/_build
@@ -14,3 +13,4 @@ docs/_build
 *.sqlite3
 *.swp
 .directory
+ve

@@ -1,45 +1,24 @@
-import sys
-sys.path.insert(0, 'src/reversion')
 from setuptools import setup, find_packages
-from version import __version__
 
-
-# Load in babel support, if available.
-try:
-    from babel.messages import frontend as babel
-    cmdclass = {'compile_catalog': babel.compile_catalog,
-                'extract_messages': babel.extract_messages,
-                'init_catalog': babel.init_catalog,
-                'update_catalog': babel.update_catalog, }
-except ImportError:
-    cmdclass = {}
 
 setup(
     name='django-reversion',
-    version = '.'.join(str(x) for x in __version__),
+    version='1.9.4.4',
     license='BSD',
     description='An extension to the Django web framework that provides comprehensive version control facilities',
     author='Dave Hall',
     author_email='dave@etianen.com',
     url='http://github.com/etianen/django-reversion',
-    zip_safe = False,
-    packages=find_packages('src'),
-    package_dir = {
-        '': 'src',
-    },
-    package_data = {
-        'reversion': ['locale/*/LC_MESSAGES/django.*', 'templates/reversion/*.html']},
-    cmdclass = cmdclass,
-    install_requires = [
+    package_dir={'reversion': 'reversion'},
+    include_package_data=True,
+    packages=find_packages(),
+    install_requires=[
         'django>=1.6',
-        'django-chamber>=0.0.17'
+        'django-chamber>=0.1.8'
     ],
-    extras_require = {
+    extras_require={
         'diff': [
             'diff_match_patch',
-        ],
-        'test': [
-            'coverage',
         ],
     },
     classifiers=[
@@ -57,7 +36,7 @@ setup(
         'Framework :: Django',
     ],
     dependency_links=[
-        'https://github.com/matllubos/django-chamber/tarball/0.0.17#egg=django-chamber-0.0.17',
+        'https://github.com/matllubos/django-chamber/tarball/0.1.8#egg=django-chamber-0.1.8',
     ],
 
 )

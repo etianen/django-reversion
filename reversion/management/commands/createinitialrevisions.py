@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from optparse import make_option
+
 try:
     from collections import OrderedDict
 except ImportError:  # For Python 2.6
@@ -31,6 +32,7 @@ from django.conf import settings
 
 from reversion import default_revision_manager
 from reversion.models import Version, has_int_pk
+from reversion.revisions import VersionAdapter
 
 
 class Command(BaseCommand):
@@ -141,7 +143,9 @@ class Command(BaseCommand):
                 objects = live_objs.in_bulk(chunked_ids)
                 for id, obj in objects.items():
                     try:
-                        default_revision_manager.save_revision((obj,), comment=comment, db=database)
+                        data = VersionAdapter(obj.__class__).get_version_data(obj, database)
+                        data['type'] = Version.TYPE.CREATED
+                        default_revision_manager.save_revision({obj: data}, {}, comment=comment, db=database)
                     except:
                         print("ERROR: Could not save initial version for %s %s." % (model_class.__name__, obj.pk))
                         raise
@@ -155,4 +159,4 @@ class Command(BaseCommand):
                 print("Created %s initial revision(s) for model %s." % (created_count, force_text(model_class._meta.verbose_name)))
         else:
             if verbosity >= 2:
-                print("Model %s is not registered."  % (force_text(model_class._meta.verbose_name)))
+                print("Model %s is not registered." % (force_text(model_class._meta.verbose_name)))

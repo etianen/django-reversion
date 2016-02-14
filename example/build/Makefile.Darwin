@@ -1,0 +1,14 @@
+# Darwin makefile configuration
+
+OPENHTML := open
+
+pip:
+	ARCHFLAGS=-Wno-error=unused-command-line-argument-hard-error-in-future $(PYTHON_BIN)/pip \
+	install --process-dependency-links --allow-all-external -r requirements/base.txt
+
+installpackages:
+	brew install python postgresql nodejs npm wget libjpeg libpng gettext msgpack
+	brew link --force gettext
+	pip install virtualenv
+	npm install -g bower grunt grunt-cli
+	gem install sass # you may need to run as root

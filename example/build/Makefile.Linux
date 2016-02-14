@@ -1,0 +1,14 @@
+# Linux makefile configuration
+
+OPENHTML := xdg-open
+
+# install standard java, iff not already installed
+JAVA = $(shell if [[ `java -version > /dev/null 2>&1` ]]  ; then echo ""; else echo "openjdk-7-jre"; fi )
+
+installpackages:
+	apt-get install python-pip postgresql postgresql-contrib postgresql-server-dev-9.1 nodejs npm ruby-full build-essential rubygems xvfb python-dev python-setuptools sqlite ${JAVA} libjpeg-dev libpng-dev gettext
+	# if command 'nodejs' installed, but command 'node' do not exists, create symlink
+	type java >/dev/null 2>&1 || { echo >&2 "creating symlink from nodejs to node"; ln -s /usr/bin/nodejs /usr/bin/node ; }
+	pip install virtualenv
+	npm install -g bower grunt grunt-cli
+	gem install sass

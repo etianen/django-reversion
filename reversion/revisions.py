@@ -476,9 +476,11 @@ class RevisionManager(object):
         self._eager_signals[model] = list(eager_signals or [])
         self._signals[model] = list(signals or [])
         # Return a class decorator if model is not given
+        if model is None:
+            return partial(self.register, adapter_cls=adapter_cls, **field_overrides)
 
         if follow_parents:
-            field_overrides['follow'] = follow = field_overrides.get('follow', [])
+            field_overrides['follow'] = follow = list(field_overrides.get('follow', ()))
 
             for parent_model, field in model._meta.parents.items():
                 if field:
@@ -486,8 +488,6 @@ class RevisionManager(object):
                 if not self.is_registered(parent_model):
                     self.register(parent_model, adapter_cls, signals, eager_signals, follow_parents)
 
-        if model is None:
-            return partial(self.register, adapter_cls=adapter_cls, **field_overrides)
         # Prevent multiple registration.
         if self.is_registered(model):
             raise RegistrationError('{model} has already been registered with django-reversion'.format(
@@ -504,8 +504,9 @@ class RevisionManager(object):
         for signal in all_signals:
             signal.connect(self._signal_receiver, model)
 
-        model.reversion_versions = GenericRelation(Version)
-        model.reversion_versions.contribute_to_class(model, 'reversion_versions')
+        model.reversion_versions = property(
+            lambda self: Version.object.filter(object_id=self.id, content_type=ContentType.objects.get_for_model(self))
+        )
 
         return model
 
@@ -533,9 +534,9 @@ class RevisionManager(object):
         delattr(model, 'reversion_versions')
         model.reversion_versions = GenericRelation(Version)
 
-    def _follow_relationships(self, objects):
+    def _follow_relationships(self, objects, with_types=True):
         """Follows all relationships in the given set of objects."""
-        followed = set()
+        followed = dict()
 
         def _follow(obj, version_type, exclude_concrete):
             # Check the pk first because objects without a pk are not hashable
@@ -543,30 +544,35 @@ class RevisionManager(object):
                 return
 
             model_parent_list = obj._meta.get_parent_list()
-            followed.add((obj, version_type))
+            followed[obj] = version_type
             adapter = self.get_adapter(obj.__class__)
             for related in adapter.get_followed_relations(obj):
                 _follow(related, version_type if related.__class__ in model_parent_list else Version.TYPE.FOLLOW,
                         exclude_concrete)
-        for obj, version_type in objects:
+        for obj_and_version_type in objects:
+            if with_types:
+                obj, version_type = obj_and_version_type
+            else:
+                obj, version_type = obj_and_version_type, Version.TYPE.FOLLOW
+
             exclude_concrete = None
             if obj._meta.proxy:
                 exclude_concrete = (obj._meta.concrete_model, obj.pk)
             _follow(obj, version_type, exclude_concrete)
-        return followed
+        return followed if with_types else followed.keys()
 
     def _get_versions(self, db=None):
         """Returns all versions that apply to this manager."""
         return Version.objects.using(db).filter(revision__manager_slug=self._manager_slug).select_related('revision')
 
-    def save_revision(self, objects, audit_logs, user=None, comment='', meta=(), db=None):
+    def save_revision(self, objects, audit_logs=None, user=None, comment='', meta=(), db=None):
         """Saves a new revision."""
         # Create the revision.
-
+        audit_logs = {} if audit_logs is None else audit_logs
         if objects or audit_logs:
             # Follow relationships.
             for obj, follower_type in self._follow_relationships(((key, version_data.get('type'))
-                                                                  for key, version_data in objects.items())):
+                                                                  for key, version_data in objects.items())).items():
                 if obj not in objects:
                     adapter = self.get_adapter(obj.__class__)
                     follow_obj_data = adapter.get_version_data(obj)
@@ -587,8 +593,9 @@ class RevisionManager(object):
             for obj in ordered_objects:
                 version = Version(**objects[obj])
                 new_versions.append(version)
-                for audit_log in audit_logs[obj]:
-                    audit_logs_versions[audit_log].append(version)
+                if obj in audit_logs:
+                    for audit_log in audit_logs[obj]:
+                        audit_logs_versions[audit_log].append(version)
 
             # Check if there's some change in all the revision's objects.
             save_revision = True
@@ -683,7 +690,9 @@ class RevisionManager(object):
         model_db = model_db or db
         content_type = ContentType.objects.db_manager(db).get_for_model(model_class)
         live_pk_queryset = model_class._default_manager.db_manager(model_db).all().values_list('pk', flat=True)
-        versioned_objs = self._get_versions(db).filter(content_type=content_type)
+        versioned_objs = self._get_versions(db).filter(content_type=content_type,
+                                                       type__in=(Version.TYPE.CREATED, Version.TYPE.CHANGED,
+                                                                 Version.TYPE.FOLLOW))
         if has_int_pk(model_class):
             # If the model and version data are in different databases, decouple the queries.
             if model_db != db:
@@ -731,7 +740,7 @@ class RevisionManager(object):
                 # don't use a lambda, but get the data out now.
                 version_data = adapter.get_version_data(instance, self._revision_context_manager._db)
                 self._revision_context_manager.add_to_context(self, type, copy.copy(instance), version_data)
-                for obj, follower_type in self._follow_relationships([(instance, type)]):
+                for obj, follower_type in self._follow_relationships([(instance, type)]).items():
                     adapter = self.get_adapter(obj.__class__)
                     version_data = adapter.get_version_data(obj, self._revision_context_manager._db)
                     self._revision_context_manager.add_to_context(self, follower_type, copy.copy(obj), version_data)

@@ -12,9 +12,7 @@ from reversion.models import Revision
 @python_2_unicode_compatible
 class ReversionTestModelBase(models.Model):
 
-    name = models.CharField(
-        max_length = 100,
-    )
+    name = models.CharField(max_length=100)
 
     def __str__(self):
         return self.name
@@ -30,6 +28,7 @@ class ReversionTestModel1(ReversionTestModelBase):
 
 str_pk_gen = 0;
 
+
 def get_str_pk():
     global str_pk_gen
     str_pk_gen += 1;
@@ -43,11 +42,7 @@ class ReversionTestModel1Child(ReversionTestModel1):
 
 class ReversionTestModel2(ReversionTestModelBase):
 
-    id = models.CharField(
-        primary_key = True,
-        max_length = 100,
-        default = get_str_pk
-    )
+    id = models.CharField(primary_key=True, max_length=100, default=get_str_pk)
 
 
 class ReversionTestModel3(ReversionTestModelBase):
@@ -58,13 +53,8 @@ class ReversionTestModel3(ReversionTestModelBase):
 
 class TestFollowModel(ReversionTestModelBase):
 
-    test_model_1 = models.ForeignKey(
-        ReversionTestModel1,
-    )
-
-    test_model_2s = models.ManyToManyField(
-        ReversionTestModel2,
-    )
+    test_model_1 = models.ForeignKey(ReversionTestModel1)
+    test_model_2s = models.ManyToManyField(ReversionTestModel2)
 
 
 class ReversionTestModel1Proxy(ReversionTestModel1):
@@ -85,9 +75,7 @@ class RevisionMeta(models.Model):
 @python_2_unicode_compatible
 class ParentTestAdminModel(models.Model):
 
-    parent_name = models.CharField(
-        max_length = 200,
-    )
+    parent_name = models.CharField(max_length=200)
 
     def __str__(self):
         return self.parent_name
@@ -96,9 +84,7 @@ class ParentTestAdminModel(models.Model):
 @python_2_unicode_compatible
 class ChildTestAdminModel(ParentTestAdminModel):
 
-    child_name = models.CharField(
-        max_length = 200,
-    )
+    child_name = models.CharField(max_length=200)
 
     def __str__(self):
         return self.child_name
@@ -107,19 +93,10 @@ class ChildTestAdminModel(ParentTestAdminModel):
 @python_2_unicode_compatible
 class InlineTestChildGenericModel(models.Model):
 
-    object_id = models.IntegerField(
-        db_index = True,
-    )
-
-    content_type = models.ForeignKey(
-        ContentType,
-    )
-
+    object_id = models.IntegerField(db_index=True)
+    content_type = models.ForeignKey(ContentType)
     object = GenericForeignKey()
-
-    name = models.CharField(
-        max_length = 100,
-    )
+    name = models.CharField(max_length=100)
 
     def __str__(self):
         return self.name
@@ -128,10 +105,7 @@ class InlineTestChildGenericModel(models.Model):
 @python_2_unicode_compatible
 class InlineTestParentModel(models.Model):
 
-    name = models.CharField(
-        max_length = 100,
-    )
-
+    name = models.CharField(max_length=100)
     generic_children = GenericRelation(InlineTestChildGenericModel)
 
     def __str__(self):
@@ -141,14 +115,8 @@ class InlineTestParentModel(models.Model):
 @python_2_unicode_compatible
 class InlineTestChildModel(models.Model):
 
-    parent = models.ForeignKey(
-        InlineTestParentModel,
-        related_name = "children",
-    )
-
-    name = models.CharField(
-        max_length = 100,
-    )
+    parent = models.ForeignKey(InlineTestParentModel, related_name='children')
+    name = models.CharField(max_length=100)
 
     def __str__(self):
         return self.name
@@ -162,5 +130,4 @@ class InlineTestUnrelatedParentModel(models.Model):
 
 
 class InlineTestUnrelatedChildModel(models.Model):
-
     parent = models.ForeignKey(InlineTestUnrelatedParentModel)

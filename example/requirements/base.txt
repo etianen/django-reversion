@@ -1,0 +1,5 @@
+django==1.6
+South==1.0.2
+https://github.com/matllubos/django-chamber/tarball/0.1.8#egg=django-chamber-0.1.8
+https://github.com/LukasRychtecky/germanium/tarball/1.0.4#egg=germanium-1.0.4
+diff-match-patch==20110725.1

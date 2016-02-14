@@ -1,40 +1,22 @@
 language: python
-sudo: false
+
 python:
-  - 2.7
-  - 3.2
-  - 3.3
-  - 3.4
-cache:
-  directories:
-    - $HOME/.cache/pip
-env:
-  - DJANGO=django==1.7.9
-  - DJANGO=django==1.7.9 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
-  - DJANGO=django==1.7.9 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-  - DJANGO=django==1.8.3
-  - DJANGO=django==1.8.3 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
-  - DJANGO=django==1.8.3 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-matrix:
-  fast_finish: true
-  exclude:
-    # mysqlclient does not work with Python 3.2.
-    - python: 3.2
-      env: DJANGO=django==1.7.9 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-    - python: 3.2
-      env: DJANGO=django==1.8.3 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-services:
-  - postgresql
-  - mysql
+  - "2.7"
+
+# command to install dependencies
 install:
-  - travis_retry pip install $DJANGO
-  - if [[ "$DB_ENGINE" == "django.db.backends.postgresql_psycopg2" ]] ; then travis_retry pip install psycopg2; fi
-  - if [[ "$DB_ENGINE" == "django.db.backends.mysql" ]] ; then travis_retry pip install mysqlclient ; fi
-  - pip install -e .[test,diff]
-before_script:
-  - if [[ "$DB_ENGINE" == "django.db.backends.mysql" ]] ; then mysql -e 'create database test_project'; fi
-  - if [[ "$DB_ENGINE" == "django.db.backends.postgresql_psycopg2" ]] ; then psql -c 'create database test_project;' -U postgres; fi
-script: coverage run src/tests/manage.py test src/tests/test_reversion/
-after_script: coverage report
-notifications:
-  email: false
+    cd ./example;
+    make install;
+
+# command to run tests
+script:
+   make test
+
+addons:
+  apt:
+    packages:
+    - xvfb
+    - sqlite
+    - libjpeg-dev
+    - libpng-dev
+    - gettext
