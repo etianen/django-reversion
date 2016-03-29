@@ -505,7 +505,8 @@ class RevisionManager(object):
             signal.connect(self._signal_receiver, model)
 
         model.reversion_versions = property(
-            lambda self: Version.object.filter(object_id=self.id, content_type=ContentType.objects.get_for_model(self))
+            lambda self: Version.objects.filter(object_id=self.id,
+                                                content_type=ContentType.objects.get_for_model(self)).order_by('-pk')
         )
 
         return model
@@ -531,8 +532,8 @@ class RevisionManager(object):
         del self._signals[model]
         del self._eager_signals[model]
 
-        delattr(model, 'reversion_versions')
-        model.reversion_versions = GenericRelation(Version)
+        if hasattr(model, 'reversion_versions'):
+            delattr(model, 'reversion_versions')
 
     def _follow_relationships(self, objects, with_types=True):
         """Follows all relationships in the given set of objects."""

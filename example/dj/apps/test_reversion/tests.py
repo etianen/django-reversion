@@ -468,11 +468,13 @@ class ApiTestCase(RevisionTestBase):
         # Test a model with an int pk.
         version = reversion.get_for_date(self.test11, now)
         assert_equal(version.field_dict['name'], 'model1 instance1 version2')
-        assert_raises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test11, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)))
+        assert_raises(Version.DoesNotExist, lambda: reversion.get_for_date(
+            self.test11, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)))
         # Test a model with a str pk.
         version = reversion.get_for_date(self.test21, now)
         assert_equal(version.field_dict['name'], 'model2 instance1 version2')
-        assert_raises(Version.DoesNotExist, lambda: reversion.get_for_date(self.test21, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)))
+        assert_raises(Version.DoesNotExist, lambda: reversion.get_for_date(
+            self.test21, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)))
 
     def test_can_get_deleted(self):
         with reversion.create_revision():
@@ -542,6 +544,9 @@ class ApiTestCase(RevisionTestBase):
         assert_equal(revision.user, self.user)
         assert_equal(revision.comment, 'Foo bar')
         assert_equal(revision.revisionmeta.age, 5)
+
+    def test_reversion_versions_for_existing_object(self):
+        assert_equal(list(self.test11.reversion_versions), list(reversion.get_for_object(self.test11)))
 
 
 class InternalsTestCase(RevisionTestBase):
@@ -614,6 +619,7 @@ class RegistrationTestCase(TestCase):
         assert_raises(RegistrationError, lambda: reversion.register(test_model))
         self.assertTrue(test_model in reversion.get_registered_models())
         self.assertTrue(isinstance(reversion.get_adapter(test_model), reversion.VersionAdapter))
+        self.assertTrue(hasattr(test_model(), 'reversion_versions'))
 
     def check_deregistration(self, test_model):
         # Unregister the model and text.
@@ -622,6 +628,8 @@ class RegistrationTestCase(TestCase):
         assert_raises(RegistrationError, lambda: reversion.unregister(test_model))
         self.assertTrue(test_model not in reversion.get_registered_models())
         assert_raises(RegistrationError, lambda: isinstance(reversion.get_adapter(test_model)))
+        if not test_model._meta.proxy:
+            self.assertFalse(hasattr(test_model(), 'reversion_versions'))
 
     def test_registration(self):
         self.check_registration(ReversionTestModel1)
