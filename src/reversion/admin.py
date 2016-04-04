@@ -89,14 +89,16 @@ class VersionAdmin(admin.ModelAdmin):
 
     def log_addition(self, request, object, change_message=None):
         change_message = change_message or _("Initial version.")
-        self.revision_context_manager.set_comment(change_message)
+        if self.revision_context_manager.is_active():
+            self.revision_context_manager.set_comment(change_message)
         try:
             super(VersionAdmin, self).log_addition(request, object, change_message)
         except TypeError:  # Django < 1.9 pragma: no cover
             super(VersionAdmin, self).log_addition(request, object)
 
     def log_change(self, request, object, message):
-        self.revision_context_manager.set_comment(message)
+        if self.revision_context_manager.is_active():
+            self.revision_context_manager.set_comment(message)
         super(VersionAdmin, self).log_change(request, object, message)
 
     # Auto-registration.
