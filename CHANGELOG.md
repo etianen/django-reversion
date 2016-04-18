@@ -1,6 +1,12 @@
 # django-reversion changelog
 
 
+## 1.10.2 - 18/04/2016
+
+- Fixing deprecation warnings (@claudep).
+- Minor tweaks and bug fixes (@fladi, @claudep, @etianen).
+
+
 ## 1.10.1 - 27/01/2016
 
 - Fixing some deprecation warnings (@ticosax).
