@@ -134,6 +134,7 @@ class Version(models.Model):
     objects = VersionQuerySet.as_manager()
 
     revision = models.ForeignKey(Revision,
+                                 on_delete=models.CASCADE,
                                  help_text="The revision that contains this version.")
 
     object_id = models.TextField(help_text="Primary key of the model under version control.")
@@ -146,6 +147,7 @@ class Version(models.Model):
     )
 
     content_type = models.ForeignKey(ContentType,
+                                     on_delete=models.CASCADE,
                                      help_text="Content type of the model under version control.")
 
     # A link to the current instance, not the version stored in this Version!
