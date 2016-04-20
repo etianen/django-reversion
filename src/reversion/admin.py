@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 from contextlib import contextmanager
 
 from django.db import models, transaction, connection
+from django.db.models.signals import post_save
 from django.conf.urls import url
 from django.contrib import admin
 from django.contrib.admin import options
@@ -23,7 +24,7 @@ from django.utils.encoding import force_text
 from django.utils.formats import localize
 
 from reversion.models import Version
-from reversion.revisions import default_revision_manager
+from reversion.revisions import RevisionManager, default_revision_manager
 
 
 class RollBackRevisionView(Exception):
@@ -187,8 +188,16 @@ class VersionAdmin(admin.ModelAdmin):
     def revisionform_view(self, request, version, template_name, extra_context=None):
         try:
             with transaction.atomic():
+                # Disconnect RevisionMiddleware signal handler if needed so a
+                # new revision isn't created.
+                model_class = version.content_type.model_class()
+                manager = RevisionManager.get_manager(version.revision.manager_slug)
+                was_connected = post_save.disconnect(manager._signal_receiver, model_class)
                 # Revert the revision.
                 version.revision.revert(delete=True)
+                # Connect back if needed.
+                if was_connected:
+                    post_save.connect(manager._signal_receiver, model_class)
                 # Run the normal changeform view.
                 with self._create_revision(request):
                     response = self.changeform_view(request, version.object_id, request.path, extra_context)
