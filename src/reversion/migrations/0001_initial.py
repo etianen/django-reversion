@@ -36,8 +36,8 @@ class Migration(migrations.Migration):
                 ('format', models.CharField(help_text='The serialization format used by this model.', max_length=255)),
                 ('serialized_data', models.TextField(help_text='The serialized form of this version of the model.')),
                 ('object_repr', models.TextField(help_text='A string representation of the object.')),
-                ('content_type', models.ForeignKey(help_text='Content type of the model under version control.', to='contenttypes.ContentType')),
-                ('revision', models.ForeignKey(help_text='The revision that contains this version.', to='reversion.Revision')),
+                ('content_type', models.ForeignKey(help_text='Content type of the model under version control.', on_delete=django.db.models.deletion.CASCADE, to='contenttypes.ContentType')),
+                ('revision', models.ForeignKey(help_text='The revision that contains this version.', on_delete=django.db.models.deletion.CASCADE, to='reversion.Revision')),
             ],
             options={
             },
