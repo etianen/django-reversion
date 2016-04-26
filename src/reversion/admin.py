@@ -22,6 +22,7 @@ from django.utils.translation import ugettext as _
 from django.utils.encoding import force_text
 from django.utils.formats import localize
 
+from reversion.compat import remote_field, remote_model
 from reversion.models import Version
 from reversion.revisions import default_revision_manager
 
@@ -123,7 +124,7 @@ class VersionAdmin(admin.ModelAdmin):
             ct_field = inline.ct_field
             fk_name = inline.ct_fk_field
             for field in self.model._meta.virtual_fields:
-                if isinstance(field, GenericRelation) and field.rel.to == inline_model and field.object_id_field_name == fk_name and field.content_type_field_name == ct_field:
+                if isinstance(field, GenericRelation) and remote_model(field) == inline_model and field.object_id_field_name == fk_name and field.content_type_field_name == ct_field:
                     follow_field = field.name
                     break
         elif issubclass(inline, options.InlineModelAdmin):
@@ -131,17 +132,12 @@ class VersionAdmin(admin.ModelAdmin):
             fk_name = inline.fk_name
             if not fk_name:
                 for field in inline_model._meta.fields:
-                    if isinstance(field, (models.ForeignKey, models.OneToOneField)) and issubclass(self.model, field.rel.to):
+                    if isinstance(field, (models.ForeignKey, models.OneToOneField)) and issubclass(self.model, remote_model(field)):
                         fk_name = field.name
                         break
-            if fk_name and not inline_model._meta.get_field(fk_name).rel.is_hidden():
+            if fk_name and not remote_field(inline_model._meta.get_field(fk_name)).is_hidden():
                 field = inline_model._meta.get_field(fk_name)
-                try:
-                    # >=django1.9
-                    remote_field = field.remote_field
-                except AttributeError:
-                    remote_field = field.related
-                accessor = remote_field.get_accessor_name()
+                accessor = remote_field(field).get_accessor_name()
                 follow_field = accessor
         return inline_model, follow_field, fk_name
 
