@@ -14,6 +14,7 @@ from django.db import models, IntegrityError, transaction
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text, python_2_unicode_compatible
 
+from reversion.compat import remote_model
 from reversion.errors import RevertError
 
 
@@ -108,7 +109,7 @@ def has_int_pk(model):
             isinstance(pk, (models.IntegerField, models.AutoField)) and
             not isinstance(pk, models.BigIntegerField)
         ) or (
-            isinstance(pk, models.ForeignKey) and has_int_pk(pk.rel.to)
+            isinstance(pk, models.ForeignKey) and has_int_pk(remote_model(pk))
         )
     )
 

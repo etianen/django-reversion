@@ -20,6 +20,7 @@ from django.db.models.query import QuerySet
 from django.db.models.signals import post_save
 from django.utils.encoding import force_text
 
+from reversion.compat import remote_field
 from reversion.signals import pre_revision_commit, post_revision_commit
 from reversion.errors import RevisionManagementError, RegistrationError
 
@@ -50,7 +51,7 @@ class VersionAdapter(object):
         fields = self.fields or (field.name for field in opts.local_fields + opts.local_many_to_many)
         fields = (opts.get_field(field) for field in fields if not field in self.exclude)
         for field in fields:
-            if field.rel:
+            if remote_field(field):
                 yield field.name
             else:
                 yield field.attname
