@@ -8,12 +8,12 @@ cache:
   directories:
     - $HOME/.cache/pip
 env:
-  - DJANGO=django==1.8.8
-  - DJANGO=django==1.8.8 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
-  - DJANGO=django==1.8.8 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-  - DJANGO=django==1.9.2
-  - DJANGO=django==1.9.2 DB_ENGINE="django.db.backends.postgresql" DB_NAME="test_project" DB_USER="postgres"
-  - DJANGO=django==1.9.2 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+  - DJANGO=django==1.8.12
+  - DJANGO=django==1.8.12 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
+  - DJANGO=django==1.8.12 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+  - DJANGO=django==1.9.5
+  - DJANGO=django==1.9.5 DB_ENGINE="django.db.backends.postgresql" DB_NAME="test_project" DB_USER="postgres"
+  - DJANGO=django==1.9.5 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
 matrix:
   fast_finish: true
 services:
