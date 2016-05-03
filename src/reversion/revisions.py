@@ -565,14 +565,9 @@ class RevisionManager(object):
     def get_for_date(self, object, date, db=None):
         """Returns the latest version of an object for the given date."""
         from reversion.models import Version
-        versions = self.get_for_object(object, db)
-        versions = versions.filter(revision__date_created__lte=date)
-        try:
-            version = versions[0]
-        except IndexError:
-            raise Version.DoesNotExist
-        else:
-            return version
+        return (self.get_for_object(object, db)
+                .filter(revision__date_created__lte=date)[:1]
+                .get())
 
     def get_deleted(self, model_class, db=None, model_db=None):
         """
