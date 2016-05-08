@@ -6,7 +6,6 @@ from django.core.urlresolvers import reverse
 from is_core.generic_views.inlines.inline_objects_views import TabularInlineObjectsView
 from is_core.generic_views.mixins import TabsViewMixin
 from is_core.generic_views.form_views import EditModelFormView, DetailModelFormView
-
 from is_core.patterns import reverse_pattern
 
 

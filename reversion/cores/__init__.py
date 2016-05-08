@@ -3,7 +3,7 @@ from django.utils.encoding import force_text
 from django.utils.safestring import mark_safe
 from django.contrib.contenttypes.models import ContentType
 
-from is_core.main import UIRestModelISCore
+from is_core.main import UIRESTModelISCore
 from is_core.generic_views.inlines.inline_objects_views import TabularInlineObjectsView
 
 from reversion.models import Revision, Version, AuditLog
@@ -11,7 +11,7 @@ from reversion.models import Revision, Version, AuditLog
 from .views import ReversionEditView, ReversionHistoryView
 
 
-class DataRevisionISCore(UIRestModelISCore):
+class DataRevisionISCore(UIRESTModelISCore):
     abstract = True
 
     model = Revision
@@ -62,7 +62,7 @@ class DataRevisionISCore(UIRestModelISCore):
     form_inline_views = [VersionInlineFormView]
 
 
-class ReversionUIRESTModelISCore(UIRestModelISCore):
+class ReversionUIRESTModelISCore(UIRESTModelISCore):
     abstract = True
 
     def get_view_classes(self):
@@ -78,7 +78,7 @@ class ReversionUIRESTModelISCore(UIRestModelISCore):
         return False
 
 
-class AuditLogUIRESTModelISCore(UIRestModelISCore):
+class AuditLogUIRESTModelISCore(UIRESTModelISCore):
     abstract = True
     model = AuditLog
     list_display = ('created_at', 'content_types', 'object_pks', 'short_comment')
