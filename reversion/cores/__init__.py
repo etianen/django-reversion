@@ -3,7 +3,11 @@ from django.utils.encoding import force_text
 from django.utils.safestring import mark_safe
 from django.contrib.contenttypes.models import ContentType
 
-from is_core.main import UIRESTModelISCore
+try:
+    from is_core.main import UIRESTModelISCore
+except ImportError:
+    from is_core.main import UIRestModelISCore as UIRESTModelISCore
+
 from is_core.generic_views.inlines.inline_objects_views import TabularInlineObjectsView
 
 from reversion.models import Revision, Version, AuditLog

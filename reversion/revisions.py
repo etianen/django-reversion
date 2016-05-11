@@ -193,7 +193,7 @@ class RevisionContextStackFrame(object):
             for manager_name, (object_versions, audit_logs) in other_context.objects.items():
                 self.objects[manager_name][0].update(object_versions)
                 for audited_object, object_audit_logs in audit_logs.items():
-                    self.objects[manager_name][1][audited_object].update(audit_logs)
+                    self.objects[manager_name][1][audited_object].update(object_audit_logs)
             self.meta.extend(other_context.meta)
 
 
