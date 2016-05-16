@@ -16,7 +16,7 @@ from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.signals import request_finished
 from django.db import models, connection, transaction
-from django.db.models import Q, Max
+from django.db.models import Q, Max, CharField
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save
 from django.utils.encoding import force_text
@@ -24,6 +24,7 @@ from django.utils.encoding import force_text
 from reversion.compat import remote_field
 from reversion.signals import pre_revision_commit, post_revision_commit
 from reversion.errors import RevisionManagementError, RegistrationError
+from reversion.functions import ReversionCast
 
 
 class VersionAdapter(object):
@@ -574,7 +575,11 @@ class RevisionManager(object):
         """
         model_db = model_db or db
         content_type = ContentType.objects.db_manager(db).get_for_model(model_class)
-        live_pk_queryset = model_class._default_manager.db_manager(model_db).all().values_list("pk", flat=True)
+        pk_field = model_class._meta.pk
+
+        live_pk_queryset = model_class._default_manager.db_manager(model_db).all().annotate(
+            pk_str=ReversionCast(pk_field.name, CharField(max_length=191))  # Force PK field as CHAR type
+        ).values_list("pk_str", flat=True)
 
         # If the model and version data are in different databases, decouple the queries.
         if model_db != db:
@@ -592,6 +597,7 @@ class RevisionManager(object):
         # TODO: If a version is identified where this bug no longer applies, we can add a version specifier.
         if connection.vendor == "mysql":  # pragma: no cover
             deleted_version_pks = list(deleted_version_pks)
+
         # Return the deleted versions!
         return self._get_versions(db).filter(pk__in=deleted_version_pks).order_by("-pk")
 
