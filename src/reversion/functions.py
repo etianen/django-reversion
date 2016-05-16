@@ -32,7 +32,10 @@ class ReversionCast(Func):
         output_field_class = self._output_field.get_internal_type()
         if output_field_class in self.override_mysql_types:
             self.extra['db_type'] = self.override_mysql_types[output_field_class]
-        return self.as_sql(compiler, connection, template='%(function)s(%(expressions)s AS %(db_type)s) COLLATE ''utf8_unicode_ci''')
+        template = self.template
+        if output_field_class == 'CharField':
+            template = '%(function)s(%(expressions)s AS %(db_type)s) COLLATE ''utf8_unicode_ci'''
+        return self.as_sql(compiler, connection, template=template)
 
     def as_postgresql(self, compiler, connection):
         output_field_class = self._output_field.get_internal_type()
