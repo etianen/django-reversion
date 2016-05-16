@@ -10,14 +10,14 @@ class ReversionCast(Func):
     template = '%(function)s(%(expressions)s AS %(db_type)s)'
 
     override_mysql_types = {
-        fields.AutoField: 'integer',
-        fields.CharField: 'char',
-        fields.PositiveIntegerField: 'integer',
-        fields.FloatField: 'signed',
+        'AutoField': 'integer',
+        'CharField': 'char',
+        'PositiveIntegerField': 'integer',
+        'FloatField': 'signed',
     }
 
     override_postgresql_types = {
-        fields.AutoField: 'integer',
+        'AutoField': 'integer',
     }
 
     def __init__(self, expression, output_field):
