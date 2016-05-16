@@ -10,10 +10,17 @@ class ReversionCast(Func):
     template = '%(function)s(%(expressions)s AS %(db_type)s)'
 
     override_mysql_types = {
-        'AutoField': 'integer',
+        'AutoField': 'signed',
         'CharField': 'char',
-        'PositiveIntegerField': 'integer',
         'FloatField': 'signed',
+        'DecimalField': 'decimal(%(max_digits)s, %(decimal_places)s)',
+        'IntegerField': 'signed',
+        'BigIntegerField': 'signed',
+        'OneToOneField': 'signed',
+        'PositiveIntegerField': 'unsigned',
+        'PositiveSmallIntegerField': 'unsigned',
+        'SlugField': 'char',
+        'SmallIntegerField': 'signed',
     }
 
     override_postgresql_types = {
@@ -43,4 +50,3 @@ class ReversionCast(Func):
             self.extra['db_type'] = self.override_postgresql_types[output_field_class]
         # CAST would be valid too, but the :: shortcut syntax is more readable.
         return self.as_sql(compiler, connection, template='%(expressions)s::%(db_type)s')
-
