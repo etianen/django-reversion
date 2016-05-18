@@ -1,16 +1,40 @@
 language: python
-
 python:
   - "2.7"
+  - "3.3"
+  - "3.4"
+  - "3.5"
+
+env:
+  - DJANGO_VERSION=1.6
+  - DJANGO_VERSION=1.7
+  - DJANGO_VERSION=1.8
+  - DJANGO_VERSION=1.9
+
+matrix:
+  exclude:
+    - python: "3.3"
+      env: DJANGO_VERSION=1.6
+    - python: "3.4"
+      env: DJANGO_VERSION=1.6
+    - python: "3.5"
+      env: DJANGO_VERSION=1.6
+    - python: "3.5"
+      env: DJANGO_VERSION=1.7
+    - python: "3.3"
+      env: DJANGO_VERSION=1.9
 
 # command to install dependencies
 install:
-    cd ./example;
-    make install;
+  - cd example
+  - pip install -r requirements/base.txt --process-dependency-links --allow-all-external
+  - pip uninstall -y -q django
+  - pip install -q Django==$DJANGO_VERSION
+  - ln -sf $(pwd)/../reversion/ $(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")
 
 # command to run tests
 script:
-   make test
+   coverage run --omit */site-packages/*,*/migrations/*,*/lib/* manage.py test test_reversion.tests --settings=dj.settings.settings -v 2
 
 addons:
   apt:

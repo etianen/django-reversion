@@ -157,16 +157,13 @@ class Version(models.Model):
 
     @property
     def flat_field_dict(self):
-        try:
-            object_version = self.object_version
-            obj = object_version.object
-            result = {}
-            for field in obj._meta.fields:
-                result[field.name] = field.value_from_object(obj)
-            result.update(object_version.m2m_data)
-            return result
-        except Exception as ex:
-            print ex
+        object_version = self.object_version
+        obj = object_version.object
+        result = {}
+        for field in obj._meta.fields:
+            result[field.name] = field.value_from_object(obj)
+        result.update(object_version.m2m_data)
+        return result
 
     @property
     def field_dict(self):

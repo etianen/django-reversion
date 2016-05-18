@@ -24,7 +24,7 @@ else:
 from django.db.models.signals import pre_delete
 from django.utils import timezone
 
-import reversion
+from reversion import revisions as reversion
 from reversion.revisions import RegistrationError, RevisionManager
 from reversion.models import Revision, Version, AuditLog
 

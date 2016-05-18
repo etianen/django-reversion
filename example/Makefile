@@ -14,9 +14,9 @@ SETTINGS = settings
 DJANGO_SETTINGS_MODULE = $(DJANGO_DIR).settings.$(SETTINGS)
 DJANGO_POSTFIX = --settings=$(DJANGO_SETTINGS_MODULE) --pythonpath=$(PYTHONPATH)
 PYTHON_BIN = $(VIRTUAL_ENV)/bin
-PYTHON = python2.7
 PYTHON_VERSION_FULL := $(wordlist 2,4,$(subst ., ,$(shell python --version 2>&1)))
 PYTHON_VERSION_MAJOR := $(word 1,${PYTHON_VERSION_FULL}).$(word 2,${PYTHON_VERSION_FULL})
+PYTHON = python$(PYTHON_VERSION_MAJOR)
 TYPE = dev
 OS = $(shell uname)
 
@@ -109,11 +109,11 @@ endif
 datamigration:
 	$(PYTHON_BIN)/python manage.py datamigration $(app) $(name) $(DJANGO_POSTFIX)
 
-install: cleanvar bootstrap initlog linkatslibrary initdb syncdb initdata initenv
+install: cleanvar bootstrap initlog linklibrary initdb syncdb initdata initenv
 
 update: clean cleanvirtualenv bootstrap syncdb initenv
 
 include build/Makefile.$(OS)
 
-linkatslibrary:
+linklibrary:
 	ln -sf $(LOCALPATH)/../reversion/ $(LOCALPATH)/var/ve/lib/python$(PYTHON_VERSION_MAJOR)/site-packages/;

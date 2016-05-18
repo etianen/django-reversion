@@ -7,14 +7,8 @@ try:
 except ImportError:  # For Python 2.6
     from django.utils.datastructures import SortedDict as OrderedDict
 
-try:
-    from django.apps import apps
-    get_app = apps.get_app
-    get_apps = apps.get_apps
-    get_model = apps.get_model
-    get_models = apps.get_models
-except ImportError:  # For Django < 1.7
-    from django.db.models import get_app, get_apps, get_model, get_models
+
+from reversion.compatibility import get_app, get_apps, get_model, get_models
 
 try:
     from importlib import import_module
@@ -30,7 +24,7 @@ from django.utils.encoding import force_text
 from django.utils import translation
 from django.conf import settings
 
-from reversion import default_revision_manager
+from reversion.revisions import default_revision_manager
 from reversion.models import Version, has_int_pk
 from reversion.revisions import VersionAdapter
 

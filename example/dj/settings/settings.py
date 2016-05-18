@@ -37,9 +37,8 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    "south",
-    "reversion",
-    "test_reversion",
+    'reversion',
+    'test_reversion',
 )
 
 
@@ -52,7 +51,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
-ROOT_URLCONF = 'urls'
+ROOT_URLCONF = 'dj.urls'
 
 TEMPLATES = [
     {
