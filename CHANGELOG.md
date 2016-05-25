@@ -1,5 +1,9 @@
 # django-reversion changelog
 
+## 1.10.3 - 25/05/2016
+
+- Minor tweaks (@bmarika).
+
 
 ## 1.10.2 - 18/04/2016
 

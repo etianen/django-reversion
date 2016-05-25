@@ -29,10 +29,9 @@ class RevisionMiddleware(object):  # pragma: no cover
 
     def process_response(self, request, response):
         """Closes the revision."""
-        # look to see if the session has been accessed before looking for user to stop Vary: Cookie
-        if hasattr(request, 'session') and request.session.accessed \
-                and hasattr(request, "user") and request.user is not None and request.user.is_authenticated() \
-                and revision_context_manager.is_active():
+        mutating_methods = ['post', 'patch', 'put']
+
+        if request.method.lower() in mutating_methods and revision_context_manager.is_active():
             revision_context_manager.set_user(request.user)
         self._close_revision(request)
         return response
