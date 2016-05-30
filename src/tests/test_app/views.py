@@ -29,6 +29,7 @@ from test_app.models import ReversionTestModel1, ReversionTestModel2
 
 revision_middleware_django_decorator = django_decorator_from_middleware(RevisionMiddleware)
 
+
 def decorator_from_middleware(middleware_class):
     """
     This is a wrapper around django.utils.decorators.decorator_from_middleware
@@ -46,20 +47,21 @@ def decorator_from_middleware(middleware_class):
 
 revision_middleware_decorator = decorator_from_middleware(RevisionMiddleware)
 
+
 # A dumb view that saves a revision.
 @revision_middleware_decorator
 def save_revision_view(request):
     ReversionTestModel1.objects.create(
-        name = "model1 instance3 version1",
+        name="model1 instance3 version1",
     )
     ReversionTestModel1.objects.create(
-        name = "model1 instance4 version1",
+        name="model1 instance4 version1",
     )
     ReversionTestModel2.objects.create(
-        name = "model2 instance3 version1",
+        name="model2 instance3 version1",
     )
     ReversionTestModel2.objects.create(
-        name = "model2 instance4 version1",
+        name="model2 instance4 version1",
     )
     return HttpResponse("OK")
 
@@ -68,16 +70,16 @@ def save_revision_view(request):
 @revision_middleware_decorator
 def error_revision_view(request):
     ReversionTestModel1.objects.create(
-        name = "model1 instance3 version1",
+        name="model1 instance3 version1",
     )
     ReversionTestModel1.objects.create(
-        name = "model1 instance4 version1",
+        name="model1 instance4 version1",
     )
     ReversionTestModel2.objects.create(
-        name = "model2 instance3 version1",
+        name="model2 instance3 version1",
     )
     ReversionTestModel2.objects.create(
-        name = "model2 instance4 version1",
+        name="model2 instance4 version1",
     )
     raise Exception("Foo")
 

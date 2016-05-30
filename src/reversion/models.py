@@ -47,26 +47,32 @@ class Revision(models.Model):
     """A group of related object versions."""
 
     manager_slug = models.CharField(
-        max_length = 191,
-        db_index = True,
-        default = "default",
+        max_length=191,
+        db_index=True,
+        default="default",
     )
 
-    date_created = models.DateTimeField(auto_now_add=True,
-                                        db_index=True,
-                                        verbose_name=_("date created"),
-                                        help_text="The date and time this revision was created.")
+    date_created = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True,
+        verbose_name=_("date created"),
+        help_text="The date and time this revision was created.",
+    )
 
-    user = models.ForeignKey(UserModel,
-                             blank=True,
-                             null=True,
-                             on_delete=models.SET_NULL,
-                             verbose_name=_("user"),
-                             help_text="The user who created this revision.")
+    user = models.ForeignKey(
+        UserModel,
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+        verbose_name=_("user"),
+        help_text="The user who created this revision.",
+    )
 
-    comment = models.TextField(blank=True,
-                               verbose_name=_("comment"),
-                               help_text="A text comment on this revision.")
+    comment = models.TextField(
+        blank=True,
+        verbose_name=_("comment"),
+        help_text="A text comment on this revision.",
+    )
 
     def revert(self, delete=False):
         """Reverts all objects in this revision."""
@@ -84,7 +90,11 @@ class Revision(models.Model):
                     old_revision.add(obj)
             # Calculate the set of all objects that are in the revision now.
             from reversion.revisions import RevisionManager
-            current_revision = RevisionManager.get_manager(self.manager_slug)._follow_relationships(obj for obj in old_revision if obj is not None)
+            current_revision = RevisionManager.get_manager(self.manager_slug)._follow_relationships(
+                obj
+                for obj in old_revision
+                if obj is not None
+            )
             # Delete objects that are no longer in the current revision.
             for item in current_revision:
                 if item not in old_revision:
@@ -96,7 +106,6 @@ class Revision(models.Model):
         """Returns a unicode representation."""
         return ", ".join(force_text(version) for version in self.version_set.all())
 
-    #Meta
     class Meta:
         app_label = 'reversion'
 
@@ -134,32 +143,44 @@ class Version(models.Model):
 
     objects = VersionQuerySet.as_manager()
 
-    revision = models.ForeignKey(Revision,
-                                 on_delete=models.CASCADE,
-                                 help_text="The revision that contains this version.")
-
-    object_id = models.TextField(help_text="Primary key of the model under version control.")
-
-    object_id_int = models.IntegerField(
-        blank = True,
-        null = True,
-        db_index = True,
-        help_text = "An indexed, integer version of the stored model's primary key, used for faster lookups.",
+    revision = models.ForeignKey(
+        Revision,
+        on_delete=models.CASCADE,
+        help_text="The revision that contains this version.",
     )
 
-    content_type = models.ForeignKey(ContentType,
-                                     on_delete=models.CASCADE,
-                                     help_text="Content type of the model under version control.")
+    object_id = models.TextField(
+        help_text="Primary key of the model under version control.",
+    )
+
+    object_id_int = models.IntegerField(
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text="An indexed, integer version of the stored model's primary key, used for faster lookups.",
+    )
+
+    content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.CASCADE,
+        help_text="Content type of the model under version control.",
+    )
 
     # A link to the current instance, not the version stored in this Version!
     object = GenericForeignKey()
 
-    format = models.CharField(max_length=255,
-                              help_text="The serialization format used by this model.")
+    format = models.CharField(
+        max_length=255,
+        help_text="The serialization format used by this model.",
+    )
 
-    serialized_data = models.TextField(help_text="The serialized form of this version of the model.")
+    serialized_data = models.TextField(
+        help_text="The serialized form of this version of the model.",
+    )
 
-    object_repr = models.TextField(help_text="A string representation of the object.")
+    object_repr = models.TextField(
+        help_text="A string representation of the object.",
+    )
 
     @property
     def object_version(self):
@@ -211,6 +232,5 @@ class Version(models.Model):
         """Returns a unicode representation."""
         return self.object_repr
 
-    #Meta
     class Meta:
         app_label = 'reversion'

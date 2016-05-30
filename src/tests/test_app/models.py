@@ -13,7 +13,7 @@ from reversion.models import Revision
 class ReversionTestModelBase(models.Model):
 
     name = models.CharField(
-        max_length = 100,
+        max_length=100,
     )
 
     def __str__(self):
@@ -28,11 +28,12 @@ class ReversionTestModel1(ReversionTestModelBase):
     pass
 
 
-str_pk_gen = 0;
+str_pk_gen = 0
+
 
 def get_str_pk():
     global str_pk_gen
-    str_pk_gen += 1;
+    str_pk_gen += 1
     return force_text(str_pk_gen)
 
 
@@ -44,16 +45,15 @@ class ReversionTestModel1Child(ReversionTestModel1):
 class ReversionTestModel2(ReversionTestModelBase):
 
     id = models.CharField(
-        primary_key = True,
-        max_length = 100,
-        default = get_str_pk
+        primary_key=True,
+        max_length=100,
+        default=get_str_pk
     )
 
 
 class ReversionTestModel3(ReversionTestModelBase):
 
     pass
-
 
 
 class TestFollowModel(ReversionTestModelBase):
@@ -86,7 +86,7 @@ class RevisionMeta(models.Model):
 class ParentTestAdminModel(models.Model):
 
     parent_name = models.CharField(
-        max_length = 200,
+        max_length=200,
     )
 
     def __str__(self):
@@ -97,7 +97,7 @@ class ParentTestAdminModel(models.Model):
 class ChildTestAdminModel(ParentTestAdminModel):
 
     child_name = models.CharField(
-        max_length = 200,
+        max_length=200,
     )
 
     def __str__(self):
@@ -108,7 +108,7 @@ class ChildTestAdminModel(ParentTestAdminModel):
 class InlineTestChildGenericModel(models.Model):
 
     object_id = models.IntegerField(
-        db_index = True,
+        db_index=True,
     )
 
     content_type = models.ForeignKey(
@@ -118,7 +118,7 @@ class InlineTestChildGenericModel(models.Model):
     object = GenericForeignKey()
 
     name = models.CharField(
-        max_length = 100,
+        max_length=100,
     )
 
     def __str__(self):
@@ -129,7 +129,7 @@ class InlineTestChildGenericModel(models.Model):
 class InlineTestParentModel(models.Model):
 
     name = models.CharField(
-        max_length = 100,
+        max_length=100,
     )
 
     generic_children = GenericRelation(InlineTestChildGenericModel)
@@ -150,11 +150,11 @@ class InlineTestChildModel(models.Model):
     parent = models.ForeignKey(
         InlineTestParentModel,
         on_delete=models.CASCADE,
-        related_name = "children",
+        related_name="children",
     )
 
     name = models.CharField(
-        max_length = 100,
+        max_length=100,
     )
 
     def __str__(self):

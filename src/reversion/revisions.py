@@ -2,7 +2,8 @@
 
 from __future__ import unicode_literals
 
-import operator, warnings
+import operator
+import warnings
 from functools import wraps, reduce, partial
 from threading import local
 from weakref import WeakValueDictionary
@@ -49,7 +50,7 @@ class VersionAdapter(object):
         """Returns an iterable of field names to serialize in the version data."""
         opts = self.model._meta.concrete_model._meta
         fields = self.fields or (field.name for field in opts.local_fields + opts.local_many_to_many)
-        fields = (opts.get_field(field) for field in fields if not field in self.exclude)
+        fields = (opts.get_field(field) for field in fields if field not in self.exclude)
         for field in fields:
             if remote_field(field):
                 yield field.name
@@ -79,9 +80,12 @@ class VersionAdapter(object):
                 for related_obj in related.all():
                     yield related_obj
             elif related is not None:  # pragma: no cover
-                raise TypeError("Cannot follow the relationship {relationship}. Expected a model or QuerySet, found {related}".format(
-                    relationship = relationship,
-                    related = related,
+                raise TypeError((
+                    "Cannot follow the relationship {relationship}. "
+                    "Expected a model or QuerySet, found {related}"
+                ).format(
+                    relationship=relationship,
+                    related=related,
                 ))
 
     def get_serialization_format(self):
@@ -93,7 +97,7 @@ class VersionAdapter(object):
         return serializers.serialize(
             self.get_serialization_format(),
             (obj,),
-            fields = list(self.get_fields_to_serialize()),
+            fields=list(self.get_fields_to_serialize()),
         )
 
     def get_version_data(self, obj, db=None):
@@ -196,11 +200,11 @@ class RevisionContextManager(local):
                                 in manager_context.items()
                                 if obj.pk is not None
                             ),
-                            user = self._user,
-                            comment = self._comment,
-                            meta = stack_frame.meta,
-                            ignore_duplicates = stack_frame.ignore_duplicates,
-                            db = self._db,
+                            user=self._user,
+                            comment=self._comment,
+                            meta=stack_frame.meta,
+                            ignore_duplicates=stack_frame.ignore_duplicates,
+                            db=self._db,
                         )
             finally:
                 self.clear()
@@ -393,7 +397,7 @@ class RevisionManager(object):
         # Prevent multiple registration.
         if self.is_registered(model):
             raise RegistrationError("{model} has already been registered with django-reversion".format(
-                model = model,
+                model=model,
             ))
         # Perform any customization.
         if field_overrides:
@@ -412,14 +416,14 @@ class RevisionManager(object):
         if self.is_registered(model):
             return self._registered_models[self._registration_key_for_model(model)]
         raise RegistrationError("{model} has not been registered with django-reversion".format(
-            model = model,
+            model=model,
         ))
 
     def unregister(self, model):
         """Removes a model from version control."""
         if not self.is_registered(model):
             raise RegistrationError("{model} has not been registered with django-reversion".format(
-                model = model,
+                model=model,
             ))
         del self._registered_models[self._registration_key_for_model(model)]
         all_signals = self._signals[model] + self._eager_signals[model]
@@ -431,6 +435,7 @@ class RevisionManager(object):
     def _follow_relationships(self, objects):
         """Follows all relationships in the given set of objects."""
         followed = set()
+
         def _follow(obj, exclude_concrete):
             # Check the pk first because objects without a pk are not hashable
             if obj.pk is None or obj in followed or (obj.__class__, obj.pk) == exclude_concrete:
@@ -450,12 +455,12 @@ class RevisionManager(object):
         """Returns all versions that apply to this manager."""
         from reversion.models import Version
         return Version.objects.using(db).filter(
-            revision__manager_slug = self._manager_slug,
+            revision__manager_slug=self._manager_slug,
         ).select_related("revision")
 
     def save_revision(self, objects, ignore_duplicates=False, user=None, comment="", meta=(), db=None):
         """Saves a new revision."""
-        from reversion.models import Revision, Version, has_int_pk
+        from reversion.models import Revision, Version
         # Adapt the objects to a dict.
         if isinstance(objects, (list, tuple)):
             objects = dict(
@@ -476,12 +481,18 @@ class RevisionManager(object):
             save_revision = True
             if ignore_duplicates:
                 # Find the latest revision amongst the latest previous version of each object.
-                subqueries = [Q(object_id=version.object_id, content_type=version.content_type) for version in new_versions]
+                subqueries = [
+                    Q(object_id=version.object_id, content_type=version.content_type)
+                    for version
+                    in new_versions
+                ]
                 subqueries = reduce(operator.or_, subqueries)
                 latest_revision = self._get_versions(db).filter(subqueries).aggregate(Max("revision"))["revision__max"]
                 # If we have a latest revision, compare it to the current revision.
                 if latest_revision is not None:
-                    previous_versions = self._get_versions(db).filter(revision=latest_revision).values_list("serialized_data", flat=True)
+                    previous_versions = self._get_versions(db).filter(
+                        revision=latest_revision
+                    ).values_list("serialized_data", flat=True)
                     if len(previous_versions) == len(new_versions):
                         all_serialized_data = [version.serialized_data for version in new_versions]
                         if sorted(previous_versions) == sorted(all_serialized_data):
@@ -490,15 +501,16 @@ class RevisionManager(object):
             if save_revision:
                 # Save a new revision.
                 revision = Revision(
-                    manager_slug = self._manager_slug,
-                    user = user,
-                    comment = comment,
+                    manager_slug=self._manager_slug,
+                    user=user,
+                    comment=comment,
                 )
                 # Send the pre_revision_commit signal.
-                pre_revision_commit.send(self,
-                    instances = ordered_objects,
-                    revision = revision,
-                    versions = new_versions,
+                pre_revision_commit.send(
+                    sender=self,
+                    instances=ordered_objects,
+                    revision=revision,
+                    versions=new_versions,
                 )
                 # Save the revision.
                 with transaction.atomic(using=db):
@@ -511,10 +523,11 @@ class RevisionManager(object):
                     for cls, kwargs in meta:
                         cls._default_manager.db_manager(db).create(revision=revision, **kwargs)
                 # Send the post_revision_commit signal.
-                post_revision_commit.send(self,
-                    instances = ordered_objects,
-                    revision = revision,
-                    versions = new_versions,
+                post_revision_commit.send(
+                    sender=self,
+                    instances=ordered_objects,
+                    revision=revision,
+                    versions=new_versions,
                 )
                 # Return the revision.
                 return revision
@@ -530,7 +543,7 @@ class RevisionManager(object):
         from reversion.models import has_int_pk
         content_type = ContentType.objects.db_manager(db).get_for_model(model)
         versions = self._get_versions(db).filter(
-            content_type = content_type,
+            content_type=content_type,
         ).select_related("revision")
         if has_int_pk(model):
             # We can do this as a fast, indexed lookup.
@@ -564,7 +577,6 @@ class RevisionManager(object):
 
     def get_for_date(self, object, date, db=None):
         """Returns the latest version of an object for the given date."""
-        from reversion.models import Version
         return (self.get_for_object(object, db)
                 .filter(revision__date_created__lte=date)[:1]
                 .get())
@@ -580,7 +592,7 @@ class RevisionManager(object):
         content_type = ContentType.objects.db_manager(db).get_for_model(model_class)
         live_pk_queryset = model_class._default_manager.db_manager(model_db).all().values_list("pk", flat=True)
         versioned_objs = self._get_versions(db).filter(
-            content_type = content_type,
+            content_type=content_type,
         )
         if has_int_pk(model_class):
             # If the model and version data are in different databases, decouple the queries.
@@ -588,15 +600,15 @@ class RevisionManager(object):
                 live_pk_queryset = list(live_pk_queryset.iterator())
             # We can do this as a fast, in-database join.
             deleted_version_pks = versioned_objs.exclude(
-                object_id_int__in = live_pk_queryset
+                object_id_int__in=live_pk_queryset
             ).values_list("object_id_int")
         else:
             # This join has to be done as two separate queries.
             deleted_version_pks = versioned_objs.exclude(
-                object_id__in = list(live_pk_queryset.iterator())
+                object_id__in=list(live_pk_queryset.iterator())
             ).values_list("object_id")
         deleted_version_pks = deleted_version_pks.annotate(
-            latest_pk = Max("pk")
+            latest_pk=Max("pk")
         ).values_list("latest_pk", flat=True)
         # HACK: MySQL deals extremely badly with this as a subquery, and can hang infinitely.
         # TODO: If a version is identified where this bug no longer applies, we can add a version specifier.
@@ -623,7 +635,8 @@ class RevisionManager(object):
                     version_data = adapter.get_version_data(obj, self._revision_context_manager._db)
                     self._revision_context_manager.add_to_context(self, copy.copy(obj), version_data)
             else:
-                version_data = lambda: adapter.get_version_data(instance, self._revision_context_manager._db)
+                def version_data():
+                    return adapter.get_version_data(instance, self._revision_context_manager._db)
                 self._revision_context_manager.add_to_context(self, instance, version_data)
 
 

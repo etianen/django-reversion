@@ -16,26 +16,37 @@ from django.utils.encoding import force_text
 from reversion.revisions import default_revision_manager
 from reversion.models import Version, has_int_pk
 
-get_app = lambda app_label: apps.get_app_config(app_label).models_module
+
+def get_app(app_label):
+    return apps.get_app_config(app_label).models_module
 
 
 class Command(BaseCommand):
     help = "Creates initial revisions for a given app [and model]."
 
     def add_arguments(self, parser):
-        parser.add_argument('args', metavar='app_label', nargs='*',
-            help="Optional apps or app.Model list.")
-        parser.add_argument("--comment",
+        parser.add_argument(
+            'args',
+            metavar='app_label',
+            nargs='*',
+            help="Optional apps or app.Model list.",
+        )
+        parser.add_argument(
+            "--comment",
             action="store",
             default="Initial version.",
             help='Specify the comment to add to the revisions. Defaults to "Initial version.".')
-        parser.add_argument("--batch-size",
+        parser.add_argument(
+            "--batch-size",
             action="store",
             type=int,
             default=500,
-            help="For large sets of data, revisions will be populated in batches. Defaults to 500.")
-        parser.add_argument("--database",
-            help='Nominates a database to create revisions in.')
+            help="For large sets of data, revisions will be populated in batches. Defaults to 500.",
+        )
+        parser.add_argument(
+            "--database",
+            help='Nominates a database to create revisions in.',
+        )
 
     def handle(self, *app_labels, **options):
 
@@ -53,10 +64,10 @@ class Command(BaseCommand):
             all_apps = [config.models_module for config in apps.get_app_configs()
                         if config.models_module is not None]
             for app in all_apps:
-                if not app in app_list:
+                if app not in app_list:
                     app_list[app] = []
                 for model_class in apps.get_models(app):
-                    if not model_class in app_list[app]:
+                    if model_class not in app_list[app]:
                         app_list[app].append(model_class)
         else:
             for label in app_labels:
@@ -80,10 +91,10 @@ class Command(BaseCommand):
                     app_label = label
                     try:
                         app = get_app(app_label)
-                        if not app in app_list:
+                        if app not in app_list:
                             app_list[app] = []
                         for model_class in apps.get_models(app):
-                            if not model_class in app_list[app]:
+                            if model_class not in app_list[app]:
                                 app_list[app].append(model_class)
                     except ImproperlyConfigured:
                         raise CommandError("Unknown application: %s" % app_label)
@@ -105,7 +116,7 @@ class Command(BaseCommand):
         # Check all models for empty revisions.
         if default_revision_manager.is_registered(model_class):
             if verbosity >= 2:
-                print("Creating initial revision(s) for model %s ..."  % (force_text(model_class._meta.verbose_name)))
+                print("Creating initial revision(s) for model %s ..." % (force_text(model_class._meta.verbose_name)))
             created_count = 0
             content_type = ContentType.objects.db_manager(database).get_for_model(model_class)
             versioned_pk_queryset = Version.objects.using(database).filter(content_type=content_type).all()
@@ -113,12 +124,12 @@ class Command(BaseCommand):
             if has_int_pk(model_class):
                 # We can do this as a fast database join!
                 live_objs = live_objs.exclude(
-                    pk__in = versioned_pk_queryset.values_list("object_id_int", flat=True)
+                    pk__in=versioned_pk_queryset.values_list("object_id_int", flat=True)
                 )
             else:
                 # This join has to be done as two separate queries.
                 live_objs = live_objs.exclude(
-                    pk__in = list(versioned_pk_queryset.values_list("object_id", flat=True).iterator())
+                    pk__in=list(versioned_pk_queryset.values_list("object_id", flat=True).iterator())
                 )
             # Save all the versions.
             ids = list(live_objs.values_list(model_class._meta.pk.name, flat=True).order_by())
@@ -139,7 +150,10 @@ class Command(BaseCommand):
 
             # Print out a message, if feeling verbose.
             if verbosity >= 2:
-                print("Created %s initial revision(s) for model %s." % (created_count, force_text(model_class._meta.verbose_name)))
+                print("Created %s initial revision(s) for model %s." % (
+                    created_count,
+                    force_text(model_class._meta.verbose_name),
+                ))
         else:
             if verbosity >= 2:
-                print("Model %s is not registered."  % (force_text(model_class._meta.verbose_name)))
+                print("Model %s is not registered." % (force_text(model_class._meta.verbose_name)))

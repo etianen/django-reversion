@@ -124,7 +124,12 @@ class VersionAdmin(admin.ModelAdmin):
             ct_field = inline.ct_field
             fk_name = inline.ct_fk_field
             for field in self.model._meta.virtual_fields:
-                if isinstance(field, GenericRelation) and remote_model(field) == inline_model and field.object_id_field_name == fk_name and field.content_type_field_name == ct_field:
+                if (
+                    isinstance(field, GenericRelation) and
+                    remote_model(field) == inline_model and
+                    field.object_id_field_name == fk_name and
+                    field.content_type_field_name == ct_field
+                ):
                     follow_field = field.name
                     break
         elif issubclass(inline, options.InlineModelAdmin):
@@ -132,7 +137,10 @@ class VersionAdmin(admin.ModelAdmin):
             fk_name = inline.fk_name
             if not fk_name:
                 for field in inline_model._meta.fields:
-                    if isinstance(field, (models.ForeignKey, models.OneToOneField)) and issubclass(self.model, remote_model(field)):
+                    if (
+                        isinstance(field, (models.ForeignKey, models.OneToOneField)) and
+                        issubclass(self.model, remote_model(field))
+                    ):
                         fk_name = field.name
                         break
             if fk_name and not remote_field(inline_model._meta.get_field(fk_name)).is_hidden():
@@ -165,9 +173,10 @@ class VersionAdmin(admin.ModelAdmin):
         opts = self.model._meta
         info = opts.app_label, opts.model_name,
         reversion_urls = [
-                                  url("^recover/$", admin_site.admin_view(self.recoverlist_view), name='%s_%s_recoverlist' % info),
-                                  url("^recover/(\d+)/$", admin_site.admin_view(self.recover_view), name='%s_%s_recover' % info),
-                                  url("^([^/]+)/history/(\d+)/$", admin_site.admin_view(self.revision_view), name='%s_%s_revision' % info),]
+            url("^recover/$", admin_site.admin_view(self.recoverlist_view), name='%s_%s_recoverlist' % info),
+            url("^recover/(\d+)/$", admin_site.admin_view(self.recover_view), name='%s_%s_recover' % info),
+            url("^([^/]+)/history/(\d+)/$", admin_site.admin_view(self.revision_view), name='%s_%s_revision' % info),
+        ]
         return reversion_urls + urls
 
     # Views.
@@ -190,10 +199,14 @@ class VersionAdmin(admin.ModelAdmin):
                     response = self.changeform_view(request, version.object_id, request.path, extra_context)
                     # Decide on whether the keep the changes.
                     if request.method == "POST" and response.status_code == 302:
-                        self.revision_context_manager.set_comment(_("Reverted to previous version, saved on %(datetime)s") % {"datetime": localize(version.revision.date_created)})
+                        self.revision_context_manager.set_comment(
+                            _("Reverted to previous version, saved on %(datetime)s") % {
+                                "datetime": localize(version.revision.date_created),
+                            }
+                        )
                     else:
                         response.template_name = template_name  # Set the template name to the correct template.
-                        response.render()  # Eagerly render the response, so it's using the latest version of the database.
+                        response.render()  # Eagerly render the response, so it's using the latest version.
                         raise RollBackRevisionView  # Raise an exception to undo the transaction and the revision.
         except RollBackRevisionView:
             pass
@@ -211,17 +224,27 @@ class VersionAdmin(admin.ModelAdmin):
             "title": _("Recover %(name)s") % {"name": version.object_repr},
         }
         context.update(extra_context or {})
-        return self.revisionform_view(request, version, self.recover_form_template or self._get_template_list("recover_form.html"), context)
+        return self.revisionform_view(
+            request,
+            version,
+            self.recover_form_template or self._get_template_list("recover_form.html"),
+            context,
+        )
 
     def revision_view(self, request, object_id, version_id, extra_context=None):
         """Displays the contents of the given revision."""
-        object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
+        object_id = unquote(object_id)  # Underscores in primary key get quoted to "_5F"
         version = get_object_or_404(Version, pk=version_id, object_id=object_id)
         context = {
             "title": _("Revert %(name)s") % {"name": version.object_repr},
         }
         context.update(extra_context or {})
-        return self.revisionform_view(request, version, self.revision_form_template or self._get_template_list("revision_form.html"), context)
+        return self.revisionform_view(
+            request,
+            version,
+            self.revision_form_template or self._get_template_list("revision_form.html"),
+            context,
+        )
 
     def changelist_view(self, request, extra_context=None):
         """Renders the change view."""
@@ -248,11 +271,11 @@ class VersionAdmin(admin.ModelAdmin):
         # Get the rest of the context.
         context = dict(
             each_context,
-            opts = opts,
-            app_label = opts.app_label,
-            module_name = capfirst(opts.verbose_name),
-            title = _("Recover deleted %(name)s") % {"name": force_text(opts.verbose_name_plural)},
-            deleted = deleted,
+            opts=opts,
+            app_label=opts.app_label,
+            module_name=capfirst(opts.verbose_name),
+            title=_("Recover deleted %(name)s") % {"name": force_text(opts.verbose_name_plural)},
+            deleted=deleted,
         )
         context.update(extra_context or {})
         return render(request, self.recover_list_template or self._get_template_list("recover_list.html"), context)
@@ -262,12 +285,15 @@ class VersionAdmin(admin.ModelAdmin):
         # Check if user has change permissions for model
         if not self.has_change_permission(request):  # pragma: no cover
             raise PermissionDenied
-        object_id = unquote(object_id) # Underscores in primary key get quoted to "_5F"
+        object_id = unquote(object_id)  # Underscores in primary key get quoted to "_5F"
         opts = self.model._meta
         action_list = [
             {
                 "revision": version.revision,
-                "url": reverse("%s:%s_%s_revision" % (self.admin_site.name, opts.app_label, opts.model_name), args=(quote(version.object_id), version.id)),
+                "url": reverse(
+                    "%s:%s_%s_revision" % (self.admin_site.name, opts.app_label, opts.model_name),
+                    args=(quote(version.object_id), version.id)
+                ),
             }
             for version
             in self._order_version_queryset(self.revision_manager.get_for_object_reference(

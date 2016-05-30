@@ -4,14 +4,13 @@ Tests for the django-reversion API.
 
 from __future__ import unicode_literals
 
-import datetime, os
+import datetime
 from unittest import skipUnless
 
 from django.db import models
 from django.test import TestCase
 from django.core.management import call_command
 from django.core.exceptions import ImproperlyConfigured
-from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.db.models.signals import pre_delete
@@ -61,7 +60,7 @@ from test_app.models import (
     InlineTestChildGenericModel,
     InlineTestChildModelProxy,
 )
-from test_app import admin  # Force early registration of all admin models.
+from test_app import admin  # noqa. Force early registration of all admin models.
 
 User = get_user_model()
 
@@ -142,25 +141,25 @@ class ReversionTestBase(TestCase):
         register(ReversionTestModel3, eager_signals=[pre_delete])
         # Create some test data.
         self.test11 = ReversionTestModel1.objects.create(
-            name = "model1 instance1 version1",
+            name="model1 instance1 version1",
         )
         self.test12 = ReversionTestModel1.objects.create(
-            name = "model1 instance2 version1",
+            name="model1 instance2 version1",
         )
         self.test21 = ReversionTestModel2.objects.create(
-            name = "model2 instance1 version1",
+            name="model2 instance1 version1",
         )
         self.test22 = ReversionTestModel2.objects.create(
-            name = "model2 instance2 version1",
+            name="model2 instance2 version1",
         )
         self.test31 = ReversionTestModel3.objects.create(
-            name = "model3 instance1 version1",
+            name="model3 instance1 version1",
         )
         self.test32 = ReversionTestModel3.objects.create(
-            name = "model3 instance2 version1",
+            name="model3 instance2 version1",
         )
         self.user = User.objects.create(
-            username = "user1",
+            username="user1",
         )
 
     def tearDown(self):
@@ -346,11 +345,17 @@ class ApiTest(RevisionTestBase):
         # Test a model with an int pk.
         version = get_for_date(self.test11, now)
         self.assertEqual(version.field_dict["name"], "model1 instance1 version2")
-        self.assertRaises(Version.DoesNotExist, lambda: get_for_date(self.test11, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)))
+        self.assertRaises(
+            Version.DoesNotExist,
+            lambda: get_for_date(self.test11, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)),
+        )
         # Test a model with a str pk.
         version = get_for_date(self.test21, now)
         self.assertEqual(version.field_dict["name"], "model2 instance1 version2")
-        self.assertRaises(Version.DoesNotExist, lambda: get_for_date(self.test21, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)))
+        self.assertRaises(
+            Version.DoesNotExist,
+            lambda: get_for_date(self.test21, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)),
+        )
 
     def testCanGetDeleted(self):
         with create_revision():
@@ -446,7 +451,7 @@ class MultiTableInheritanceApiTest(RevisionTestBase):
         register(ReversionTestModel1Child, follow=("reversiontestmodel1_ptr",))
         with create_revision():
             self.testchild1 = ReversionTestModel1Child.objects.create(
-                name = "modelchild1 instance1 version 1",
+                name="modelchild1 instance1 version 1",
             )
 
     def testCanRetreiveFullFieldDict(self):
@@ -524,8 +529,8 @@ class FollowModelsTest(ReversionTestBase):
         register(ReversionTestModel1, follow=("testfollowmodel_set",))
         register(TestFollowModel, follow=("test_model_1", "test_model_2s",))
         self.follow1 = TestFollowModel.objects.create(
-            name = "related instance1 version 1",
-            test_model_1 = self.test11,
+            name="related instance1 version 1",
+            test_model_1=self.test11,
         )
         self.follow1.test_model_2s.add(self.test21, self.test22)
 
@@ -540,7 +545,7 @@ class FollowModelsTest(ReversionTestBase):
     def testRevertWithDelete(self):
         with create_revision():
             test23 = ReversionTestModel2.objects.create(
-                name = "model2 instance3 version1",
+                name="model2 instance3 version1",
             )
             self.follow1.test_model_2s.add(test23)
             self.follow1.save()
@@ -574,8 +579,8 @@ class FollowModelsTest(ReversionTestBase):
     def testReverseFollowRevertWithDelete(self):
         with create_revision():
             follow2 = TestFollowModel.objects.create(
-                name = "related instance2 version 1",
-                test_model_1 = self.test11,
+                name="related instance2 version 1",
+                test_model_1=self.test11,
             )
         # Test that a revert with delete works.
         follow2_pk = follow2.pk
@@ -693,16 +698,16 @@ class VersionAdminTest(TestCase):
 
     def setUp(self):
         self.user = User(
-            username = "foo",
-            is_staff = True,
-            is_superuser = True,
+            username="foo",
+            is_staff=True,
+            is_superuser=True,
         )
         self.user.set_password("bar")
         self.user.save()
         # Log the user in.
         self.client.login(
-            username = "foo",
-            password = "bar",
+            username="foo",
+            password="bar",
         )
 
     def tearDown(self):
@@ -752,7 +757,10 @@ class VersionAdminTest(TestCase):
         self.assertContains(response, "child instance1 version2")
         self.assertContains(response, "child instance1 version1")
         # Check that version data can be loaded.
-        response = self.client.get(reverse("admin:test_app_childtestadminmodel_revision", args=(obj_pk, versions[1].pk)))
+        response = self.client.get(reverse(
+            "admin:test_app_childtestadminmodel_revision",
+            args=(obj_pk, versions[1].pk)
+        ))
         self.assertContains(response, "parent instance1 version1")
         self.assertContains(response, "child instance1 version1")
         # Check that loading the version data didn't roll it back!
@@ -761,10 +769,16 @@ class VersionAdminTest(TestCase):
         self.assertEqual(obj.parent_name, "parent instance1 version2")
         self.assertEqual(get_for_object(obj).count(), 2)
         # Check that a version can be rolled back.
-        response = self.client.post(reverse("admin:test_app_childtestadminmodel_revision", args=(obj_pk, versions[1].pk)), {
-            "parent_name": "parent instance1 version3",
-            "child_name": "child instance1 version3",
-        })
+        response = self.client.post(
+            reverse(
+                "admin:test_app_childtestadminmodel_revision",
+                args=(obj_pk, versions[1].pk)
+            ),
+            {
+                "parent_name": "parent instance1 version3",
+                "child_name": "child instance1 version3",
+            },
+        )
         self.assertEqual(response.status_code, 302)
         # Check that the models were rolled back.
         obj = ChildTestAdminModel.objects.get(pk=obj.pk)
@@ -840,12 +854,18 @@ class VersionAdminTest(TestCase):
         parent_pk = self.createInlineObjects()
         # Check that the current version includes the inlines.
         versions = list(get_for_object_reference(InlineTestParentModel, parent_pk))
-        response = self.client.get(reverse("admin:test_app_inlinetestparentmodel_revision", args=(parent_pk, versions[0].pk)))
+        response = self.client.get(reverse(
+            "admin:test_app_inlinetestparentmodel_revision",
+            args=(parent_pk, versions[0].pk),
+        ))
         self.assertContains(response, "parent version2")  # Check parent model.
         self.assertContains(response, "non-generic child version 1")  # Check inline child model.
         self.assertContains(response, "generic child version 1")  # Check inline generic child model.
         # Check that the first version does not include the inlines.
-        response = self.client.get(reverse("admin:test_app_inlinetestparentmodel_revision", args=(parent_pk, versions[1].pk)))
+        response = self.client.get(reverse(
+            "admin:test_app_inlinetestparentmodel_revision",
+            args=(parent_pk, versions[1].pk),
+        ))
         self.assertContains(response, "parent version1")  # Check parent model.
         self.assertNotContains(response, "non-generic child version 1")  # Check inline child model.
         self.assertNotContains(response, "generic child version 1")  # Check inline generic child model.
@@ -885,11 +905,17 @@ class VersionAdminTest(TestCase):
         parent_pk = self.createInlineProxyObjects()
         # Check that the current version includes the inlines.
         versions = list(get_for_object_reference(InlineTestParentModelProxy, parent_pk))
-        response = self.client.get(reverse("admin:test_app_inlinetestparentmodelproxy_revision", args=(parent_pk, versions[0].pk)))
+        response = self.client.get(reverse(
+            "admin:test_app_inlinetestparentmodelproxy_revision",
+            args=(parent_pk, versions[0].pk),
+        ))
         self.assertContains(response, "parent version2")  # Check parent model.
         self.assertContains(response, "non-generic child version 1")  # Check inline child model.
         # Check that the first version does not include the inlines.
-        response = self.client.get(reverse("admin:test_app_inlinetestparentmodelproxy_revision", args=(parent_pk, versions[1].pk)))
+        response = self.client.get(reverse(
+            "admin:test_app_inlinetestparentmodelproxy_revision",
+            args=(parent_pk, versions[1].pk),
+        ))
         self.assertContains(response, "parent version1")  # Check parent model.
         self.assertNotContains(response, "non-generic child version 1")  # Check inline child model.
 
@@ -924,7 +950,9 @@ class PatchTest(RevisionTestBase):
     def testCanGeneratePathHtml(self):
         self.assertEqual(
             generate_patch_html(self.version1, self.version2, "name"),
-            '<span>model1 instance1 version</span><del style="background:#ffe6e6;">1</del><ins style="background:#e6ffe6;">2</ins>',
+            '''<span>model1 instance1 version</span>
+            <del style="background:#ffe6e6;">1</del>
+            <ins style="background:#e6ffe6;">2</ins>''',
         )
 
 
