@@ -1,3 +1,6 @@
+import decimal
+import uuid
+
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.encoding import force_text, python_2_unicode_compatible
@@ -179,3 +182,46 @@ class InlineTestUnrelatedChildModel(models.Model):
     parent = models.ForeignKey(
         InlineTestUnrelatedParentModel, on_delete=models.CASCADE,
     )
+
+
+# Test for Various PK Types
+class ReversionTestModelPKAutoInt(models.Model):
+    name = models.CharField(max_length=100)
+
+
+class ReversionTestModelPKBigInt(models.Model):
+    id = models.BigIntegerField(primary_key=True, default=models.BigIntegerField.MAX_BIGINT)
+    name = models.CharField(max_length=100)
+
+
+class ReversionTestModelPKString(models.Model):
+    id = models.CharField(max_length=191, primary_key=True, default="NEW_ID")
+    name = models.CharField(max_length=100)
+
+
+class ReversionTestModelPKGuid(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    name = models.CharField(max_length=100)
+
+
+class ReversionTestModelPKDecimal(models.Model):
+    id = models.DecimalField(max_digits=19, decimal_places=4, primary_key=True, default=decimal.Decimal('1234.2401'))
+    name = models.CharField(max_length=100)
+
+
+class ReversionTestModelPKFloat(models.Model):
+    id = models.FloatField(primary_key=True, default=float(1234.234))
+    name = models.CharField(max_length=100)
+
+
+# Register Failure Tests
+class ReversionTestModelPKStringLarge(models.Model):
+    id = models.CharField(max_length=255, primary_key=True)
+    name = models.CharField(max_length=100)
+    pass
+
+
+class ReversionTestModelPKText(models.Model):
+    id = models.TextField(max_length=1000, primary_key=True)
+    name = models.CharField(max_length=100)
+    pass

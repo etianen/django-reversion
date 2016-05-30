@@ -1,5 +1,4 @@
 """Database models used by django-reversion."""
-
 from __future__ import unicode_literals
 
 from django.contrib.contenttypes.models import ContentType
@@ -14,7 +13,6 @@ from django.db import models, IntegrityError, transaction
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text, python_2_unicode_compatible
 
-from reversion.compat import remote_model
 from reversion.errors import RevertError
 
 
@@ -110,19 +108,6 @@ class Revision(models.Model):
         app_label = 'reversion'
 
 
-def has_int_pk(model):
-    """Tests whether the given model has an integer primary key."""
-    pk = model._meta.pk
-    return (
-        (
-            isinstance(pk, (models.IntegerField, models.AutoField)) and
-            not isinstance(pk, models.BigIntegerField)
-        ) or (
-            isinstance(pk, models.ForeignKey) and has_int_pk(remote_model(pk))
-        )
-    )
-
-
 class VersionQuerySet(models.QuerySet):
 
     def get_unique(self):
@@ -149,25 +134,19 @@ class Version(models.Model):
         help_text="The revision that contains this version.",
     )
 
-    object_id = models.TextField(
-        help_text="Primary key of the model under version control.",
-    )
-
-    object_id_int = models.IntegerField(
-        blank=True,
-        null=True,
-        db_index=True,
-        help_text="An indexed, integer version of the stored model's primary key, used for faster lookups.",
+    object_id = models.CharField(
+        max_length=191,
+        help_text="Primary key of the model under version control."
     )
 
     content_type = models.ForeignKey(
         ContentType,
         on_delete=models.CASCADE,
-        help_text="Content type of the model under version control.",
+        help_text="Content type of the model under version control."
     )
 
     # A link to the current instance, not the version stored in this Version!
-    object = GenericForeignKey()
+    object = GenericForeignKey(ct_field='content_type', fk_field='object_id')
 
     format = models.CharField(
         max_length=255,
@@ -234,3 +213,6 @@ class Version(models.Model):
 
     class Meta:
         app_label = 'reversion'
+        index_together = [
+            ["object_id", "content_type"],
+        ]

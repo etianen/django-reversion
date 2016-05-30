@@ -102,16 +102,10 @@ class VersionAdapter(object):
 
     def get_version_data(self, obj, db=None):
         """Creates the version data to be saved to the version model."""
-        from reversion.models import has_int_pk
         object_id = force_text(obj.pk)
         content_type = ContentType.objects.db_manager(db).get_for_model(obj)
-        if has_int_pk(obj.__class__):
-            object_id_int = int(obj.pk)
-        else:
-            object_id_int = None
         return {
             "object_id": object_id,
-            "object_id_int": object_id_int,
             "content_type": content_type,
             "format": self.get_serialization_format(),
             "serialized_data": self.get_serialized_data(obj),
@@ -399,6 +393,19 @@ class RevisionManager(object):
             raise RegistrationError("{model} has already been registered with django-reversion".format(
                 model=model,
             ))
+        # Prevent incompatible registrations
+        pk_field_type = model._meta.pk.get_internal_type()
+        pk_max_length = model._meta.pk.max_length
+        if pk_field_type in ('TextField',):
+            raise RegistrationError("{model} has an incompatible primary key type '{field_type}' with django-reversion".format(
+                model=model,
+                field_type=pk_field_type
+            ))
+        if pk_field_type == models.CharField and pk_max_length > 191:
+            raise RegistrationError("{model} has an incompatible primary key length (>191) '{field_length}' with django-reversion".format(
+                model=model,
+                field_length=pk_max_length
+            ))
         # Perform any customization.
         if field_overrides:
             adapter_cls = type(adapter_cls.__name__, (adapter_cls,), field_overrides)
@@ -540,21 +547,12 @@ class RevisionManager(object):
 
         The results are returned with the most recent versions first.
         """
-        from reversion.models import has_int_pk
         content_type = ContentType.objects.db_manager(db).get_for_model(model)
-        versions = self._get_versions(db).filter(
+        object_id = force_text(object_id)
+        return self._get_versions(db).filter(
             content_type=content_type,
-        ).select_related("revision")
-        if has_int_pk(model):
-            # We can do this as a fast, indexed lookup.
-            object_id_int = int(object_id)
-            versions = versions.filter(object_id_int=object_id_int)
-        else:
-            # We can't do this using an index. Never mind.
-            object_id = force_text(object_id)
-            versions = versions.filter(object_id=object_id)
-        versions = versions.order_by("-pk")
-        return versions
+            object_id=object_id
+        ).select_related("revision").order_by("-pk")
 
     def get_for_object(self, obj, db=None):
         """
@@ -587,38 +585,28 @@ class RevisionManager(object):
 
         The results are returned with the most recent versions first.
         """
-        from reversion.models import has_int_pk
         model_db = model_db or db
         content_type = ContentType.objects.db_manager(db).get_for_model(model_class)
-        live_pk_queryset = model_class._default_manager.db_manager(model_db).all().values_list("pk", flat=True)
-        versioned_objs = self._get_versions(db).filter(
-            content_type=content_type,
-        )
-        if has_int_pk(model_class):
-            # If the model and version data are in different databases, decouple the queries.
-            if model_db != db:
-                live_pk_queryset = list(live_pk_queryset.iterator())
-            # We can do this as a fast, in-database join.
-            deleted_version_pks = versioned_objs.exclude(
-                object_id_int__in=live_pk_queryset
-            ).values_list("object_id_int")
-        else:
-            # This join has to be done as two separate queries.
-            deleted_version_pks = versioned_objs.exclude(
-                object_id__in=list(live_pk_queryset.iterator())
-            ).values_list("object_id")
-        deleted_version_pks = deleted_version_pks.annotate(
-            latest_pk=Max("pk")
-        ).values_list("latest_pk", flat=True)
+
+        live_pk_queryset = model_class._default_manager.db_manager(model_db).values_list("pk", flat=True)
+
+        deleted_version_pks = self._get_versions(db).filter(
+            content_type=content_type
+        ).exclude(
+            object_id__in=list(live_pk_queryset.iterator())
+        ).values_list("object_id")
+
+        deleted_version_pks = deleted_version_pks.annotate(latest_pk=Max("pk")).values_list("latest_pk", flat=True)
+
         # HACK: MySQL deals extremely badly with this as a subquery, and can hang infinitely.
         # TODO: If a version is identified where this bug no longer applies, we can add a version specifier.
         if connection.vendor == "mysql":  # pragma: no cover
             deleted_version_pks = list(deleted_version_pks)
+
         # Return the deleted versions!
         return self._get_versions(db).filter(pk__in=deleted_version_pks).order_by("-pk")
 
     # Signal receivers.
-
     def _signal_receiver(self, instance, signal, **kwargs):
         """Adds registered models to the current revision, if any."""
         if self._revision_context_manager.is_active() and not self._revision_context_manager.is_managing_manually():
