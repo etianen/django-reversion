@@ -15,7 +15,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.signals import request_finished
-from django.db import models, connection, transaction
+from django.db import models, transaction
 from django.db.models import Q, Max
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save
@@ -102,16 +102,10 @@ class VersionAdapter(object):
 
     def get_version_data(self, obj, db=None):
         """Creates the version data to be saved to the version model."""
-        from reversion.models import has_int_pk
         object_id = force_text(obj.pk)
         content_type = ContentType.objects.db_manager(db).get_for_model(obj)
-        if has_int_pk(obj.__class__):
-            object_id_int = int(obj.pk)
-        else:
-            object_id_int = None
         return {
             "object_id": object_id,
-            "object_id_int": object_id_int,
             "content_type": content_type,
             "format": self.get_serialization_format(),
             "serialized_data": self.get_serialized_data(obj),
@@ -540,20 +534,11 @@ class RevisionManager(object):
 
         The results are returned with the most recent versions first.
         """
-        from reversion.models import has_int_pk
         content_type = ContentType.objects.db_manager(db).get_for_model(model)
         versions = self._get_versions(db).filter(
             content_type=content_type,
-        ).select_related("revision")
-        if has_int_pk(model):
-            # We can do this as a fast, indexed lookup.
-            object_id_int = int(object_id)
-            versions = versions.filter(object_id_int=object_id_int)
-        else:
-            # We can't do this using an index. Never mind.
-            object_id = force_text(object_id)
-            versions = versions.filter(object_id=object_id)
-        versions = versions.order_by("-pk")
+            object_id=object_id,
+        ).select_related("revision").order_by("-pk")
         return versions
 
     def get_for_object(self, obj, db=None):
@@ -587,35 +572,18 @@ class RevisionManager(object):
 
         The results are returned with the most recent versions first.
         """
-        from reversion.models import has_int_pk
         model_db = model_db or db
         content_type = ContentType.objects.db_manager(db).get_for_model(model_class)
-        live_pk_queryset = model_class._default_manager.db_manager(model_db).all().values_list("pk", flat=True)
-        versioned_objs = self._get_versions(db).filter(
-            content_type=content_type,
-        )
-        if has_int_pk(model_class):
-            # If the model and version data are in different databases, decouple the queries.
-            if model_db != db:
-                live_pk_queryset = list(live_pk_queryset.iterator())
-            # We can do this as a fast, in-database join.
-            deleted_version_pks = versioned_objs.exclude(
-                object_id_int__in=live_pk_queryset
-            ).values_list("object_id_int")
-        else:
-            # This join has to be done as two separate queries.
-            deleted_version_pks = versioned_objs.exclude(
-                object_id__in=list(live_pk_queryset.iterator())
-            ).values_list("object_id")
-        deleted_version_pks = deleted_version_pks.annotate(
-            latest_pk=Max("pk")
-        ).values_list("latest_pk", flat=True)
-        # HACK: MySQL deals extremely badly with this as a subquery, and can hang infinitely.
-        # TODO: If a version is identified where this bug no longer applies, we can add a version specifier.
-        if connection.vendor == "mysql":  # pragma: no cover
-            deleted_version_pks = list(deleted_version_pks)
         # Return the deleted versions!
-        return self._get_versions(db).filter(pk__in=deleted_version_pks).order_by("-pk")
+        return self._get_versions(db).filter(
+            pk__reversion_in=(self._get_versions(db).filter(
+                content_type=content_type,
+            ).exclude(
+                object_id__reversion_in=(model_class._default_manager.using(model_db), model_class._meta.pk.name),
+            ).values_list("object_id").annotate(
+                id=Max("id"),
+            ), "id")
+        ).order_by("-id")
 
     # Signal receivers.
 
