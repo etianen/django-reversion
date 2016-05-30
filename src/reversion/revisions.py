@@ -16,7 +16,7 @@ from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.signals import request_finished
 from django.db import models, connection, transaction
-from django.db.models import Q, Max, CharField
+from django.db.models import Q, Max
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save
 from django.utils.encoding import force_text
@@ -24,7 +24,6 @@ from django.utils.encoding import force_text
 from reversion.compat import remote_field
 from reversion.signals import pre_revision_commit, post_revision_commit
 from reversion.errors import RevisionManagementError, RegistrationError
-from reversion.functions import ReversionCast
 
 
 class VersionAdapter(object):
@@ -394,6 +393,19 @@ class RevisionManager(object):
             raise RegistrationError("{model} has already been registered with django-reversion".format(
                 model=model,
             ))
+        # Prevent incompatible registrations
+        pk_field_type = model._meta.pk.get_internal_type()
+        pk_max_length = model._meta.pk.max_length
+        if pk_field_type in ('TextField',):
+            raise RegistrationError("{model} has an incompatible primary key type '{field_type}' with django-reversion".format(
+                model=model,
+                field_type=pk_field_type
+            ))
+        if pk_field_type == models.CharField and pk_max_length > 191:
+            raise RegistrationError("{model} has an incompatible primary key length (>191) '{field_length}' with django-reversion".format(
+                model=model,
+                field_length=pk_max_length
+            ))
         # Perform any customization.
         if field_overrides:
             adapter_cls = type(adapter_cls.__name__, (adapter_cls,), field_overrides)
@@ -575,20 +587,13 @@ class RevisionManager(object):
         """
         model_db = model_db or db
         content_type = ContentType.objects.db_manager(db).get_for_model(model_class)
-        pk_field = model_class._meta.pk
 
-        live_pk_queryset = model_class._default_manager.db_manager(model_db).all().annotate(
-            pk_str=ReversionCast(pk_field.name, CharField(max_length=191))  # Force PK field as CHAR type
-        ).values_list("pk_str", flat=True)
-
-        # If the model and version data are in different databases, decouple the queries.
-        if model_db != db:
-            live_pk_queryset = list(live_pk_queryset.iterator())
+        live_pk_queryset = model_class._default_manager.db_manager(model_db).values_list("pk", flat=True)
 
         deleted_version_pks = self._get_versions(db).filter(
             content_type=content_type
         ).exclude(
-            object_id__in=live_pk_queryset
+            object_id__in=list(live_pk_queryset.iterator())
         ).values_list("object_id")
 
         deleted_version_pks = deleted_version_pks.annotate(latest_pk=Max("pk")).values_list("latest_pk", flat=True)

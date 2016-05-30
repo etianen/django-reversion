@@ -12,7 +12,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import reset_queries
 from django.utils import translation
 from django.utils.encoding import force_text
-from reversion.functions import ReversionCast
 
 from reversion.revisions import default_revision_manager
 from reversion.models import Version
@@ -121,15 +120,16 @@ class Command(BaseCommand):
             created_count = 0
             pk_field = model_class._meta.pk
             content_type = ContentType.objects.db_manager(database).get_for_model(model_class)
-            versioned_pk_queryset = Version.objects.using(database).filter(content_type=content_type).all()
 
-            live_objs = model_class._default_manager.using(database).all()
-
-            # We can do this as a fast database join!
-            live_objs = live_objs.exclude(
-                pk__in=versioned_pk_queryset.annotate(
-                    object_typecast=ReversionCast("object_id", pk_field)
-                ).values_list("object_typecast", flat=True)
+            # In-Memory Join due to cross database and cross-type
+            live_objs = model_class._default_manager.using(database).exclude(
+                pk__in=list(
+                    Version.objects.using(database).filter(
+                        content_type=content_type
+                    ).values_list(
+                        "object_id", flat=True
+                    ).iterator()
+                )
             )
 
             # Save all the versions.

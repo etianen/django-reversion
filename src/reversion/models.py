@@ -1,5 +1,4 @@
 """Database models used by django-reversion."""
-
 from __future__ import unicode_literals
 
 from django.contrib.contenttypes.models import ContentType
@@ -14,7 +13,6 @@ from django.db import models, IntegrityError, transaction
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text, python_2_unicode_compatible
 
-from reversion.compat import remote_model
 from reversion.errors import RevertError
 
 
@@ -144,7 +142,7 @@ class Version(models.Model):
     content_type = models.ForeignKey(
         ContentType,
         on_delete=models.CASCADE,
-        help_text="Content type of the model under version control.", db_index=False
+        help_text="Content type of the model under version control."
     )
 
     # A link to the current instance, not the version stored in this Version!
@@ -216,5 +214,5 @@ class Version(models.Model):
     class Meta:
         app_label = 'reversion'
         index_together = [
-            ["content_type", "object_id"],
+            ["object_id", "content_type"],
         ]

@@ -15,11 +15,6 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterField(
             model_name='version',
-            name='content_type',
-            field=models.ForeignKey(db_index=False, help_text='Content type of the model under version control.', on_delete=django.db.models.deletion.CASCADE, to='contenttypes.ContentType'),
-        ),
-        migrations.AlterField(
-            model_name='version',
             name='object_id',
             field=models.CharField(help_text='Primary key of the model under version control.', max_length=191),
         ),
@@ -29,6 +24,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterIndexTogether(
             name='version',
-            index_together=set([('content_type', 'object_id')]),
+            index_together=set([('object_id', 'content_type')]),
         ),
     ]

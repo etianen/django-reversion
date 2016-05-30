@@ -59,6 +59,14 @@ from test_app.models import (
     InlineTestChildModel,
     InlineTestChildGenericModel,
     InlineTestChildModelProxy,
+    ReversionTestModelPKAutoInt,
+    ReversionTestModelPKBigInt,
+    ReversionTestModelPKString,
+    ReversionTestModelPKGuid,
+    ReversionTestModelPKDecimal,
+    ReversionTestModelPKFloat,
+    ReversionTestModelPKStringLarge,
+    ReversionTestModelPKText
 )
 from test_app import admin  # noqa. Force early registration of all admin models.
 
@@ -125,6 +133,11 @@ class RegistrationTest(TestCase):
         self.assertRaises(RegistrationError, lambda: isinstance(get_adapter(ReversionTestModel3)))
         self.assertFalse(ReversionTestModel3 in default_revision_manager._signals)
         self.assertFalse(ReversionTestModel3 in default_revision_manager._eager_signals)
+
+    def check_registration_failures(self):
+        # Register the model and test.
+        self.assertRaises(RegistrationError, lambda: register(ReversionTestModelPKText))
+        self.assertRaises(RegistrationError, lambda: register(ReversionTestModelPKStringLarge))
 
 
 class ReversionTestBase(TestCase):
@@ -970,3 +983,33 @@ class DeleteUserTest(RevisionTestBase):
         self.user.delete()
         self.assertEqual(Revision.objects.count(), 1)
         self.assertEqual(Version.objects.count(), 4)
+
+
+# Test Various PK Types
+class PrimaryKeyDataTypesTest(TestCase):
+
+    def setUp(self):
+        self.table_types = [
+            ReversionTestModelPKAutoInt,
+            ReversionTestModelPKBigInt,
+            ReversionTestModelPKString,
+            ReversionTestModelPKGuid,
+            ReversionTestModelPKDecimal,
+            ReversionTestModelPKFloat
+        ]
+
+        for table_type in self.table_types:
+            register(table_type)
+
+    def testPKs(self):
+
+        for table_type in self.table_types:
+            self.assertTrue(is_registered(table_type))
+            with create_revision():
+                record = table_type.objects.create(name="Testing")
+            versions = get_for_object(record)
+            self.assertEqual(versions.count(), 1)
+
+    def tearDown(self):
+        for table_type in self.table_types:
+            unregister(table_type)
