@@ -1,35 +1,51 @@
 language: python
 sudo: false
-python:
-  - 2.7
-  - 3.4
-  - 3.5
 cache:
   directories:
     - $HOME/.cache/pip
 env:
-  - DJANGO=django==1.8.8
-  - DJANGO=django==1.8.8 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
-  - DJANGO=django==1.8.8 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-  - DJANGO=django==1.9.2
-  - DJANGO=django==1.9.2 DB_ENGINE="django.db.backends.postgresql" DB_NAME="test_project" DB_USER="postgres"
-  - DJANGO=django==1.9.2 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+  matrix:
+    - TOX_ENV=py27-django-18-postgres
+    - TOX_ENV=py27-django-18-mysql
+    - TOX_ENV=py27-django-18-sqlite
+    - TOX_ENV=py27-django-19-postgres
+    - TOX_ENV=py27-django-19-mysql
+    - TOX_ENV=py27-django-19-sqlite
+    - TOX_ENV=py27-django-110-postgres
+    - TOX_ENV=py27-django-110-mysql
+    - TOX_ENV=py27-django-110-sqlite
+    - TOX_ENV=py34-django-18-postgres
+    - TOX_ENV=py34-django-18-mysql
+    - TOX_ENV=py34-django-18-sqlite
+    - TOX_ENV=py34-django-19-postgres
+    - TOX_ENV=py34-django-19-mysql
+    - TOX_ENV=py34-django-19-sqlite
+    - TOX_ENV=py34-django-110-postgres
+    - TOX_ENV=py34-django-110-mysql
+    - TOX_ENV=py34-django-110-sqlite
+    - TOX_ENV=py35-django-18-postgres
+    - TOX_ENV=py35-django-18-mysql
+    - TOX_ENV=py35-django-18-sqlite
+    - TOX_ENV=py35-django-19-postgres
+    - TOX_ENV=py35-django-19-mysql
+    - TOX_ENV=py35-django-19-sqlite
+    - TOX_ENV=py35-django-110-postgres
+    - TOX_ENV=py35-django-110-mysql
+    - TOX_ENV=py35-django-110-sqlite
+  global:
+    - PYTHONWARNINGS=default,ignore::PendingDeprecationWarning,ignore::ResourceWarning
+    - DJANGO_DATABASE_USER_POSTGRES=postgres
+    - DJANGO_DATABASE_USER_MYSQL=travis
 matrix:
   fast_finish: true
 services:
   - postgresql
   - mysql
 install:
-  - travis_retry pip install $DJANGO
-  - if [[ "$DB_ENGINE" == "django.db.backends.postgresql" ]] ; then travis_retry pip install psycopg2; fi
-  - if [[ "$DB_ENGINE" == "django.db.backends.postgresql_psycopg2" ]] ; then travis_retry pip install psycopg2; fi
-  - if [[ "$DB_ENGINE" == "django.db.backends.mysql" ]] ; then travis_retry pip install mysqlclient ; fi
-  - pip install -e .[test,diff]
+  - pip install tox
 before_script:
-  - if [[ "$DB_ENGINE" == "django.db.backends.mysql" ]] ; then mysql -e 'create database test_project'; fi
-  - if [[ "$DB_ENGINE" == "django.db.backends.postgresql_psycopg2" ]] ; then psql -c 'create database test_project;' -U postgres; fi
-  - if [[ "$DB_ENGINE" == "django.db.backends.postgresql" ]] ; then psql -c 'create database test_project;' -U postgres; fi
-script: coverage run src/tests/manage.py test src/tests/test_reversion/
-after_script: coverage report
+  - mysql -e 'create database test_project'
+  - psql -c 'create database test_project;' -U postgres;
+script: tox
 notifications:
   email: false

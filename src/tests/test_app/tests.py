@@ -45,7 +45,7 @@ from reversion.models import Revision, Version
 from reversion.errors import RegistrationError
 from reversion.signals import pre_revision_commit, post_revision_commit
 
-from test_reversion.models import (
+from test_app.models import (
     ReversionTestModel1,
     ReversionTestModel1Child,
     ReversionTestModel2,
@@ -61,7 +61,7 @@ from test_reversion.models import (
     InlineTestChildGenericModel,
     InlineTestChildModelProxy,
 )
-from test_reversion import admin  # Force early registration of all admin models.
+from test_app import admin  # Force early registration of all admin models.
 
 User = get_user_model()
 
@@ -641,15 +641,15 @@ class CreateInitialRevisionsTest(ReversionTestBase):
         self.assertEqual(Version.objects.count(), vercount)
 
     def testCreateInitialRevisionsSpecificApps(self):
-        call_command("createinitialrevisions", "test_reversion")
+        call_command("createinitialrevisions", "test_app")
         self.assertEqual(Revision.objects.count(), 6)
         self.assertEqual(Version.objects.count(), 6)
 
     def testCreateInitialRevisionsSpecificModels(self):
-        call_command("createinitialrevisions", "test_reversion.ReversionTestModel1")
+        call_command("createinitialrevisions", "test_app.ReversionTestModel1")
         self.assertEqual(Revision.objects.count(), 2)
         self.assertEqual(Version.objects.count(), 2)
-        call_command("createinitialrevisions", "test_reversion.ReversionTestModel2")
+        call_command("createinitialrevisions", "test_app.ReversionTestModel2")
         self.assertEqual(Revision.objects.count(), 4)
         self.assertEqual(Version.objects.count(), 4)
 
@@ -663,7 +663,7 @@ class DeleteRevisionsTest(ReversionTestBase):
     def testDeleteRevisions(self):
         call_command("createinitialrevisions")
         self.assertGreater(Version.objects.count(), 4)
-        call_command("deleterevisions", "test_reversion", confirmation=False, verbosity=0)
+        call_command("deleterevisions", "test_app", confirmation=False, verbosity=0)
         self.assertEqual(Version.objects.count(), 0)
 
 
@@ -716,13 +716,13 @@ class VersionAdminTest(TestCase):
         self.assertTrue(is_registered(InlineTestParentModel))
 
     def testChangelist(self):
-        response = self.client.get("/admin/test_reversion/childtestadminmodel/")
+        response = self.client.get("/admin/test_app/childtestadminmodel/")
         self.assertEqual(response.status_code, 200)
 
     def testRevisionSavedOnPost(self):
         self.assertEqual(ChildTestAdminModel.objects.count(), 0)
         # Create an instance via the admin.
-        response = self.client.post("/admin/test_reversion/childtestadminmodel/add/", {
+        response = self.client.post("/admin/test_app/childtestadminmodel/add/", {
             "parent_name": "parent instance1 version1",
             "child_name": "child instance1 version1",
             "_continue": 1,
@@ -736,7 +736,7 @@ class VersionAdminTest(TestCase):
         self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version1")
         self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version1")
         # Save a new version.
-        response = self.client.post(reverse("admin:test_reversion_childtestadminmodel_change", args=(obj_pk,)), {
+        response = self.client.post(reverse("admin:test_app_childtestadminmodel_change", args=(obj_pk,)), {
             "parent_name": "parent instance1 version2",
             "child_name": "child instance1 version2",
             "_continue": 1,
@@ -748,11 +748,11 @@ class VersionAdminTest(TestCase):
         self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version2")
         self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version2")
         # Check that the versions can be listed.
-        response = self.client.get(reverse("admin:test_reversion_childtestadminmodel_history", args=(obj_pk,)))
+        response = self.client.get(reverse("admin:test_app_childtestadminmodel_history", args=(obj_pk,)))
         self.assertContains(response, "child instance1 version2")
         self.assertContains(response, "child instance1 version1")
         # Check that version data can be loaded.
-        response = self.client.get(reverse("admin:test_reversion_childtestadminmodel_revision", args=(obj_pk, versions[1].pk)))
+        response = self.client.get(reverse("admin:test_app_childtestadminmodel_revision", args=(obj_pk, versions[1].pk)))
         self.assertContains(response, "parent instance1 version1")
         self.assertContains(response, "child instance1 version1")
         # Check that loading the version data didn't roll it back!
@@ -761,7 +761,7 @@ class VersionAdminTest(TestCase):
         self.assertEqual(obj.parent_name, "parent instance1 version2")
         self.assertEqual(get_for_object(obj).count(), 2)
         # Check that a version can be rolled back.
-        response = self.client.post(reverse("admin:test_reversion_childtestadminmodel_revision", args=(obj_pk, versions[1].pk)), {
+        response = self.client.post(reverse("admin:test_app_childtestadminmodel_revision", args=(obj_pk, versions[1].pk)), {
             "parent_name": "parent instance1 version3",
             "child_name": "child instance1 version3",
         })
@@ -777,14 +777,14 @@ class VersionAdminTest(TestCase):
         self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version3")
         # Check that a deleted version can be viewed in the list.
         obj.delete()
-        response = self.client.get("/admin/test_reversion/childtestadminmodel/recover/")
+        response = self.client.get("/admin/test_app/childtestadminmodel/recover/")
         self.assertContains(response, "child instance1 version3")
         # Check that a delete version can be viewed in detail.
-        response = self.client.get(reverse("admin:test_reversion_childtestadminmodel_recover", args=(versions[0].pk,)))
+        response = self.client.get(reverse("admin:test_app_childtestadminmodel_recover", args=(versions[0].pk,)))
         self.assertContains(response, "parent instance1 version3")
         self.assertContains(response, "child instance1 version3")
         # Check that a deleted version can be recovered.
-        response = self.client.post(reverse("admin:test_reversion_childtestadminmodel_recover", args=(versions[0].pk,)), {
+        response = self.client.post(reverse("admin:test_app_childtestadminmodel_recover", args=(versions[0].pk,)), {
             "parent_name": "parent instance1 version4",
             "child_name": "child instance1 version4",
         })
@@ -800,26 +800,26 @@ class VersionAdminTest(TestCase):
 
     def createInlineObjects(self):
         # Create an instance via the admin without a child.
-        response = self.client.post(reverse("admin:test_reversion_inlinetestparentmodel_add"), {
+        response = self.client.post(reverse("admin:test_app_inlinetestparentmodel_add"), {
             "name": "parent version1",
             "children-TOTAL_FORMS": "0",
             "children-INITIAL_FORMS": "0",
-            "test_reversion-inlinetestchildgenericmodel-content_type-object_id-TOTAL_FORMS": "0",
-            "test_reversion-inlinetestchildgenericmodel-content_type-object_id-INITIAL_FORMS": "0",
+            "test_app-inlinetestchildgenericmodel-content_type-object_id-TOTAL_FORMS": "0",
+            "test_app-inlinetestchildgenericmodel-content_type-object_id-INITIAL_FORMS": "0",
             "_continue": 1,
             })
         self.assertEqual(response.status_code, 302)
         parent_pk = resolve(response["Location"].replace("http://testserver", "")).args[0]
         parent = InlineTestParentModel.objects.get(id=parent_pk)
         # Update  instance via the admin to add a child
-        response = self.client.post(reverse("admin:test_reversion_inlinetestparentmodel_change", args=(parent_pk,)), {
+        response = self.client.post(reverse("admin:test_app_inlinetestparentmodel_change", args=(parent_pk,)), {
             "name": "parent version2",
             "children-TOTAL_FORMS": "1",
             "children-INITIAL_FORMS": "0",
             "children-0-name": "non-generic child version 1",
-            "test_reversion-inlinetestchildgenericmodel-content_type-object_id-TOTAL_FORMS": "1",
-            "test_reversion-inlinetestchildgenericmodel-content_type-object_id-INITIAL_FORMS": "0",
-            "test_reversion-inlinetestchildgenericmodel-content_type-object_id-0-name": "generic child version 1",
+            "test_app-inlinetestchildgenericmodel-content_type-object_id-TOTAL_FORMS": "1",
+            "test_app-inlinetestchildgenericmodel-content_type-object_id-INITIAL_FORMS": "0",
+            "test_app-inlinetestchildgenericmodel-content_type-object_id-0-name": "generic child version 1",
             "_continue": 1,
             })
         self.assertEqual(response.status_code, 302)
@@ -840,19 +840,19 @@ class VersionAdminTest(TestCase):
         parent_pk = self.createInlineObjects()
         # Check that the current version includes the inlines.
         versions = list(get_for_object_reference(InlineTestParentModel, parent_pk))
-        response = self.client.get(reverse("admin:test_reversion_inlinetestparentmodel_revision", args=(parent_pk, versions[0].pk)))
+        response = self.client.get(reverse("admin:test_app_inlinetestparentmodel_revision", args=(parent_pk, versions[0].pk)))
         self.assertContains(response, "parent version2")  # Check parent model.
         self.assertContains(response, "non-generic child version 1")  # Check inline child model.
         self.assertContains(response, "generic child version 1")  # Check inline generic child model.
         # Check that the first version does not include the inlines.
-        response = self.client.get(reverse("admin:test_reversion_inlinetestparentmodel_revision", args=(parent_pk, versions[1].pk)))
+        response = self.client.get(reverse("admin:test_app_inlinetestparentmodel_revision", args=(parent_pk, versions[1].pk)))
         self.assertContains(response, "parent version1")  # Check parent model.
         self.assertNotContains(response, "non-generic child version 1")  # Check inline child model.
         self.assertNotContains(response, "generic child version 1")  # Check inline generic child model.
 
     def createInlineProxyObjects(self):
         # Create an instance via the admin without a child.
-        response = self.client.post(reverse("admin:test_reversion_inlinetestparentmodelproxy_add"), {
+        response = self.client.post(reverse("admin:test_app_inlinetestparentmodelproxy_add"), {
             "name": "parent version1",
             "children-TOTAL_FORMS": "0",
             "children-INITIAL_FORMS": "0",
@@ -862,7 +862,7 @@ class VersionAdminTest(TestCase):
         parent_pk = resolve(response["Location"].replace("http://testserver", "")).args[0]
         parent = InlineTestParentModelProxy.objects.get(id=parent_pk)
         # Update  instance via the admin to add a child
-        response = self.client.post(reverse("admin:test_reversion_inlinetestparentmodelproxy_change", args=(parent_pk,)), {
+        response = self.client.post(reverse("admin:test_app_inlinetestparentmodelproxy_change", args=(parent_pk,)), {
             "name": "parent version2",
             "children-TOTAL_FORMS": "1",
             "children-INITIAL_FORMS": "0",
@@ -885,11 +885,11 @@ class VersionAdminTest(TestCase):
         parent_pk = self.createInlineProxyObjects()
         # Check that the current version includes the inlines.
         versions = list(get_for_object_reference(InlineTestParentModelProxy, parent_pk))
-        response = self.client.get(reverse("admin:test_reversion_inlinetestparentmodelproxy_revision", args=(parent_pk, versions[0].pk)))
+        response = self.client.get(reverse("admin:test_app_inlinetestparentmodelproxy_revision", args=(parent_pk, versions[0].pk)))
         self.assertContains(response, "parent version2")  # Check parent model.
         self.assertContains(response, "non-generic child version 1")  # Check inline child model.
         # Check that the first version does not include the inlines.
-        response = self.client.get(reverse("admin:test_reversion_inlinetestparentmodelproxy_revision", args=(parent_pk, versions[1].pk)))
+        response = self.client.get(reverse("admin:test_app_inlinetestparentmodelproxy_revision", args=(parent_pk, versions[1].pk)))
         self.assertContains(response, "parent version1")  # Check parent model.
         self.assertNotContains(response, "non-generic child version 1")  # Check inline child model.
 
@@ -897,7 +897,7 @@ class VersionAdminTest(TestCase):
 # Tests for optional patch generation methods.
 
 try:
-    from helpers import generate_patch, generate_patch_html
+    from reversion.helpers import generate_patch, generate_patch_html
 except ImportError:  # pragma: no cover
     can_test_patch = False
 else:

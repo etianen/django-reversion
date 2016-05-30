@@ -6,7 +6,7 @@ except ImportError:  # Django < 1.9  pragma: no cover
 
 from reversion.admin import VersionAdmin
 
-from test_reversion.models import (
+from test_app.models import (
     ChildTestAdminModel,
     InlineTestChildModel,
     InlineTestChildModelProxy,

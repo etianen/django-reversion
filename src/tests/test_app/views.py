@@ -4,7 +4,7 @@ from django.conf import settings
 
 from reversion.middleware import RevisionMiddleware
 
-from test_reversion.models import ReversionTestModel1, ReversionTestModel2
+from test_app.models import ReversionTestModel1, ReversionTestModel2
 
 
 # RevisionMiddleware is tested by applying it as a decorator to various view

@@ -14,5 +14,6 @@ exclude_lines =
 omit =
     */venv/*
     */virtualenv/*
+    */.tox/*
 
 show_missing = True

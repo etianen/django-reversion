@@ -57,7 +57,7 @@ commands:
 ::
 
     $ pip install -e .[test]
-    $ coverage run src/tests/manage.py test src/tests/test_reversion/
+    $ tox
 
 The django-reversion project is built on every push with `Travis CI <https://travis-ci.org/etianen/django-reversion>`_.
 

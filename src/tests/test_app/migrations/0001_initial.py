@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import models, migrations
-import test_reversion.models
+import test_app.models
 
 
 class Migration(migrations.Migration):
@@ -76,12 +76,12 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='ChildTestAdminModel',
             fields=[
-                ('parenttestadminmodel_ptr', models.OneToOneField(parent_link=True, to='test_reversion.ParentTestAdminModel', auto_created=True, serialize=False, primary_key=True)),
+                ('parenttestadminmodel_ptr', models.OneToOneField(parent_link=True, to='test_app.ParentTestAdminModel', auto_created=True, serialize=False, primary_key=True)),
                 ('child_name', models.CharField(max_length=200)),
             ],
             options={
             },
-            bases=('test_reversion.parenttestadminmodel',),
+            bases=('test_app.parenttestadminmodel',),
         ),
         migrations.CreateModel(
             name='ReversionTestModel1',
@@ -97,18 +97,18 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='ReversionTestModel1Child',
             fields=[
-                ('reversiontestmodel1_ptr', models.OneToOneField(parent_link=True, to='test_reversion.ReversionTestModel1', auto_created=True, serialize=False, primary_key=True)),
+                ('reversiontestmodel1_ptr', models.OneToOneField(parent_link=True, to='test_app.ReversionTestModel1', auto_created=True, serialize=False, primary_key=True)),
             ],
             options={
                 'abstract': False,
             },
-            bases=('test_reversion.reversiontestmodel1',),
+            bases=('test_app.reversiontestmodel1',),
         ),
         migrations.CreateModel(
             name='ReversionTestModel2',
             fields=[
                 ('name', models.CharField(max_length=100)),
-                ('id', models.CharField(serialize=False, primary_key=True, default=test_reversion.models.get_str_pk, max_length=100)),
+                ('id', models.CharField(serialize=False, primary_key=True, default=test_app.models.get_str_pk, max_length=100)),
             ],
             options={
                 'abstract': False,
@@ -142,8 +142,8 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, serialize=False, verbose_name='ID', primary_key=True)),
                 ('name', models.CharField(max_length=100)),
-                ('test_model_1', models.ForeignKey(to='test_reversion.ReversionTestModel1')),
-                ('test_model_2s', models.ManyToManyField(to='test_reversion.ReversionTestModel2')),
+                ('test_model_1', models.ForeignKey(to='test_app.ReversionTestModel1')),
+                ('test_model_2s', models.ManyToManyField(to='test_app.ReversionTestModel2')),
             ],
             options={
                 'abstract': False,
@@ -153,13 +153,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='inlinetestunrelatedchildmodel',
             name='parent',
-            field=models.ForeignKey(to='test_reversion.InlineTestUnrelatedParentModel'),
+            field=models.ForeignKey(to='test_app.InlineTestUnrelatedParentModel'),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='inlinetestchildmodel',
             name='parent',
-            field=models.ForeignKey(to='test_reversion.InlineTestParentModel', related_name='children'),
+            field=models.ForeignKey(to='test_app.InlineTestParentModel', related_name='children'),
             preserve_default=True,
         ),
         migrations.CreateModel(
@@ -169,6 +169,6 @@ class Migration(migrations.Migration):
             options={
                 'proxy': True,
             },
-            bases=('test_reversion.reversiontestmodel1',),
+            bases=('test_app.reversiontestmodel1',),
         ),
     ]
