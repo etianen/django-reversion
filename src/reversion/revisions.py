@@ -20,6 +20,7 @@ from django.db.models.query import QuerySet
 from django.db.models.signals import post_save
 from django.utils.encoding import force_text
 
+from reversion.compat import remote_field
 from reversion.signals import pre_revision_commit, post_revision_commit
 from reversion.errors import RevisionManagementError, RegistrationError
 
@@ -50,7 +51,7 @@ class VersionAdapter(object):
         fields = self.fields or (field.name for field in opts.local_fields + opts.local_many_to_many)
         fields = (opts.get_field(field) for field in fields if not field in self.exclude)
         for field in fields:
-            if field.rel:
+            if remote_field(field):
                 yield field.name
             else:
                 yield field.attname
@@ -564,14 +565,9 @@ class RevisionManager(object):
     def get_for_date(self, object, date, db=None):
         """Returns the latest version of an object for the given date."""
         from reversion.models import Version
-        versions = self.get_for_object(object, db)
-        versions = versions.filter(revision__date_created__lte=date)
-        try:
-            version = versions[0]
-        except IndexError:
-            raise Version.DoesNotExist
-        else:
-            return version
+        return (self.get_for_object(object, db)
+                .filter(revision__date_created__lte=date)[:1]
+                .get())
 
     def get_deleted(self, model_class, db=None, model_db=None):
         """

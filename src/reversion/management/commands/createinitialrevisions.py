@@ -121,7 +121,7 @@ class Command(BaseCommand):
                     pk__in = list(versioned_pk_queryset.values_list("object_id", flat=True).iterator())
                 )
             # Save all the versions.
-            ids = list(live_objs.values_list(model_class._meta.pk.name, flat=True))
+            ids = list(live_objs.values_list(model_class._meta.pk.name, flat=True).order_by())
             total = len(ids)
             for i in range(0, total, batch_size):
                 chunked_ids = ids[i:i+batch_size]

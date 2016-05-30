@@ -1,6 +1,8 @@
 from __future__ import unicode_literals
 
-import datetime, operator
+import datetime
+import operator
+import warnings
 from functools import reduce
 
 from django.core.management.base import BaseCommand
@@ -57,11 +59,16 @@ Examples:
             action="store_true",
             default=False,
             help="Force the deletion of revisions even if an other app/model is involved")
+        parser.add_argument("--noinput", "--no-input",
+            action="store_false",
+            dest="interactive",
+            default=True,
+            help="Do NOT prompt the user for input of any kind before deleting revisions."),
         parser.add_argument("-c", "--no-confirmation",
             action="store_false",
             dest="confirmation",
             default=True,
-            help="Disable the confirmation before deleting revisions")
+            help="Disable the confirmation before deleting revisions (DEPRECATED)")
         parser.add_argument("-m", "--manager",
             help="Delete revisions only from specified manager. Defaults from all managers.")
         parser.add_argument("--database",
@@ -71,7 +78,14 @@ Examples:
         days = options["days"]
         keep = options["keep"]
         force = options["force"]
-        confirmation = options["confirmation"]
+        interactive = options.get("interactive")
+        if not options.get("confirmation"):
+            interactive = False
+            warnings.warn(
+                '--no-confirmation is deprecated, please use --no-input instead',
+                DeprecationWarning
+            )
+
         manager = options.get('manager')
         database = options.get('database')
         # I don't know why verbosity is not already an int in Django?
@@ -92,13 +106,13 @@ Examples:
             except ValueError:
                 raise CommandError("The date you give (%s) is not a valid date. The date should be in the ISO format (YYYY-MM-DD)." % options["date"])
 
-        # Find the date from the days arguments.        
+        # Find the date from the days arguments.
         elif days:
             date = datetime.datetime.now() - datetime.timedelta(days)
 
         # Build the queries
         revision_query = Revision.objects.using(database).all()
-        
+
         if manager:
             revision_query = revision_query.filter(manager_slug=manager)
 
@@ -116,7 +130,7 @@ Examples:
                     # This is just an app, no model qualifier.
                     app_list.add(label)
 
-            # Remove models that their app is already in app_list            
+            # Remove models that their app is already in app_list
             for app, model in mod_list.copy():
                 if app in app_list:
                     mod_list.remove((app, model))
@@ -193,7 +207,7 @@ Examples:
 
 
         # Ask confirmation
-        if confirmation:
+        if interactive:
             choice = input("Are you sure you want to delete theses revisions? [y|N] ")
             if choice.lower() != "y":
                 print("Aborting revision deletion.")
@@ -203,7 +217,7 @@ Examples:
         # Delete versions and revisions
         if verbosity > 0:
             print("Deleting revisions...")
-        
+
         try:
             revision_query.delete()
         except DatabaseError:
@@ -211,6 +225,6 @@ Examples:
             print("Delete failed. Trying again with slower method.")
             for item in revision_query:
                 item.delete()
-                
+
         if verbosity > 0:
             return "Done"

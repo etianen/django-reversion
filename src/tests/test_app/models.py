@@ -59,7 +59,7 @@ class ReversionTestModel3(ReversionTestModelBase):
 class TestFollowModel(ReversionTestModelBase):
 
     test_model_1 = models.ForeignKey(
-        ReversionTestModel1,
+        ReversionTestModel1, on_delete=models.CASCADE,
     )
 
     test_model_2s = models.ManyToManyField(
@@ -75,7 +75,7 @@ class ReversionTestModel1Proxy(ReversionTestModel1):
 
 class RevisionMeta(models.Model):
 
-    revision = models.OneToOneField(Revision)
+    revision = models.OneToOneField(Revision, on_delete=models.CASCADE)
 
     age = models.IntegerField()
 
@@ -112,7 +112,7 @@ class InlineTestChildGenericModel(models.Model):
     )
 
     content_type = models.ForeignKey(
-        ContentType,
+        ContentType, on_delete=models.CASCADE,
     )
 
     object = GenericForeignKey()
@@ -149,6 +149,7 @@ class InlineTestChildModel(models.Model):
 
     parent = models.ForeignKey(
         InlineTestParentModel,
+        on_delete=models.CASCADE,
         related_name = "children",
     )
 
@@ -175,4 +176,6 @@ class InlineTestUnrelatedParentModel(models.Model):
 
 class InlineTestUnrelatedChildModel(models.Model):
 
-    parent = models.ForeignKey(InlineTestUnrelatedParentModel)
+    parent = models.ForeignKey(
+        InlineTestUnrelatedParentModel, on_delete=models.CASCADE,
+    )
