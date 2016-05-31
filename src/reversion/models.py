@@ -1,4 +1,6 @@
 from __future__ import unicode_literals
+from collections import defaultdict
+from itertools import chain
 from django.contrib.contenttypes.models import ContentType
 try:
     from django.contrib.contenttypes.fields import GenericForeignKey
@@ -13,9 +15,11 @@ from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text, python_2_unicode_compatible
 from reversion.errors import RevertError
+from reversion.revisions import RevisionManager, default_revision_manager, get_version_data_key
+from reversion.signals import pre_revision_commit, post_revision_commit, post_revision_context_end
 
 
-def safe_revert(versions):
+def safe_revert(versions, using=None):
     """
     Attempts to revert the given models contained in the give versions.
 
@@ -25,20 +29,110 @@ def safe_revert(versions):
     unreverted_versions = []
     for version in versions:
         try:
-            with transaction.atomic():
-                version.revert()
+            with transaction.atomic(using=using):
+                version.revert(using=using)
         except (IntegrityError, ObjectDoesNotExist):  # pragma: no cover
             unreverted_versions.append(version)
     if len(unreverted_versions) == len(versions):  # pragma: no cover
         raise RevertError("Could not revert revision, due to database integrity errors.")
     if unreverted_versions:  # pragma: no cover
-        safe_revert(unreverted_versions)
+        safe_revert(unreverted_versions, using)
+
+
+class RevisionModelManager(models.Manager):
+
+    def save_revision(self, objects=(), serialized_objects=(), ignore_duplicates=False, user=None, comment="", meta=(),
+                      revision_manager=default_revision_manager):
+        """
+        Manually saves a new revision containing the given objects.
+
+        `objects` is an iterable of model instances.
+        `serialized_objects` is an iterable of dicts of version data.
+        """
+        # Create the object versions.
+        version_data_dict = {
+            get_version_data_key(version_data): version_data
+            for version_data
+            in serialized_objects
+        }
+        for obj in objects:
+            for version_data in revision_manager._get_version_data_list(obj, self.db):
+                version_data_dict[get_version_data_key(version_data)] = version_data
+        new_versions = [Version(**version_data) for version_data in version_data_dict.values()]
+        # Bail early if there are no objects to save.
+        if not new_versions:
+            return
+        # Check for duplicates, if requested.
+        save_revision = True
+        if ignore_duplicates:
+            # Find the latest revision amongst the latest previous version of each object.
+            latest_revision_qs = self.annotate(
+                version_count=models.Count("version"),
+            ).filter(
+                version_count=len(new_versions),
+                manager_slug=revision_manager._manager_slug,
+            )
+            for version in new_versions:
+                latest_revision_qs = latest_revision_qs.filter(
+                    version__object_id=version.object_id,
+                    version__content_type_id=version.content_type_id,
+                )
+            latest_revision = latest_revision_qs.order_by("-pk").first()
+            # If we have a latest revision, compare it to the current revision.
+            if latest_revision is not None:
+                previous_versions = latest_revision.version_set.all()
+
+                # Creates a sorted list of version dicts for comparison.
+                def get_version_dicts(versions):
+                    return [
+                        version.local_field_dict
+                        for version
+                        in sorted(versions, key=lambda v: (v.content_type_id, v.object_id))
+                    ]
+                save_revision = get_version_dicts(previous_versions) != get_version_dicts(new_versions)
+        # Only save if we're always saving, or have changes.
+        if save_revision:
+            # Save a new revision.
+            revision = Revision(
+                manager_slug=revision_manager._manager_slug,
+                user=user,
+                comment=comment,
+            )
+            # Send the pre_revision_commit signal.
+            pre_revision_commit.send(
+                sender=revision_manager,
+                instances=objects,
+                revision=revision,
+                versions=new_versions,
+            )
+            # Save the revision.
+            with transaction.atomic(using=self.db):
+                revision.save(using=self.db)
+                # Save version models.
+                for version in new_versions:
+                    version.revision = revision
+                    version.save(using=self.db)
+                # Save the meta information.
+                for meta_obj in meta:
+                    meta_obj.revision = revision
+                    meta_obj.save(using=self.db)
+            # Send the post_revision_commit signal.
+            post_revision_commit.send(
+                sender=revision_manager,
+                instances=objects,
+                revision=revision,
+                versions=new_versions,
+            )
+            # Return the revision.
+            return revision
 
 
 @python_2_unicode_compatible
 class Revision(models.Model):
 
     """A group of related object versions."""
+
+    objects = RevisionModelManager()
 
     manager_slug = models.CharField(
         max_length=191,
@@ -68,33 +162,34 @@ class Revision(models.Model):
         help_text="A text comment on this revision.",
     )
 
-    def revert(self, delete=False):
+    def revert(self, delete=False, using=None):
         """Reverts all objects in this revision."""
+        using = using or self._state.db
         version_set = self.version_set.all()
         # Optionally delete objects no longer in the current revision.
         if delete:
             # Get a dict of all objects in this revision.
-            old_revision = set()
+            old_revision_models = defaultdict(list)
             for version in version_set:
-                try:
-                    obj = version.object
-                except ContentType.objects.get_for_id(version.content_type_id).model_class().DoesNotExist:
-                    pass
-                else:
-                    old_revision.add(obj)
+                content_type = ContentType.objects.db_manager(using).get_for_id(version.content_type_id)
+                old_revision_models[content_type].append(version.object_id)
+            old_revision = set(chain.from_iterable(
+                content_type.model_class()._base_manager.in_bulk(object_ids).values()
+                for content_type, object_ids
+                in old_revision_models.items()
+            ))
             # Calculate the set of all objects that are in the revision now.
-            from reversion.revisions import RevisionManager
-            current_revision = RevisionManager.get_manager(self.manager_slug)._follow_relationships(
-                obj
+            revision_manager = RevisionManager.get_manager(self.manager_slug)
+            current_revision = chain.from_iterable(
+                revision_manager._follow_relationships(obj)
                 for obj in old_revision
-                if obj is not None
             )
             # Delete objects that are no longer in the current revision.
             for item in current_revision:
                 if item not in old_revision:
-                    item.delete()
+                    item.delete(using=using)
         # Attempt to revert all revisions.
-        safe_revert(version_set)
+        safe_revert(version_set, using)
 
     def __str__(self):
         """Returns a unicode representation."""
@@ -104,7 +199,27 @@ class Revision(models.Model):
         app_label = 'reversion'
 
 
+def _post_revision_context_end_receiver(sender, objects, serialized_objects, ignore_duplicates, user, comment,
+                                        meta, **kwargs):
+    Revision.objects.save_revision(
+        objects=objects,
+        serialized_objects=serialized_objects,
+        ignore_duplicates=ignore_duplicates,
+        user=user,
+        comment=comment,
+        meta=meta,
+        revision_manager=sender,
+    )
+post_revision_context_end.connect(_post_revision_context_end_receiver)
+
+
 class VersionQuerySet(models.QuerySet):
+
+    def for_revision_manager(self, revision_manager):
+        """
+        Returns all versions created using the given revision manager.
+        """
+        return self.filter(revision__manager_slug=revision_manager._manager_slug)
 
     def get_unique(self):
         """
@@ -209,9 +324,10 @@ class Version(models.Model):
             result.update(parent_version.field_dict)
         return result
 
-    def revert(self):
+    def revert(self, using=None):
         """Recovers the model in this version."""
-        self.object_version.save()
+        using = using or self._state.db
+        self.object_version.save(using=using)
 
     def __str__(self):
         """Returns a unicode representation."""
@@ -219,8 +335,8 @@ class Version(models.Model):
 
     class Meta:
         app_label = 'reversion'
-        index_together = (
-            ("object_id", "content_type",),
+        unique_together = (
+            ("object_id", "content_type", "revision"),
         )
 
 

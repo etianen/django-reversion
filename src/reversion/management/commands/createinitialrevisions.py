@@ -11,7 +11,7 @@ from django.db import reset_queries
 from django.utils import translation
 from django.utils.encoding import force_text
 from reversion.revisions import default_revision_manager
-from reversion.models import Version
+from reversion.models import Revision, Version
 
 
 def get_app(app_label):
@@ -116,7 +116,7 @@ class Command(BaseCommand):
                 print("Creating initial revision(s) for model %s ..." % (force_text(model_class._meta.verbose_name)))
             created_count = 0
             content_type = ContentType.objects.db_manager(database).get_for_model(model_class)
-            live_objs = model_class._default_manager.using(database).exclude(
+            live_objs = model_class._base_manager.using(database).exclude(
                 pk__reversion_in=(Version.objects.using(database).filter(
                     content_type=content_type,
                 ), "object_id")
@@ -129,7 +129,10 @@ class Command(BaseCommand):
                 objects = live_objs.in_bulk(chunked_ids)
                 for id, obj in objects.items():
                     try:
-                        default_revision_manager.save_revision((obj,), comment=comment, db=database)
+                        Revision.objects.db_manager(database).save_revision(
+                            objects=(obj,),
+                            comment=comment,
+                        )
                     except:
                         print("ERROR: Could not save initial version for %s %s." % (model_class.__name__, obj.pk))
                         raise

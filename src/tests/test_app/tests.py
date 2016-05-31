@@ -23,7 +23,6 @@ from reversion.revisions import (
     get_registered_models,
     get_adapter,
     VersionAdapter,
-    default_revision_manager,
     create_revision,
     get_for_object_reference,
     get_for_object,
@@ -107,24 +106,6 @@ class RegistrationTest(TestCase):
             pass
         self.assertTrue(is_registered(DecoratorArgsModel))
 
-    def testEagerRegistration(self):
-        # Register the model and test.
-        register(ReversionTestModel3, eager_signals=[pre_delete])
-        self.assertTrue(is_registered(ReversionTestModel3))
-        self.assertRaises(RegistrationError, lambda: register(ReversionTestModel3, eager_signals=[pre_delete]))
-        self.assertTrue(ReversionTestModel3 in get_registered_models())
-        self.assertTrue(isinstance(get_adapter(ReversionTestModel3), VersionAdapter))
-        self.assertEqual([], default_revision_manager._signals[ReversionTestModel3])
-        self.assertEqual([pre_delete], default_revision_manager._eager_signals[ReversionTestModel3])
-        # Unregister the model and text.
-        unregister(ReversionTestModel3)
-        self.assertFalse(is_registered(ReversionTestModel3))
-        self.assertRaises(RegistrationError, lambda: unregister(ReversionTestModel3))
-        self.assertTrue(ReversionTestModel3 not in get_registered_models())
-        self.assertRaises(RegistrationError, lambda: isinstance(get_adapter(ReversionTestModel3)))
-        self.assertFalse(ReversionTestModel3 in default_revision_manager._signals)
-        self.assertFalse(ReversionTestModel3 in default_revision_manager._eager_signals)
-
 
 class ReversionTestBase(TestCase):
 
@@ -186,16 +167,18 @@ class InternalsTest(RevisionTestBase):
 
     def testRevisionsCreated(self):
         self.assertEqual(Revision.objects.count(), 1)
-        self.assertEqual(Version.objects.count(), 4)
+        self.assertEqual(Version.objects.count(), 6)
 
     def testContextManager(self):
+        self.assertEqual(Revision.objects.count(), 1)
+        self.assertEqual(Version.objects.count(), 6)
         # New revision should be created.
         with create_revision():
             with create_revision():
                 self.test11.name = "model1 instance1 version2"
                 self.test11.save()
         self.assertEqual(Revision.objects.count(), 2)
-        self.assertEqual(Version.objects.count(), 5)
+        self.assertEqual(Version.objects.count(), 7)
 
     def testManualRevisionManagement(self):
         # When manage manually is on, no revisions created.
@@ -203,17 +186,17 @@ class InternalsTest(RevisionTestBase):
             self.test11.name = "model1 instance1 version2"
             self.test11.save()
         self.assertEqual(Revision.objects.count(), 1)
-        self.assertEqual(Version.objects.count(), 4)
+        self.assertEqual(Version.objects.count(), 6)
         # Save a manual revision.
-        default_revision_manager.save_revision([self.test11])
+        Revision.objects.save_revision([self.test11])
         self.assertEqual(Revision.objects.count(), 2)
-        self.assertEqual(Version.objects.count(), 5)
+        self.assertEqual(Version.objects.count(), 7)
 
     def testEmptyRevisionNotCreated(self):
         with create_revision():
             pass
         self.assertEqual(Revision.objects.count(), 1)
-        self.assertEqual(Version.objects.count(), 4)
+        self.assertEqual(Version.objects.count(), 6)
 
     def testRevisionContextAbandonedOnError(self):
         with create_revision():
@@ -225,7 +208,7 @@ class InternalsTest(RevisionTestBase):
             except:
                 pass
         self.assertEqual(Revision.objects.count(), 1)
-        self.assertEqual(Version.objects.count(), 4)
+        self.assertEqual(Version.objects.count(), 6)
 
     def testRevisionDecoratorAbandonedOnError(self):
         @create_revision()
@@ -238,13 +221,13 @@ class InternalsTest(RevisionTestBase):
         except:
             pass
         self.assertEqual(Revision.objects.count(), 1)
-        self.assertEqual(Version.objects.count(), 4)
+        self.assertEqual(Version.objects.count(), 6)
 
     def testRevisionCreatedOnDelete(self):
         with create_revision():
             self.test31.delete()
         self.assertEqual(Revision.objects.count(), 2)
-        self.assertEqual(Version.objects.count(), 5)
+        self.assertEqual(Version.objects.count(), 7)
 
     def testNoVersionForObjectCreatedAndDeleted(self):
         with create_revision():
@@ -252,7 +235,7 @@ class InternalsTest(RevisionTestBase):
             new_object.delete()
         # No Revision and no Version should have been created.
         self.assertEqual(Revision.objects.count(), 1)
-        self.assertEqual(Version.objects.count(), 4)
+        self.assertEqual(Version.objects.count(), 6)
 
 
 class ApiTest(RevisionTestBase):
@@ -521,25 +504,25 @@ class ProxyModelApiTest(RevisionTestBase):
 
 class FollowModelsTest(ReversionTestBase):
 
-    @create_revision()
     def setUp(self):
         super(FollowModelsTest, self).setUp()
         unregister(ReversionTestModel1)
         register(ReversionTestModel1, follow=("testfollowmodel_set",))
         register(TestFollowModel, follow=("test_model_1", "test_model_2s",))
-        self.follow1 = TestFollowModel.objects.create(
-            name="related instance1 version 1",
-            test_model_1=self.test11,
-        )
-        self.follow1.test_model_2s.add(self.test21, self.test22)
+        with create_revision():
+            self.follow1 = TestFollowModel.objects.create(
+                name="related instance1 version 1",
+                test_model_1=self.test11,
+            )
+            self.follow1.test_model_2s.add(self.test21, self.test22)
 
     def testRelationsFollowed(self):
         self.assertEqual(Revision.objects.count(), 1)
-        self.assertEqual(Version.objects.count(), 5)
+        self.assertEqual(Version.objects.count(), 4)
         with create_revision():
             self.follow1.save()
         self.assertEqual(Revision.objects.count(), 2)
-        self.assertEqual(Version.objects.count(), 9)
+        self.assertEqual(Version.objects.count(), 8)
 
     def testRevertWithDelete(self):
         with create_revision():
@@ -569,11 +552,11 @@ class FollowModelsTest(ReversionTestBase):
 
     def testReverseRelationsFollowed(self):
         self.assertEqual(Revision.objects.count(), 1)
-        self.assertEqual(Version.objects.count(), 5)
+        self.assertEqual(Version.objects.count(), 4)
         with create_revision():
             self.test11.save()
         self.assertEqual(Revision.objects.count(), 2)
-        self.assertEqual(Version.objects.count(), 9)
+        self.assertEqual(Version.objects.count(), 8)
 
     def testReverseFollowRevertWithDelete(self):
         with create_revision():
@@ -583,6 +566,7 @@ class FollowModelsTest(ReversionTestBase):
             )
         # Test that a revert with delete works.
         follow2_pk = follow2.pk
+        self.assertEqual(TestFollowModel.objects.count(), 2)
         get_for_object(self.test11)[1].revision.revert(delete=True)
         self.assertEqual(TestFollowModel.objects.count(), 1)
         self.assertRaises(TestFollowModel.DoesNotExist, lambda: TestFollowModel.objects.get(id=follow2_pk))
