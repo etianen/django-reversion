@@ -1,11 +1,7 @@
-"""A number of useful helper functions to automate common tasks."""
-
 from __future__ import unicode_literals
-
 from django.contrib import admin
 from django.contrib.admin.sites import NotRegistered
 from django.utils.encoding import force_text
-
 from reversion.admin import VersionAdmin
 
 
@@ -37,7 +33,6 @@ def patch_admin(model, admin_site=None):
 # library is installed.
 #
 # http://code.google.com/p/google-diff-match-patch/
-
 
 try:
     from diff_match_patch import diff_match_patch

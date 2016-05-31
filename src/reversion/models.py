@@ -1,7 +1,4 @@
-"""Database models used by django-reversion."""
-
 from __future__ import unicode_literals
-
 from django.contrib.contenttypes.models import ContentType
 try:
     from django.contrib.contenttypes.fields import GenericForeignKey
@@ -14,7 +11,6 @@ from django.db import models, IntegrityError, transaction
 from django.db.models.lookups import In
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text, python_2_unicode_compatible
-
 from reversion.errors import RevertError
 
 
@@ -38,9 +34,6 @@ def safe_revert(versions):
         safe_revert(unreverted_versions)
 
 
-UserModel = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
-
-
 @python_2_unicode_compatible
 class Revision(models.Model):
 
@@ -60,7 +53,7 @@ class Revision(models.Model):
     )
 
     user = models.ForeignKey(
-        UserModel,
+        settings.AUTH_USER_MODEL,
         blank=True,
         null=True,
         on_delete=models.SET_NULL,

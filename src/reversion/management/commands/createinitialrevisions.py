@@ -1,8 +1,6 @@
 from __future__ import unicode_literals
-
 from collections import OrderedDict
 from importlib import import_module
-
 from django.apps import apps
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -12,7 +10,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import reset_queries
 from django.utils import translation
 from django.utils.encoding import force_text
-
 from reversion.revisions import default_revision_manager
 from reversion.models import Version
 

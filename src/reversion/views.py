@@ -1,7 +1,5 @@
 from functools import wraps
-
 from django.db import transaction
-
 from reversion.revisions import revision_context_manager
 
 

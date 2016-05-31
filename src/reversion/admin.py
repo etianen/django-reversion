@@ -1,9 +1,5 @@
-"""Admin extensions for django-reversion."""
-
 from __future__ import unicode_literals
-
 from contextlib import contextmanager
-
 from django.db import models, transaction, connection
 from django.conf.urls import url
 from django.contrib import admin
@@ -21,7 +17,6 @@ from django.utils.text import capfirst
 from django.utils.translation import ugettext as _
 from django.utils.encoding import force_text
 from django.utils.formats import localize
-
 from reversion.compat import remote_field, remote_model
 from reversion.models import Version
 from reversion.revisions import default_revision_manager

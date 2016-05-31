@@ -1,6 +1,3 @@
-"""Compatibility functions for django-reversion."""
-
-
 def remote_field(field):
     # remote_field is new in Django 1.9
     return field.remote_field if hasattr(field, 'remote_field') else field.rel

@@ -20,7 +20,6 @@ from django.db.models import Q, Max
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save
 from django.utils.encoding import force_text
-
 from reversion.compat import remote_field
 from reversion.signals import pre_revision_commit, post_revision_commit
 from reversion.errors import RevisionManagementError, RegistrationError

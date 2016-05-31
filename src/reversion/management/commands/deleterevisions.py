@@ -1,16 +1,13 @@
 from __future__ import unicode_literals
-
 import datetime
 import operator
 import warnings
 from functools import reduce
-
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 from django.db.models import Q, Count
 from django.contrib.contenttypes.models import ContentType
 from django.utils.six.moves import input
-
 from reversion.models import Revision, Version
 from django.db.utils import DatabaseError
 
