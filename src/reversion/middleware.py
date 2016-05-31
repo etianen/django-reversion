@@ -15,7 +15,8 @@ class RevisionMiddleware(object):
             warnings.warn((
                 "Using RevisionMiddleware in MIDDLEWARE_CLASSES breaks transactional isolation. "
                 "For Django >= 1.10, upgrade to using MIDDLEWARE instead. "
-                "For Django <= 1.9, use reversion.views.RevisionMixin instead."
+                "For Django <= 1.9, use reversion.views.RevisionMixin instead. "
+                "Support for Django <= 1.9 MIDDLEWARE_CLASSES will be removed in django-reversion 1.11.0."
             ), DeprecationWarning)
         else:
             # Support Django 1.10 middleware.
