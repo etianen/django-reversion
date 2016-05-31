@@ -7,4 +7,4 @@ Developed by Dave Hall.
 from __future__ import unicode_literals
 
 
-__version__ = VERSION = (1, 9, 4, 8)
+__version__ = VERSION = (2, 0, 0)
