@@ -14,7 +14,7 @@ from django.utils import translation
 from django.utils.encoding import force_text
 
 from reversion.revisions import default_revision_manager
-from reversion.models import Version, has_int_pk
+from reversion.models import Version
 
 
 def get_app(app_label):
@@ -119,20 +119,13 @@ class Command(BaseCommand):
                 print("Creating initial revision(s) for model %s ..." % (force_text(model_class._meta.verbose_name)))
             created_count = 0
             content_type = ContentType.objects.db_manager(database).get_for_model(model_class)
-            versioned_pk_queryset = Version.objects.using(database).filter(content_type=content_type).all()
-            live_objs = model_class._default_manager.using(database).all()
-            if has_int_pk(model_class):
-                # We can do this as a fast database join!
-                live_objs = live_objs.exclude(
-                    pk__in=versioned_pk_queryset.values_list("object_id_int", flat=True)
-                )
-            else:
-                # This join has to be done as two separate queries.
-                live_objs = live_objs.exclude(
-                    pk__in=list(versioned_pk_queryset.values_list("object_id", flat=True).iterator())
-                )
+            live_objs = model_class._default_manager.using(database).exclude(
+                pk__reversion_in=(Version.objects.using(database).filter(
+                    content_type=content_type,
+                ), "object_id")
+            )
             # Save all the versions.
-            ids = list(live_objs.values_list(model_class._meta.pk.name, flat=True).order_by())
+            ids = list(live_objs.values_list("pk", flat=True).order_by())
             total = len(ids)
             for i in range(0, total, batch_size):
                 chunked_ids = ids[i:i+batch_size]

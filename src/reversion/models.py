@@ -11,10 +11,10 @@ from django.conf import settings
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, IntegrityError, transaction
+from django.db.models.lookups import In
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text, python_2_unicode_compatible
 
-from reversion.compat import remote_model
 from reversion.errors import RevertError
 
 
@@ -110,19 +110,6 @@ class Revision(models.Model):
         app_label = 'reversion'
 
 
-def has_int_pk(model):
-    """Tests whether the given model has an integer primary key."""
-    pk = model._meta.pk
-    return (
-        (
-            isinstance(pk, (models.IntegerField, models.AutoField)) and
-            not isinstance(pk, models.BigIntegerField)
-        ) or (
-            isinstance(pk, models.ForeignKey) and has_int_pk(remote_model(pk))
-        )
-    )
-
-
 class VersionQuerySet(models.QuerySet):
 
     def get_unique(self):
@@ -149,15 +136,9 @@ class Version(models.Model):
         help_text="The revision that contains this version.",
     )
 
-    object_id = models.TextField(
+    object_id = models.CharField(
+        max_length=191,
         help_text="Primary key of the model under version control.",
-    )
-
-    object_id_int = models.IntegerField(
-        blank=True,
-        null=True,
-        db_index=True,
-        help_text="An indexed, integer version of the stored model's primary key, used for faster lookups.",
     )
 
     content_type = models.ForeignKey(
@@ -167,7 +148,10 @@ class Version(models.Model):
     )
 
     # A link to the current instance, not the version stored in this Version!
-    object = GenericForeignKey()
+    object = GenericForeignKey(
+        ct_field="content_type",
+        fk_field="object_id",
+    )
 
     format = models.CharField(
         max_length=255,
@@ -234,3 +218,91 @@ class Version(models.Model):
 
     class Meta:
         app_label = 'reversion'
+        index_together = (
+            ("object_id", "content_type",),
+        )
+
+
+class Str(models.Func):
+
+    """Casts a value to the database's text type."""
+
+    function = "CAST"
+    template = "%(function)s(%(expressions)s as %(db_type)s)"
+
+    def __init__(self, expression):
+        super(Str, self).__init__(expression, output_field=models.TextField())
+
+    def as_sql(self, compiler, connection):
+        self.extra["db_type"] = self.output_field.db_type(connection)
+        return super(Str, self).as_sql(compiler, connection)
+
+
+@models.Field.register_lookup
+class ReversionSubqueryLookup(models.Lookup):
+
+    """
+    Performs a subquery using an SQL `IN` clause, selecting the bast strategy
+    for the database.
+    """
+
+    lookup_name = "reversion_in"
+
+    # Strategies.
+
+    def __init__(self, lhs, rhs):
+        rhs, self.rhs_field_name = rhs
+        rhs = rhs.values_list(self.rhs_field_name, flat=True)
+        super(ReversionSubqueryLookup, self).__init__(lhs, rhs)
+        # Introspect the lhs and rhs, so we can fail early if it's unexpected.
+        self.lhs_field = self.lhs.output_field
+        self.rhs_field = self.rhs.model._meta.get_field(self.rhs_field_name)
+
+    def _as_in_memory_sql(self, compiler, connection):
+        """
+        The most reliable strategy. The subquery is performed as two separate queries,
+        buffering the subquery in application memory.
+
+        This will work in all databases, but can use a lot of memory.
+        """
+        return compiler.compile(In(self.lhs, list(self.rhs.iterator())))
+
+    def _as_in_database_sql(self, compiler, connection):
+        """
+        Theoretically the best strategy. The subquery is performed as a single database
+        query, using nested SELECT.
+
+        This will only work if the `Str` function supports the database.
+        """
+        lhs = self.lhs
+        rhs = self.rhs
+        # If fields are not the same internal type, we have to cast both to string.
+        if self.lhs_field.get_internal_type() != self.rhs_field.get_internal_type():
+            # If the left hand side is not a text field, we need to cast it.
+            if not isinstance(self.lhs_field, (models.CharField, models.TextField)):
+                lhs = Str(lhs)
+            # If the right hand side is not a text field, we need to cast it.
+            if not isinstance(self.rhs_field, (models.CharField, models.TextField)):
+                rhs_str_name = "%s_str" % self.rhs_field.name
+                rhs = rhs.annotate(**{
+                    rhs_str_name: Str(self.rhs_field.name),
+                }).values_list(rhs_str_name, flat=True)
+        # All done!
+        return compiler.compile(In(lhs, rhs))
+
+    def as_sql(self, compiler, connection):
+        """The fallback strategy for all databases is a safe in-memory subquery."""
+        return self._as_in_memory_sql(compiler, connection)
+
+    def as_sqlite(self, compiler, connection):
+        """SQLite supports the `Str` function, so can use the efficient in-database subquery."""
+        return self._as_in_database_sql(compiler, connection)
+
+    def as_mysql(self, compiler, connection):
+        """MySQL can choke on complex subqueries, so uses the safe in-memory subquery."""
+        # TODO: Add a version selector to use the in-database subquery if a safe version is known.
+        return self._as_in_memory_sql(compiler, connection)
+
+    def as_postgresql(self, compiler, connection):
+        """Postgres supports the `Str` function, so can use the efficient in-database subquery."""
+        return self._as_in_database_sql(compiler, connection)
