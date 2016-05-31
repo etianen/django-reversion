@@ -10,7 +10,6 @@ from unittest import skipUnless
 from django.db import models
 from django.test import TestCase
 from django.core.management import call_command
-from django.core.exceptions import ImproperlyConfigured
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.db.models.signals import pre_delete
@@ -78,7 +77,7 @@ class RegistrationTest(TestCase):
         self.assertTrue(isinstance(get_adapter(test_model), VersionAdapter))
 
     def check_deregistration(self, test_model):
-        # Unregister the model and text.
+        # Unregister the model and test.
         unregister(test_model)
         self.assertFalse(is_registered(test_model))
         self.assertRaises(RegistrationError, lambda: unregister(test_model))
@@ -674,26 +673,6 @@ class DeleteRevisionsTest(ReversionTestBase):
 
 # Tests for reversion functionality that's tied to requests.
 
-class RevisionMiddlewareTest(ReversionTestBase):
-
-    def testRevisionMiddleware(self):
-        self.assertEqual(Revision.objects.count(), 0)
-        self.assertEqual(Version.objects.count(), 0)
-        self.client.get("/success/")
-        self.assertEqual(Revision.objects.count(), 1)
-        self.assertEqual(Version.objects.count(), 4)
-
-    def testRevisionMiddlewareInvalidatesRevisionOnError(self):
-        self.assertEqual(Revision.objects.count(), 0)
-        self.assertEqual(Version.objects.count(), 0)
-        self.assertRaises(Exception, lambda: self.client.get("/error/"))
-        self.assertEqual(Revision.objects.count(), 0)
-        self.assertEqual(Version.objects.count(), 0)
-
-    def testRevisionMiddlewareErrorOnDoubleMiddleware(self):
-        self.assertRaises(ImproperlyConfigured, lambda: self.client.get("/double/"))
-
-
 class VersionAdminTest(TestCase):
 
     def setUp(self):
@@ -956,17 +935,3 @@ class PatchTest(RevisionTestBase):
                 '<ins style="background:#e6ffe6;">2</ins>'
             ),
         )
-
-
-# test preserve deleted User Revisions
-class DeleteUserTest(RevisionTestBase):
-
-    def testDeleteUser(self):
-        self.assertEqual(Revision.objects.count(), 1)
-        self.assertEqual(Version.objects.count(), 4)
-        rev = Revision.objects.all()[0]
-        rev.user = self.user
-        rev.save()
-        self.user.delete()
-        self.assertEqual(Revision.objects.count(), 1)
-        self.assertEqual(Version.objects.count(), 4)

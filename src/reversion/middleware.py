@@ -1,42 +1,44 @@
-"""Middleware used by Reversion."""
-
 from __future__ import unicode_literals
-
-from django.core.exceptions import ImproperlyConfigured
-
+import warnings
 from reversion.revisions import revision_context_manager
+from reversion.views import request_creates_revision, create_revision
 
 
-REVISION_MIDDLEWARE_FLAG = "reversion.revision_middleware_active"
-
-
-class RevisionMiddleware(object):  # pragma: no cover
+class RevisionMiddleware(object):
 
     """Wraps the entire request in a revision."""
 
-    def process_request(self, request):
-        """Starts a new revision."""
-        if request.META.get(REVISION_MIDDLEWARE_FLAG, False):
-            raise ImproperlyConfigured("RevisionMiddleware can only be included in MIDDLEWARE_CLASSES once.")
-        request.META[REVISION_MIDDLEWARE_FLAG] = True
-        revision_context_manager.start()
+    def __init__(self, get_response=None):
+        super(RevisionMiddleware, self).__init__()
+        if get_response is None:
+            # Warn about using old-style middleware.
+            warnings.warn((
+                "Using RevisionMiddleware in MIDDLEWARE_CLASSES breaks transactional isolation. "
+                "For Django >= 1.10, upgrade to using MIDDLEWARE instead. "
+                "For Django <= 1.9, use reversion.views.RevisionMixin instead."
+            ), DeprecationWarning)
+        else:
+            # Support Django 1.10 middleware.
+            self.__call__ = create_revision()(get_response)
 
-    def _close_revision(self, request):
-        """Closes the revision."""
-        if request.META.get(REVISION_MIDDLEWARE_FLAG, False):
-            del request.META[REVISION_MIDDLEWARE_FLAG]
+    def process_request(self, request):
+        if request_creates_revision(request):
+            revision_context_manager.start()
+            revision_context_manager.set_user(request.user)
+            if not hasattr(request, "_revision_middleware"):
+                setattr(request, "_revision_middleware", set())
+            request._revision_middleware.add(self)
+
+    def _close_revision(self, request, invalidate):
+        if self in getattr(request, "_revision_middleware", ()):
+            if invalidate:
+                revision_context_manager.invalidate()
             revision_context_manager.end()
+            request._revision_middleware.remove(self)
 
     def process_response(self, request, response):
-        """Closes the revision."""
-        mutating_methods = ['post', 'patch', 'put']
-
-        if request.method.lower() in mutating_methods and revision_context_manager.is_active():
-            revision_context_manager.set_user(request.user)
-        self._close_revision(request)
+        self._close_revision(request, invalidate=False)
         return response
 
     def process_exception(self, request, exception):
-        """Closes the revision."""
-        revision_context_manager.invalidate()
-        self._close_revision(request)
+        self._close_revision(request, invalidate=True)
