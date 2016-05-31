@@ -318,6 +318,14 @@ class RevisionContext(object):
 revision_context_manager = RevisionContextManager()
 
 
+def get_version_dicts(versions):
+    return [
+        version.local_field_dict
+        for version
+        in sorted(versions, key=lambda v: (v.content_type_id, v.object_id))
+    ]
+
+
 class RevisionManager(object):
 
     """Manages the configuration and creation of revisions."""
@@ -485,11 +493,8 @@ class RevisionManager(object):
                 if latest_revision is not None:
                     previous_versions = self._get_versions(db).filter(
                         revision=latest_revision
-                    ).values_list("serialized_data", flat=True)
-                    if len(previous_versions) == len(new_versions):
-                        all_serialized_data = [version.serialized_data for version in new_versions]
-                        if sorted(previous_versions) == sorted(all_serialized_data):
-                            save_revision = False
+                    )
+                    save_revision = get_version_dicts(previous_versions) != get_version_dicts(new_versions)
             # Only save if we're always saving, or have changes.
             if save_revision:
                 # Save a new revision.

@@ -112,9 +112,9 @@ class VersionQuerySet(models.QuerySet):
         """
         last_field_dict = None
         for version in self.iterator():
-            if last_field_dict != version.field_dict:
+            if last_field_dict != version.local_field_dict:
                 yield version
-            last_field_dict = version.field_dict
+            last_field_dict = version.local_field_dict
 
 
 @python_2_unicode_compatible
@@ -160,12 +160,28 @@ class Version(models.Model):
         help_text="A string representation of the object.",
     )
 
-    @property
+    @cached_property
     def object_version(self):
         """The stored version of the model."""
         data = self.serialized_data
         data = force_text(data.encode("utf8"))
         return list(serializers.deserialize(self.format, data, ignorenonexistent=True))[0]
+
+    @cached_property
+    def local_field_dict(self):
+        """
+        A dictionary mapping field names to field values in this version
+        of the model.
+
+        Parent links of inherited multi-table models will not be followed.
+        """
+        object_version = self.object_version
+        obj = object_version.object
+        result = {}
+        for field in obj._meta.fields:
+            result[field.name] = field.value_from_object(obj)
+        result.update(object_version.m2m_data)
+        return result
 
     @cached_property
     def field_dict(self):
@@ -177,10 +193,7 @@ class Version(models.Model):
         """
         object_version = self.object_version
         obj = object_version.object
-        result = {}
-        for field in obj._meta.fields:
-            result[field.name] = field.value_from_object(obj)
-        result.update(object_version.m2m_data)
+        result = self.local_field_dict
         # Add parent data.
         for parent_class, field in obj._meta.concrete_model._meta.parents.items():
             field = field or obj.pk
