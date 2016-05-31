@@ -9,6 +9,7 @@ import test_app.models
 class Migration(migrations.Migration):
 
     dependencies = [
+        ('reversion', '0003_auto_20160530_1442'),
         ('reversion', '0002_auto_20141216_1509'),
         ('contenttypes', '0001_initial'),
     ]

@@ -58,6 +58,12 @@ from test_app.models import (
     InlineTestChildModel,
     InlineTestChildGenericModel,
     InlineTestChildModelProxy,
+    ReversionTestModelPKAutoInt,
+    ReversionTestModelPKBigInt,
+    ReversionTestModelPKString,
+    ReversionTestModelPKGuid,
+    ReversionTestModelPKDecimal,
+    ReversionTestModelPKFloat
 )
 from test_app import admin  # noqa. Force early registration of all admin models.
 
@@ -672,7 +678,6 @@ class DeleteRevisionsTest(ReversionTestBase):
 
 
 # Tests for reversion functionality that's tied to requests.
-
 class VersionAdminTest(TestCase):
 
     def setUp(self):
@@ -935,3 +940,33 @@ class PatchTest(RevisionTestBase):
                 '<ins style="background:#e6ffe6;">2</ins>'
             ),
         )
+
+
+# Test Various PK Types
+class PrimaryKeyDataTypesTest(TestCase):
+
+    def setUp(self):
+        self.table_types = [
+            ReversionTestModelPKAutoInt,
+            ReversionTestModelPKBigInt,
+            ReversionTestModelPKString,
+            ReversionTestModelPKGuid,
+            ReversionTestModelPKDecimal,
+            ReversionTestModelPKFloat
+        ]
+
+        for table_type in self.table_types:
+            register(table_type)
+
+    def testPKs(self):
+
+        for table_type in self.table_types:
+            self.assertTrue(is_registered(table_type))
+            with create_revision():
+                record = table_type.objects.create(name="Testing")
+            versions = get_for_object(record)
+            self.assertEqual(versions.count(), 1)
+
+    def tearDown(self):
+        for table_type in self.table_types:
+            unregister(table_type)
