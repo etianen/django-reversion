@@ -9,6 +9,7 @@ from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, IntegrityError, transaction
 from django.db.models.lookups import In
+from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text, python_2_unicode_compatible
 from reversion.errors import RevertError
@@ -109,11 +110,11 @@ class VersionQuerySet(models.QuerySet):
         """
         Returns a generator of unique version data.
         """
-        last_serialized_data = None
+        last_field_dict = None
         for version in self.iterator():
-            if last_serialized_data != version.serialized_data:
+            if last_field_dict != version.field_dict:
                 yield version
-            last_serialized_data = version.serialized_data
+            last_field_dict = version.field_dict
 
 
 @python_2_unicode_compatible
@@ -166,7 +167,7 @@ class Version(models.Model):
         data = force_text(data.encode("utf8"))
         return list(serializers.deserialize(self.format, data, ignorenonexistent=True))[0]
 
-    @property
+    @cached_property
     def field_dict(self):
         """
         A dictionary mapping field names to field values in this version
@@ -174,32 +175,26 @@ class Version(models.Model):
 
         This method will follow parent links, if present.
         """
-        if not hasattr(self, "_field_dict_cache"):
-            object_version = self.object_version
-            obj = object_version.object
-            result = {}
-            for field in obj._meta.fields:
-                result[field.name] = field.value_from_object(obj)
-            result.update(object_version.m2m_data)
-            # Add parent data.
-            for parent_class, field in obj._meta.concrete_model._meta.parents.items():
-                if obj._meta.proxy and parent_class == obj._meta.concrete_model:
-                    continue
-                content_type = ContentType.objects.get_for_model(parent_class)
-                if field:
-                    parent_id = force_text(getattr(obj, field.attname))
-                else:
-                    parent_id = obj.pk
-                try:
-                    parent_version = Version.objects.get(revision__id=self.revision_id,
-                                                         content_type=content_type,
-                                                         object_id=parent_id)
-                except Version.DoesNotExist:  # pragma: no cover
-                    pass
-                else:
-                    result.update(parent_version.field_dict)
-            setattr(self, "_field_dict_cache", result)
-        return getattr(self, "_field_dict_cache")
+        object_version = self.object_version
+        obj = object_version.object
+        result = {}
+        for field in obj._meta.fields:
+            result[field.name] = field.value_from_object(obj)
+        result.update(object_version.m2m_data)
+        # Add parent data.
+        for parent_class, field in obj._meta.concrete_model._meta.parents.items():
+            field = field or obj.pk
+            if obj._meta.proxy and parent_class == obj._meta.concrete_model:
+                continue
+            content_type = ContentType.objects.get_for_model(parent_class)
+            parent_id = getattr(obj, field.attname)
+            parent_version = Version.objects.get(
+                revision__id=self.revision_id,
+                content_type=content_type,
+                object_id=parent_id,
+            )
+            result.update(parent_version.field_dict)
+        return result
 
     def revert(self):
         """Recovers the model in this version."""
