@@ -9,4 +9,4 @@ Developed by Dave Hall.
 from __future__ import unicode_literals
 
 
-__version__ = VERSION = (1, 10, 2)
+__version__ = VERSION = (1, 10, 3)
