@@ -493,8 +493,11 @@ class RevisionManager(object):
         The results are returned with the most recent versions first.
         """
         warnings.warn(
-            "Use get_for_object().get_unique() instead of get_unique_for_object().",
-            PendingDeprecationWarning)
+            (
+                "Use get_for_object().get_unique() instead of get_unique_for_object(). "
+                "get_unique_for_object() will be removed in django-reversion 1.12.0"
+            ),
+            DeprecationWarning)
         return list(self.get_for_object(obj, db).get_unique())
 
     def get_for_date(self, object, date, db=None):

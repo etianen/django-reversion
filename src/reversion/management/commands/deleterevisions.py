@@ -114,7 +114,10 @@ Examples:
         if not options.get("confirmation"):
             interactive = False
             warnings.warn(
-                '--no-confirmation is deprecated, please use --no-input instead',
+                (
+                    "--no-confirmation is deprecated, please use --no-input instead. ",
+                    "--no-confirmation will be removed in django-reversion 1.12.0"
+                ),
                 DeprecationWarning
             )
 
