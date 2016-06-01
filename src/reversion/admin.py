@@ -99,6 +99,14 @@ class VersionAdmin(admin.ModelAdmin):
 
     # Auto-registration.
 
+    def register_model_with_reversion(self, model, **kwargs):
+        """
+        Registers the given model with reversion, using the given kwargs.
+
+        Override to provide additional arguments to the reversion.register() call.
+        """
+        self.revision_manager.register(model, **kwargs)
+
     def _autoregister(self, model, follow=None):
         """Registers a model with reversion, if required."""
         if not self.revision_manager.is_registered(model):
@@ -107,7 +115,7 @@ class VersionAdmin(admin.ModelAdmin):
             for parent_cls, field in model._meta.concrete_model._meta.parents.items():
                 follow.append(field.name)
                 self._autoregister(parent_cls)
-            self.revision_manager.register(model, follow=follow, format=self.reversion_format)
+            self.register_model_with_reversion(model, follow=follow, format=self.reversion_format)
 
     def _introspect_inline_admin(self, inline):
         """Introspects the given inline admin, returning a tuple of (inline_model, follow_field)."""
