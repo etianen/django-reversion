@@ -8,6 +8,7 @@ from functools import wraps, partial
 from itertools import chain
 from threading import local
 from weakref import WeakValueDictionary
+from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
@@ -398,16 +399,19 @@ class RevisionManager(object):
 
     # Registration methods.
 
+    def _get_registration_key(self, model):
+        return (model._meta.app_label, model._meta.model_name)
+
     def is_registered(self, model):
         """
         Checks whether the given model has been registered with this revision
         manager.
         """
-        return model in self._registered_models
+        return self._get_registration_key(model) in self._registered_models
 
     def get_registered_models(self):
         """Returns an iterable of all registered models."""
-        return list(self._registered_models.keys())
+        return [apps.get_model(*key) for key in self._registered_models.keys()]
 
     def register(self, model=None, adapter_cls=VersionAdapter, **field_overrides):
         """Registers a model with this revision manager."""
@@ -424,7 +428,7 @@ class RevisionManager(object):
             adapter_cls = type(adapter_cls.__name__, (adapter_cls,), field_overrides)
         # Perform the registration.
         adapter_obj = adapter_cls(model)
-        self._registered_models[model] = adapter_obj
+        self._registered_models[self._get_registration_key(model)] = adapter_obj
         # Connect to the selected signals of the model.
         for signal in adapter_obj.get_all_signals():
             signal.connect(self._signal_receiver, model)
@@ -433,7 +437,7 @@ class RevisionManager(object):
     def get_adapter(self, model):
         """Returns the registration information for the given model class."""
         if self.is_registered(model):
-            return self._registered_models[model]
+            return self._registered_models[self._get_registration_key(model)]
         raise RegistrationError("{model} has not been registered with django-reversion".format(
             model=model,
         ))
@@ -444,7 +448,7 @@ class RevisionManager(object):
             raise RegistrationError("{model} has not been registered with django-reversion".format(
                 model=model,
             ))
-        adapter_obj = self._registered_models.pop(model)
+        adapter_obj = self._registered_models.pop(self._get_registration_key(model))
         # Connect to the selected signals of the model.
         for signal in adapter_obj.get_all_signals():
             signal.disconnect(self._signal_receiver, model)
