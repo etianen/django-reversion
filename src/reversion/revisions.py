@@ -18,7 +18,7 @@ from django.db.models.signals import post_save
 from django.utils.encoding import force_text
 from reversion.compat import remote_field
 from reversion.errors import RevisionManagementError, RegistrationError
-from reversion.signals import post_revision_context_end
+from reversion.signals import pre_revision_commit, post_revision_commit
 
 
 class VersionAdapter(object):
@@ -317,15 +317,13 @@ class RevisionContextManager(local):
             # Only save for a db if that's the last stack frame for that db.
             if not any(frame.db == stack_frame.db for frame in self._stack):
                 for manager, objects in stack_frame.manager_objects.items():
-                    post_revision_context_end.send(
-                        sender=manager,
-                        objects=[obj for obj in objects.values() if not isinstance(obj, dict)],
-                        serialized_objects=[obj for obj in objects.values() if isinstance(obj, dict)],
+                    manager.save_revision(
+                        objects=list(objects.values()),
                         user=stack_frame.user,
                         comment=stack_frame.comment,
                         meta=stack_frame.meta,
                         ignore_duplicates=stack_frame.ignore_duplicates,
-                        db=stack_frame.db,
+                        using=using,
                     )
             # Join the stack frame on success.
             if self._stack:
@@ -453,7 +451,7 @@ class RevisionManager(object):
     def _get_versions(self, db=None):
         """Returns all versions that apply to this manager."""
         from reversion.models import Version
-        return Version.objects.using(db).for_revision_manager(self)
+        return Version.objects.using(db).filter(revision__manager_slug=self._manager_slug)
 
     # Revision management API.
 
@@ -517,7 +515,7 @@ class RevisionManager(object):
             ), "id")
         ).order_by("-id")
 
-    # Serialization.
+    # Helpers.
 
     def _follow_relationships(self, instance):
         def follow(obj):
@@ -531,6 +529,119 @@ class RevisionManager(object):
         followed_objects = set()
         follow(instance)
         return followed_objects
+
+    # Manual revision saving.
+
+    def save_revision(self, objects=(), ignore_duplicates=False, user=None, comment="", meta=(),
+                      using=None):
+        """
+        Manually saves a new revision containing the given objects.
+
+        `objects` is an iterable of model instances.
+        `serialized_objects` is an iterable of dicts of version data.
+        """
+        from reversion.models import Revision, Version
+        # Create the object versions.
+        version_data_dict = {}
+        for obj in objects:
+            # Handle eagerly-saved version dicts.
+            if isinstance(obj, dict):
+                version_data_seq = (obj,)
+            # Handle model instances.
+            else:
+                version_data_seq = (
+                    self.get_adapter(relation.__class__).get_version_data(relation)
+                    for relation
+                    in self._follow_relationships(obj)
+                )
+            # Store the version data.
+            version_data_dict.update(
+                ((version_data["app_label"], version_data["model_name"], version_data["object_id"]), version_data)
+                for version_data
+                in version_data_seq
+            )
+        new_versions = [
+            Version(
+                content_type=ContentType.objects.db_manager(using).get_by_natural_key(
+                    version_data["app_label"],
+                    version_data["model_name"],
+                ),
+                object_id=version_data["object_id"],
+                db=version_data["db"],
+                format=version_data["format"],
+                serialized_data=version_data["serialized_data"],
+                object_repr=version_data["object_repr"],
+            )
+            for version_data
+            in version_data_dict.values()
+        ]
+        # Bail early if there are no objects to save.
+        if not new_versions:
+            return
+        # Check for duplicates, if requested.
+        save_revision = True
+        if ignore_duplicates:
+            # Find the latest revision amongst the latest previous version of each object.
+            latest_revision_qs = Revision.objects.using(using).annotate(
+                version_count=models.Count("version"),
+            ).filter(
+                version_count=len(new_versions),
+                manager_slug=self._manager_slug,
+            )
+            for version in new_versions:
+                latest_revision_qs = latest_revision_qs.filter(
+                    version__object_id=version.object_id,
+                    version__content_type_id=version.content_type_id,
+                    version__db=version.db,
+                )
+            latest_revision = latest_revision_qs.order_by("-pk").first()
+            # If we have a latest revision, compare it to the current revision.
+            if latest_revision is not None:
+                previous_versions = latest_revision.version_set.all()
+
+                # Creates a sorted list of version keys for comparison.
+                def get_version_keys(versions):
+                    return [
+                        (version.object_id, version.content_type_id, version.db, version.local_field_dict)
+                        for version
+                        in sorted(versions, key=lambda v: (v.object_id, v.content_type_id, v.db))
+                    ]
+                save_revision = get_version_keys(previous_versions) != get_version_keys(new_versions)
+        # Only save if we're always saving, or have changes.
+        if save_revision:
+            # Save a new revision.
+            revision = Revision(
+                manager_slug=self._manager_slug,
+                user=user,
+                comment=comment,
+            )
+            # Send the pre_revision_commit signal.
+            pre_revision_commit.send(
+                sender=self,
+                instances=objects,
+                revision=revision,
+                versions=new_versions,
+            )
+            # Save the revision.
+            with transaction.atomic(using=using):
+                revision.save(using=using)
+                # Save version models.
+                for version in new_versions:
+                    version.revision = revision
+                    version.save(using=using)
+                # Save the meta information.
+                for meta_obj in meta:
+                    meta_obj.revision = revision
+                    meta_obj.save(using=using)
+            # Send the post_revision_commit signal.
+            post_revision_commit.send(
+                sender=self,
+                instances=objects,
+                revision=revision,
+                versions=new_versions,
+            )
+            # Return the revision.
+            return revision
 
     # Signal receivers.
 

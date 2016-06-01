@@ -24,6 +24,7 @@ from reversion.revisions import (
     get_adapter,
     VersionAdapter,
     create_revision,
+    default_revision_manager,
     get_for_object_reference,
     get_for_object,
     get_unique_for_object,
@@ -188,7 +189,7 @@ class InternalsTest(RevisionTestBase):
         self.assertEqual(Revision.objects.count(), 1)
         self.assertEqual(Version.objects.count(), 6)
         # Save a manual revision.
-        Revision.objects.save_revision([self.test11])
+        default_revision_manager.save_revision([self.test11])
         self.assertEqual(Revision.objects.count(), 2)
         self.assertEqual(Version.objects.count(), 7)
 

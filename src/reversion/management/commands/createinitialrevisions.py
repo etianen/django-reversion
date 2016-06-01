@@ -11,7 +11,7 @@ from django.db import reset_queries
 from django.utils import translation
 from django.utils.encoding import force_text
 from reversion.revisions import default_revision_manager
-from reversion.models import Revision, Version
+from reversion.models import Version
 
 
 def get_app(app_label):
@@ -129,9 +129,10 @@ class Command(BaseCommand):
                 objects = live_objs.in_bulk(chunked_ids)
                 for id, obj in objects.items():
                     try:
-                        Revision.objects.db_manager(database).save_revision(
+                        default_revision_manager.save_revision(
                             objects=(obj,),
                             comment=comment,
+                            using=database,
                         )
                     except:
                         print("ERROR: Could not save initial version for %s %s." % (model_class.__name__, obj.pk))
