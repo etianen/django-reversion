@@ -1,7 +1,8 @@
 import sys
+sys.path.insert(0, "src/reversion")  # noqa
 sys.path.insert(0, "src")  # noqa
 from setuptools import setup, find_packages
-from reversion import __version__
+from version import __version__
 
 
 # Load in babel support, if available.

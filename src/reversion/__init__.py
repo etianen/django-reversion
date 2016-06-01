@@ -6,6 +6,7 @@ Developed by Dave Hall.
 <http://www.etianen.com/>
 """
 
+from reversion.version import __version__  # noqa
 from reversion.revisions import (  # noqa
     VersionAdapter,
     RevisionManager,
@@ -37,5 +38,3 @@ from reversion.revisions import (  # noqa
     get_for_date,
     get_deleted,
 )
-
-__version__ = VERSION = (1, 10, 3)
