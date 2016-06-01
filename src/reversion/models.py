@@ -33,7 +33,7 @@ def safe_revert(versions):
         except (IntegrityError, ObjectDoesNotExist):
             unreverted_versions.append(version)
     if len(unreverted_versions) == len(versions):
-        raise RevertError("Could not revert revision, due to database integrity errors.")
+        raise RevertError("Could not revert revision due to database integrity errors.")
     if unreverted_versions:
         safe_revert(unreverted_versions)
 

@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 from contextlib import contextmanager
 from django.db import models, transaction, connection
 from django.conf.urls import url
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.admin import options
 from django.contrib.admin.utils import unquote, quote
 try:
@@ -12,12 +12,13 @@ except ImportError:  # Django < 1.9  pragma: no cover
     from django.contrib.contenttypes.generic import GenericInlineModelAdmin, GenericRelation
 from django.core.urlresolvers import reverse
 from django.core.exceptions import PermissionDenied, ImproperlyConfigured
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.utils.text import capfirst
 from django.utils.translation import ugettext as _
 from django.utils.encoding import force_text
 from django.utils.formats import localize
 from reversion.compat import remote_field, remote_model
+from reversion.errors import RevertError
 from reversion.models import Version
 from reversion.revisions import default_revision_manager
 
@@ -211,6 +212,10 @@ class VersionAdmin(admin.ModelAdmin):
                         response.template_name = template_name  # Set the template name to the correct template.
                         response.render()  # Eagerly render the response, so it's using the latest version.
                         raise RollBackRevisionView  # Raise an exception to undo the transaction and the revision.
+        except RevertError:
+            opts = self.model._meta
+            messages.error(request, "Could not revert revision due to database integrity errors.")
+            return redirect("%s:%s_%s_changelist" % (self.admin_site.name, opts.app_label, opts.model_name))
         except RollBackRevisionView:
             pass
         return response
