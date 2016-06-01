@@ -15,16 +15,16 @@ class RevisionMiddleware(object):
 
     def process_request(self, request):
         if request_creates_revision(request):
-            revision_context_manager._start()
+            context = revision_context_manager.create_revision()
+            context.__enter__()
             revision_context_manager.set_user(request.user)
             if not hasattr(request, "_revision_middleware"):
-                setattr(request, "_revision_middleware", set())
-            request._revision_middleware.add(self)
+                setattr(request, "_revision_middleware", {})
+            request._revision_middleware[self] = context
 
     def _close_revision(self, request):
-        if self in getattr(request, "_revision_middleware", ()):
-            revision_context_manager._end(*sys.exc_info())
-            request._revision_middleware.remove(self)
+        if self in getattr(request, "_revision_middleware", {}):
+            request._revision_middleware.pop(self).__exit__(*sys.exc_info())
 
     def process_response(self, request, response):
         self._close_revision(request)
