@@ -132,7 +132,7 @@ class Command(BaseCommand):
                         default_revision_manager.save_revision(
                             objects=(obj,),
                             comment=comment,
-                            using=database,
+                            db=database,
                         )
                     except:
                         print("ERROR: Could not save initial version for %s %s." % (model_class.__name__, obj.pk))

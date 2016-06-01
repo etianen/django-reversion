@@ -157,17 +157,15 @@ class VersionAdapter(object):
             fields=list(self.get_fields_to_serialize()),
         )
 
-    def get_version_id(self, obj):
+    def get_content_type_natural_key(self, model):
         """
-        Returns a tuple of (app_label, model_name, object_id) for the given model instance.
-
-        `obj` - A model instance.
+        Returns a tuple of (app_label, model_name) for the given model.
         """
         if self.for_concrete_model:
-            opts = obj._meta.concrete_model._meta
+            opts = model._meta.concrete_model._meta
         else:
-            opts = obj._meta
-        return (opts.app_label, opts.model_name, force_text(obj.pk))
+            opts = model._meta
+        return (opts.app_label, opts.model_name)
 
     def get_version_data(self, obj):
         """
@@ -175,11 +173,9 @@ class VersionAdapter(object):
 
         `obj` - A model instance.
         """
-        app_label, model_name, object_id = self.get_version_id(obj)
         return {
-            "app_label": app_label,
-            "model_name": model_name,
-            "object_id": object_id,
+            "content_type": self.get_content_type_natural_key(obj.__class__),
+            "object_id": force_text(obj.pk),
             "db": obj._state.db,
             "format": self.get_serialization_format(),
             "serialized_data": self.get_serialized_data(obj),
@@ -272,12 +268,15 @@ class RevisionContextManager(local):
         """Gets whether to ignore duplicate revisions."""
         return self._current_frame.ignore_duplicates
 
+    def _get_version_id(self, revision_manager, obj):
+        adapter = revision_manager.get_adapter(obj.__class__)
+        return (adapter.get_content_type_natural_key(obj.__class__), force_text(obj.pk))
+
     def add_to_context(self, revision_manager, obj):
         """
         Adds an object to the current revision.
         """
-        adapter = revision_manager.get_adapter(obj.__class__)
-        self._current_frame.manager_objects[revision_manager][adapter.get_version_id(obj)] = obj
+        self._current_frame.manager_objects[revision_manager][self._get_version_id(revision_manager, obj)] = obj
 
     def add_to_context_eager(self, revision_manager, obj):
         """
@@ -286,7 +285,10 @@ class RevisionContextManager(local):
         for relation in revision_manager._follow_relationships(obj):
             adapter = revision_manager.get_adapter(relation.__class__)
             version_data = adapter.get_version_data(relation)
-            self._current_frame.manager_objects[revision_manager][adapter.get_version_id(relation)] = version_data
+            self._current_frame.manager_objects[revision_manager][self._get_version_id(
+                revision_manager,
+                relation,
+            )] = version_data
 
     def add_meta(self, cls, **kwargs):
         """Adds a model of meta information to the current revision."""
@@ -295,14 +297,14 @@ class RevisionContextManager(local):
     # High-level context management.
 
     @contextmanager
-    def _create_revision_context(self, manage_manually, using):
+    def _create_revision_context(self, manage_manually, db):
         # Create a new stack frame.
         if self.is_active():
-            stack_frame = self._current_frame.fork(manage_manually, using)
+            stack_frame = self._current_frame.fork(manage_manually, db)
         else:
             stack_frame = RevisionContextStackFrame(
                 manage_manually=manage_manually,
-                db=using,
+                db=db,
                 user=None,
                 comment="",
                 ignore_duplicates=False,
@@ -310,7 +312,7 @@ class RevisionContextManager(local):
                 meta=[],
             )
         # Run the revision context in a transaction.
-        with transaction.atomic(using=using):
+        with transaction.atomic(using=db):
             self._stack.append(stack_frame)
             try:
                 yield
@@ -325,19 +327,19 @@ class RevisionContextManager(local):
                         comment=stack_frame.comment,
                         meta=stack_frame.meta,
                         ignore_duplicates=stack_frame.ignore_duplicates,
-                        using=using,
+                        db=db,
                     )
             # Join the stack frame on success.
             if self._stack:
                 self._current_frame.join(stack_frame)
 
-    def create_revision(self, manage_manually=False, using=None):
+    def create_revision(self, manage_manually=False, db=None):
         """
         Marks up a block of code as requiring a revision to be created.
 
         The returned context manager can also be used as a decorator.
         """
-        return ContextWrapper(self._create_revision_context, (manage_manually, using))
+        return ContextWrapper(self._create_revision_context, (manage_manually, db))
 
 
 class ContextWrapper(object):
@@ -453,10 +455,16 @@ class RevisionManager(object):
         for signal in adapter_obj.get_all_signals():
             signal.disconnect(self._signal_receiver, model)
 
-    def _get_versions(self, db=None):
+    def _get_versions(self, model, db=None):
         """Returns all versions that apply to this manager."""
         from reversion.models import Version
-        return Version.objects.using(db).filter(revision__manager_slug=self._manager_slug)
+        adapter = self.get_adapter(model)
+        content_type = (ContentType.objects.db_manager(db)
+                        .get_by_natural_key(*adapter.get_content_type_natural_key(model)))
+        return Version.objects.using(db).filter(
+            revision__manager_slug=self._manager_slug,
+            content_type=content_type,
+        )
 
     # Revision management API.
 
@@ -466,12 +474,9 @@ class RevisionManager(object):
 
         The results are returned with the most recent versions first.
         """
-        content_type = ContentType.objects.db_manager(db).get_for_model(model)
-        versions = self._get_versions(db).filter(
-            content_type=content_type,
+        return self._get_versions(model, db).filter(
             object_id=object_id,
-        ).select_related("revision").order_by("-pk")
-        return versions
+        ).order_by("-pk")
 
     def get_for_object(self, obj, db=None):
         """
@@ -492,53 +497,33 @@ class RevisionManager(object):
                 "Use get_for_object().get_unique() instead of get_unique_for_object(). "
                 "get_unique_for_object() will be removed in django-reversion 1.12.0"
             ),
-            DeprecationWarning)
+            DeprecationWarning
+        )
         return list(self.get_for_object(obj, db).get_unique())
 
-    def get_for_date(self, object, date, db=None):
+    def get_for_date(self, obj, date, db=None):
         """Returns the latest version of an object for the given date."""
-        return (self.get_for_object(object, db)
-                .filter(revision__date_created__lte=date)[:1]
-                .get())
+        return self.get_for_object(obj, db).filter(revision__date_created__lte=date)[:1].get()
 
-    def get_deleted(self, model_class, db=None, model_db=None):
+    def get_deleted(self, model, db=None, model_db=None):
         """
         Returns all the deleted versions for the given model class.
 
         The results are returned with the most recent versions first.
         """
         model_db = model_db or db
-        content_type = ContentType.objects.db_manager(db).get_for_model(model_class)
-        # Return the deleted versions!
-        return self._get_versions(db).filter(
-            pk__reversion_in=(self._get_versions(db).filter(
-                content_type=content_type,
-            ).exclude(
-                object_id__reversion_in=(model_class._base_manager.using(model_db), model_class._meta.pk.name),
+        return self._get_versions(model, db).filter(
+            pk__reversion_in=(self._get_versions(model, db).exclude(
+                object_id__reversion_in=(model._base_manager.using(model_db), model._meta.pk.name),
             ).values_list("object_id").annotate(
                 id=Max("id"),
             ), "id")
         ).order_by("-id")
 
-    # Helpers.
-
-    def _follow_relationships(self, instance):
-        def follow(obj):
-            # If a model is created an deleted in the same revision, then it's pk will be none.
-            if obj.pk is None or obj in followed_objects:
-                return
-            followed_objects.add(obj)
-            adapter = self.get_adapter(obj.__class__)
-            for related in adapter.get_followed_relations(obj):
-                follow(related)
-        followed_objects = set()
-        follow(instance)
-        return followed_objects
-
     # Manual revision saving.
 
     def save_revision(self, objects=(), ignore_duplicates=False, user=None, comment="", meta=(),
-                      date_created=None, using=None):
+                      date_created=None, db=None):
         """
         Manually saves a new revision containing the given objects.
 
@@ -562,16 +547,13 @@ class RevisionManager(object):
                 )
             # Store the version data.
             version_data_dict.update(
-                ((version_data["app_label"], version_data["model_name"], version_data["object_id"]), version_data)
+                ((version_data["content_type"], version_data["object_id"]), version_data)
                 for version_data
                 in version_data_seq
             )
         new_versions = [
             Version(
-                content_type=ContentType.objects.db_manager(using).get_by_natural_key(
-                    version_data["app_label"],
-                    version_data["model_name"],
-                ),
+                content_type=ContentType.objects.db_manager(db).get_by_natural_key(*version_data["content_type"]),
                 object_id=version_data["object_id"],
                 db=version_data["db"],
                 format=version_data["format"],
@@ -588,7 +570,7 @@ class RevisionManager(object):
         save_revision = True
         if ignore_duplicates:
             # Find the latest revision amongst the latest previous version of each object.
-            latest_revision_qs = Revision.objects.using(using).annotate(
+            latest_revision_qs = Revision.objects.using(db).annotate(
                 version_count=models.Count("version"),
             ).filter(
                 version_count=len(new_versions),
@@ -630,16 +612,16 @@ class RevisionManager(object):
                 versions=new_versions,
             )
             # Save the revision.
-            with transaction.atomic(using=using):
-                revision.save(using=using)
+            with transaction.atomic(using=db):
+                revision.save(using=db)
                 # Save version models.
                 for version in new_versions:
                     version.revision = revision
-                    version.save(using=using)
+                    version.save(using=db)
                 # Save the meta information.
                 for meta_obj in meta:
                     meta_obj.revision = revision
-                    meta_obj.save(using=using)
+                    meta_obj.save(using=db)
             # Send the post_revision_commit signal.
             post_revision_commit.send(
                 sender=self,
@@ -651,6 +633,19 @@ class RevisionManager(object):
             return revision
 
     # Signal receivers.
+
+    def _follow_relationships(self, instance):
+        def follow(obj):
+            # If a model is created an deleted in the same revision, then it's pk will be none.
+            if obj.pk is None or obj in followed_objects:
+                return
+            followed_objects.add(obj)
+            adapter = self.get_adapter(obj.__class__)
+            for related in adapter.get_followed_relations(obj):
+                follow(related)
+        followed_objects = set()
+        follow(instance)
+        return followed_objects
 
     def _signal_receiver(self, instance, signal, **kwargs):
         """Adds registered models to the current revision, if any."""

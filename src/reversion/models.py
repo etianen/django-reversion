@@ -86,9 +86,8 @@ class Revision(models.Model):
                     for version in versions:
                         # Load the content type from the same DB as the Version, since it logically has to be in the
                         # same DB for the foreign key to work.
-                        content_type = ContentType.objects.db_manager(
-                            using=version._state.db,
-                        ).get_for_id(version.content_type_id)
+                        content_type = (ContentType.objects.db_manager(version._state.db)
+                                        .get_for_id(version.content_type_id))
                         model_cls = content_type.model_class()
                         try:
                             # Load the model instance from the same DB as it was saved under.
