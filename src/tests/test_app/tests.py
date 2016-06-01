@@ -651,7 +651,7 @@ class DeleteRevisionsTest(ReversionTestBase):
     def testDeleteRevisions(self):
         call_command("createinitialrevisions")
         self.assertGreater(Version.objects.count(), 4)
-        call_command("deleterevisions", "test_app", confirmation=False, verbosity=0)
+        call_command("deleterevisions", "test_app", interactive=False, verbosity=0)
         self.assertEqual(Version.objects.count(), 0)
 
 
