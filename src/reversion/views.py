@@ -1,5 +1,4 @@
 from functools import wraps
-from django.db import transaction
 from reversion.revisions import revision_context_manager
 
 
@@ -18,7 +17,7 @@ def create_revision(revision_context_manager=revision_context_manager):
         @wraps(func)
         def do_revision_view(request, *args, **kwargs):
             if request_creates_revision(request):
-                with transaction.atomic(), revision_context_manager.create_revision():
+                with revision_context_manager.create_revision():
                     revision_context_manager.set_user(request.user)
                     return func(request, *args, **kwargs)
                 return func(request, *args, **kwargs)
