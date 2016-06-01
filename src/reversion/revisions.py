@@ -154,9 +154,9 @@ class VersionAdapter(object):
             fields=list(self.get_fields_to_serialize()),
         )
 
-    def get_content_type_natural_key(self, obj):
+    def get_version_id(self, obj):
         """
-        Returns a tuple of (app_label, model_name) for the given model instance.
+        Returns a tuple of (app_label, model_name, object_id) for the given model instance.
 
         `obj` - A model instance.
         """
@@ -164,25 +164,19 @@ class VersionAdapter(object):
             opts = obj._meta.concrete_model._meta
         else:
             opts = obj._meta
-        return (opts.app_label, opts.model_name)
-
-    def get_object_id(self, obj):
-        """
-        Returns the object id to save for the given object.
-
-        `obj` - A model instance.
-        """
-        return force_text(obj.pk)
+        return (opts.app_label, opts.model_name, force_text(obj.pk))
 
     def get_version_data(self, obj):
         """
-        Creates the version data to be saved to the version model.
+        Creates a dict of version data to be saved to the version model.
 
         `obj` - A model instance.
         """
+        app_label, model_name, object_id = self.get_version_id(obj)
         return {
-            "content_type": self.get_content_type_natural_key(obj),
-            "object_id": self.get_object_id(obj),
+            "app_label": app_label,
+            "model_name": model_name,
+            "object_id": object_id,
             "db": obj._state.db,
             "format": self.get_serialization_format(),
             "serialized_data": self.get_serialized_data(obj),
@@ -326,19 +320,16 @@ class RevisionContextManager(local):
         Adds an object to the current revision.
         """
         adapter = revision_manager.get_adapter(obj.__class__)
-        self._current_frame.manager_objects[revision_manager][(
-            adapter.get_content_type_natural_key(obj),
-            adapter.get_object_id(obj),
-        )] = obj
+        self._current_frame.manager_objects[revision_manager][adapter.get_version_id(obj)] = obj
 
-    def add_to_context_eager(self, revision_manager, version_data):
+    def add_to_context_eager(self, revision_manager, obj):
         """
         Adds a dict of pre-serialized version data to the current revision
         """
-        self._current_frame.manager_objects[revision_manager][(
-            version_data["content_type"],
-            version_data["object_id"],
-        )] = version_data
+        for relation in revision_manager._follow_relationships(obj):
+            adapter = revision_manager.get_adapter(relation.__class__)
+            version_data = adapter.get_version_data(relation)
+            self._current_frame.manager_objects[revision_manager][adapter.get_version_id(relation)] = version_data
 
     def add_meta(self, cls, **kwargs):
         """Adds a model of meta information to the current revision."""
@@ -553,13 +544,6 @@ class RevisionManager(object):
         follow(instance)
         return followed_objects
 
-    def _get_version_data_list(self, instance):
-        return [
-            self.get_adapter(obj.__class__).get_version_data(obj)
-            for obj
-            in self._follow_relationships(instance)
-        ]
-
     # Signal receivers.
 
     def _signal_receiver(self, instance, signal, **kwargs):
@@ -567,8 +551,7 @@ class RevisionManager(object):
         if self._revision_context_manager.is_active() and not self._revision_context_manager.is_managing_manually():
             adapter = self.get_adapter(instance.__class__)
             if signal in adapter.eager_signals:
-                for version_data in self._get_version_data_list(instance):
-                    self._revision_context_manager.add_to_context_eager(self, version_data)
+                self._revision_context_manager.add_to_context_eager(self, instance)
             else:
                 self._revision_context_manager.add_to_context(self, instance)
 

@@ -60,16 +60,29 @@ class RevisionModelManager(models.Manager):
         """
         # Create the object versions.
         version_data_dict = {
-            (version_data["content_type"], version_data["object_id"]): version_data
+            (
+                version_data["app_label"],
+                version_data["model_name"],
+                version_data["object_id"],
+            ): version_data
             for version_data
             in serialized_objects
         }
         for obj in objects:
-            for version_data in revision_manager._get_version_data_list(obj):
-                version_data_dict[(version_data["content_type"], version_data["object_id"])] = version_data
+            for relation in revision_manager._follow_relationships(obj):
+                adapter = revision_manager.get_adapter(relation.__class__)
+                version_data = adapter.get_version_data(relation)
+                version_data_dict[(
+                    version_data["app_label"],
+                    version_data["model_name"],
+                    version_data["object_id"],
+                )] = version_data
         new_versions = [
             Version(
-                content_type=ContentType.objects.db_manager(self.db).get_by_natural_key(*version_data["content_type"]),
+                content_type=ContentType.objects.db_manager(self.db).get_by_natural_key(
+                    version_data["app_label"],
+                    version_data["model_name"],
+                ),
                 object_id=version_data["object_id"],
                 db=version_data["db"],
                 format=version_data["format"],
