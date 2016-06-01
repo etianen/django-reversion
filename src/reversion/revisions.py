@@ -186,21 +186,23 @@ class VersionAdapter(object):
 
 class RevisionContextStackFrame(object):
 
-    def __init__(self, manage_manually, is_invalid, user, comment, ignore_duplicates, manager_objects, meta):
+    def __init__(self, manage_manually, db, user, comment, ignore_duplicates, manager_objects, meta):
         # Block-scoped properties.
         self.manage_manually = manage_manually
-        self.is_invalid = is_invalid
+        self.db = db
         # Revision-scoped properties.
         self.user = user
         self.comment = comment
         self.ignore_duplicates = ignore_duplicates
         self.manager_objects = manager_objects
         self.meta = meta
+        # Start transaction management.
+        self.transaction = transaction.atomic(using=db)
 
-    def fork(self, manage_manually):
+    def fork(self, manage_manually, db):
         return RevisionContextStackFrame(
             manage_manually,
-            self.is_invalid,
+            db,
             self.user,
             self.comment,
             self.ignore_duplicates,
@@ -213,20 +215,23 @@ class RevisionContextStackFrame(object):
         )
 
     def join(self, other_frame):
-        if not other_frame.is_invalid:
-            # Copy back all revision-scoped properties.
-            self.user = other_frame.user
-            self.comment = other_frame.comment
-            self.ignore_duplicates = other_frame.ignore_duplicates
-            self.manager_objects = other_frame.manager_objects
-            self.meta = other_frame.meta
+        self.user = other_frame.user
+        self.comment = other_frame.comment
+        self.ignore_duplicates = other_frame.ignore_duplicates
+        self.manager_objects = other_frame.manager_objects
+        self.meta = other_frame.meta
+
+    def __enter__(self):
+        self.transaction.__enter__()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.transaction.__exit__(exc_type, exc_value, traceback)
 
 
 class RevisionContextManager(local):
 
     def __init__(self):
         self._stack = []
-        self._db_depths = defaultdict(int)
 
     def is_active(self):
         """
@@ -242,52 +247,49 @@ class RevisionContextManager(local):
 
     def _start(self, manage_manually, db):
         if self.is_active():
-            self._stack.append(self._current_frame.fork(manage_manually))
+            new_frame = self._current_frame.fork(manage_manually, db)
         else:
-            self._stack.append(RevisionContextStackFrame(
+            new_frame = RevisionContextStackFrame(
                 manage_manually,
-                is_invalid=False,
+                db,
                 user=None,
                 comment="",
                 ignore_duplicates=False,
                 manager_objects=defaultdict(dict),
                 meta=[],
-            ))
-        self._db_depths[db] += 1
+            )
+        self._stack.append(new_frame)
+        new_frame.__enter__()
 
-    def _invalidate(self):
-        self._current_frame.is_invalid = True
-
-    def _end(self, db):
+    def _end(self, exc_type, exc_value, traceback):
         stack_frame = self._current_frame
-        self._db_depths[db] -= 1
+        self._stack.pop()
         try:
-            if self._db_depths[db] == 0 and not stack_frame.is_invalid:
-                for manager, objects in stack_frame.manager_objects.items():
-                    post_revision_context_end.send(
-                        sender=manager,
-                        objects=[obj for obj in objects.values() if not isinstance(obj, dict)],
-                        serialized_objects=[obj for obj in objects.values() if isinstance(obj, dict)],
-                        user=stack_frame.user,
-                        comment=stack_frame.comment,
-                        meta=stack_frame.meta,
-                        ignore_duplicates=stack_frame.ignore_duplicates,
-                        db=db,
-                    )
+            if exc_type is None:
+                # Only save for a db if that's the last stack frame for that db.
+                if not any(frame.db == stack_frame.db for frame in self._stack):
+                    for manager, objects in stack_frame.manager_objects.items():
+                        post_revision_context_end.send(
+                            sender=manager,
+                            objects=[obj for obj in objects.values() if not isinstance(obj, dict)],
+                            serialized_objects=[obj for obj in objects.values() if isinstance(obj, dict)],
+                            user=stack_frame.user,
+                            comment=stack_frame.comment,
+                            meta=stack_frame.meta,
+                            ignore_duplicates=stack_frame.ignore_duplicates,
+                            db=stack_frame.db,
+                        )
+                # Join the stack frame on success.
+                if self._stack:
+                    self._current_frame.join(stack_frame)
         finally:
-            self._stack.pop()
-            if self._stack:
-                self._current_frame.join(stack_frame)
+            stack_frame.__exit__(exc_type, exc_value, traceback)
 
     # Block-scoped properties.
 
     def is_managing_manually(self):
         """Returns whether this revision context has manual management enabled."""
         return self._current_frame.manage_manually
-
-    def is_invalid(self):
-        """Checks whether this revision is invalid."""
-        return self._current_frame.is_invalid
 
     # Revision-scoped properties.
 
@@ -352,21 +354,12 @@ class RevisionContext(object):
         self._context_manager = context_manager
         self._manage_manually = manage_manually
         self._db = db
-        self._transaction = transaction.atomic(using=db)
 
     def __enter__(self):
-        self._transaction.__enter__()
         self._context_manager._start(self._manage_manually, self._db)
 
     def __exit__(self, exc_type, exc_value, traceback):
-        try:
-            if exc_type is not None:
-                self._context_manager._invalidate()
-        finally:
-            try:
-                self._context_manager._end(self._db)
-            finally:
-                self._transaction.__exit__(exc_type, exc_value, traceback)
+        self._context_manager._end(exc_type, exc_value, traceback)
 
     def __call__(self, func):
         @wraps(func)
