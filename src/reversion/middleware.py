@@ -24,7 +24,7 @@ class RevisionMiddleware(object):
 
     def process_request(self, request):
         if request_creates_revision(request):
-            revision_context_manager.start()
+            revision_context_manager._start()
             revision_context_manager.set_user(request.user)
             if not hasattr(request, "_revision_middleware"):
                 setattr(request, "_revision_middleware", set())
@@ -33,8 +33,8 @@ class RevisionMiddleware(object):
     def _close_revision(self, request, invalidate):
         if self in getattr(request, "_revision_middleware", ()):
             if invalidate:
-                revision_context_manager.invalidate()
-            revision_context_manager.end()
+                revision_context_manager._invalidate()
+            revision_context_manager._end()
             request._revision_middleware.remove(self)
 
     def process_response(self, request, response):

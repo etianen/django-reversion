@@ -2,15 +2,15 @@
 
 from __future__ import unicode_literals
 import warnings
+from collections import defaultdict
 from functools import wraps, partial
+from itertools import chain
 from threading import local
 from weakref import WeakValueDictionary
-from collections import defaultdict
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.signals import request_finished
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Max
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save
@@ -22,39 +22,35 @@ from reversion.signals import post_revision_context_end
 
 class VersionAdapter(object):
 
-    """Adapter class for serializing a registered model."""
-
-    # Fields to include in the serialized data.
-    fields = None
-
-    # Fields to exclude from the serialized data.
-    exclude = ()
-
-    # Foreign key relationships to follow when saving a version of this model.
-    follow = ()
-
-    # The serialization format to use.
-    format = "json"
-
-    # Signals to listen to.
-    signals = (post_save,)
-
-    # Eager signals to listen to.
-    eager_signals = ()
-
-    # Whether to save content types for the concrete model of any proxy models.
-    for_concrete_model = True
+    """
+    Adapter class for serializing a registered model.
+    """
 
     def __init__(self, model):
         self.model = model
 
-    def get_all_signals(self):
-        return tuple(self.signals) + tuple(self.eager_signals)
+    fields = None
+    """
+    Field named to include in the serialized data.
+
+    Set to `None` to include all model fields.
+    """
+
+    exclude = ()
+    """
+    Field names to exclude from the serialized data.
+    """
 
     def get_fields_to_serialize(self):
-        """Returns an iterable of field names to serialize in the version data."""
+        """
+        Returns an iterable of field names to serialize in the version data.
+        """
         opts = self.model._meta.concrete_model._meta
-        fields = self.fields or (field.name for field in opts.local_fields + opts.local_many_to_many)
+        fields = (
+            field.name
+            for field
+            in opts.local_fields + opts.local_many_to_many
+        ) if self.fields is None else self.fields
         fields = (opts.get_field(field) for field in fields if field not in self.exclude)
         for field in fields:
             if remote_field(field):
@@ -62,8 +58,21 @@ class VersionAdapter(object):
             else:
                 yield field.attname
 
+    follow = ()
+    """
+    Foreign-key relationships to follow when saving a version of this model.
+
+    `ForeignKey`, `ManyToManyField` and reversion `ForeignKey` relationships
+    are all supported. Any property that returns a `Model` or `QuerySet`
+    are also supported.
+    """
+
     def get_followed_relations(self, obj):
-        """Returns an iterable of related models that should be included in the revision data."""
+        """
+        Returns an iterable of related models that should be included in the revision data.
+
+        `obj` - A model instance.
+        """
         for relationship in self.follow:
             # Clear foreign key cache.
             try:
@@ -93,33 +102,88 @@ class VersionAdapter(object):
                     related=related,
                 ))
 
+    format = "json"
+    """
+    The name of a Django serialization format to use when saving the version.
+    """
+
     def get_serialization_format(self):
-        """Returns the serialization format to use."""
+        """
+        Returns the name of a Django serialization format to use when saving the version.
+        """
         return self.format
 
+    for_concrete_model = True
+    """
+    If `True` (default), then proxy models will be saved under the same content
+    type as their concrete model. If `False`, then proxy models will be saved
+    under their own content type, effectively giving proxy models their own
+    distinct history.
+    """
+
+    signals = (post_save,)
+    """
+    Django signals that trigger saving a version.
+
+    The model version will be saved at the end of the outermost revision block.
+    """
+
+    eager_signals = ()
+    """
+    Django signals that trigger saving a version.
+
+    The model version will be saved immediately, making it suitable for signals
+    that trigger before a model is deleted.
+    """
+
+    def get_all_signals(self):
+        """
+        Returns an iterable of all signals that trigger saving a version.
+        """
+        return chain(self.signals, self.eager_signals)
+
     def get_serialized_data(self, obj):
-        """Returns a string of serialized data for the given obj."""
+        """
+        Returns a string of serialized data for the given model instance.
+
+        `obj` - A model instance.
+        """
         return serializers.serialize(
             self.get_serialization_format(),
             (obj,),
             fields=list(self.get_fields_to_serialize()),
         )
 
+    def get_content_type_natural_key(self, obj):
+        """
+        Returns a tuple of (app_label, model_name) for the given model instance.
+
+        `obj` - A model instance.
+        """
+        if self.for_concrete_model:
+            opts = obj._meta.concrete_model._meta
+        else:
+            opts = obj._meta
+        return (opts.app_label, opts.model_name)
+
     def get_object_id(self, obj):
         """
         Returns the object id to save for the given object.
+
+        `obj` - A model instance.
         """
         return force_text(obj.pk)
 
-    def get_content_type(self, obj, db):
-        """Returns the content type to use for the given object."""
-        return ContentType.objects.db_manager(db).get_for_model(obj, for_concrete_model=self.for_concrete_model)
+    def get_version_data(self, obj):
+        """
+        Creates the version data to be saved to the version model.
 
-    def get_version_data(self, obj, db):
-        """Creates the version data to be saved to the version model."""
+        `obj` - A model instance.
+        """
         return {
+            "content_type": self.get_content_type_natural_key(obj),
             "object_id": self.get_object_id(obj),
-            "content_type": self.get_content_type(obj, db),
+            "db": obj._state.db,
             "format": self.get_serialization_format(),
             "serialized_data": self.get_serialized_data(obj),
             "object_repr": force_text(obj),
@@ -128,155 +192,126 @@ class VersionAdapter(object):
 
 class RevisionContextStackFrame(object):
 
-    def __init__(self, is_managing_manually, is_invalid=False, ignore_duplicates=False):
-        self.is_managing_manually = is_managing_manually
+    def __init__(self, manage_manually, is_invalid, user, comment, ignore_duplicates, manager_objects, meta):
+        # Block-scoped properties.
+        self.manage_manually = manage_manually
         self.is_invalid = is_invalid
+        # Revision-scoped properties.
+        self.user = user
+        self.comment = comment
         self.ignore_duplicates = ignore_duplicates
-        self.objects = defaultdict(dict)
-        self.meta = []
+        self.manager_objects = manager_objects
+        self.meta = meta
 
-    def fork(self, is_managing_manually):
-        return RevisionContextStackFrame(is_managing_manually, self.is_invalid, self.ignore_duplicates)
+    def fork(self, manage_manually):
+        return RevisionContextStackFrame(
+            manage_manually,
+            self.is_invalid,
+            self.user,
+            self.comment,
+            self.ignore_duplicates,
+            defaultdict(dict, {
+                manager: objects.copy()
+                for manager, objects
+                in self.manager_objects.items()
+            }),
+            self.meta.copy(),
+        )
 
-    def join(self, other_context):
-        if not other_context.is_invalid:
-            for manager_name, object_versions in other_context.objects.items():
-                self.objects[manager_name].update(object_versions)
-            self.meta.extend(other_context.meta)
-
-
-def get_version_data_key(version_data):
-    return (version_data["content_type"], version_data["object_id"])
+    def join(self, other_frame):
+        if not other_frame.is_invalid:
+            # Copy back all revision-scoped properties.
+            self.user = other_frame.user
+            self.comment = other_frame.comment
+            self.ignore_duplicates = other_frame.ignore_duplicates
+            self.manager_objects = other_frame.manager_objects
+            self.meta = other_frame.meta
 
 
 class RevisionContextManager(local):
 
-    """Manages the state of the current revision."""
-
     def __init__(self):
-        self.clear()
-        request_finished.connect(self._request_finished_receiver)
-
-    def clear(self):
-        """Puts the revision manager back into its default state."""
-        self._user = None
-        self._comment = ""
         self._stack = []
-        self._db = None
+        self._db_depths = defaultdict(int)
 
     def is_active(self):
-        """Returns whether there is an active revision for this thread."""
+        """
+        Returns whether there is an active revision for this thread.
+        """
         return bool(self._stack)
-
-    def _assert_active(self):
-        """Checks for an active revision, throwning an exception if none."""
-        if not self.is_active():
-            raise RevisionManagementError("There is no active revision for this thread")
 
     @property
     def _current_frame(self):
-        self._assert_active()
+        if not self.is_active():
+            raise RevisionManagementError("There is no active revision for this thread")
         return self._stack[-1]
 
-    def start(self, manage_manually=False):
-        """
-        Begins a revision for this thread.
-
-        This MUST be balanced by a call to `end`.  It is recommended that you
-        leave these methods alone and instead use the `create_revision`
-        decorator/context manager.
-        """
+    def _start(self, manage_manually, db):
         if self.is_active():
             self._stack.append(self._current_frame.fork(manage_manually))
         else:
-            self._stack.append(RevisionContextStackFrame(manage_manually))
+            self._stack.append(RevisionContextStackFrame(
+                manage_manually,
+                is_invalid=False,
+                user=None,
+                comment="",
+                ignore_duplicates=False,
+                manager_objects=defaultdict(dict),
+                meta=[],
+            ))
+        self._db_depths[db] += 1
 
-    def end(self):
-        """Ends a revision for this thread."""
-        self._assert_active()
-        stack_frame = self._stack.pop()
-        if self._stack:
-            self._current_frame.join(stack_frame)
-        else:
-            try:
-                if not stack_frame.is_invalid:
-                    for manager, manager_objects in stack_frame.objects.items():
-                        post_revision_context_end.send(
-                            sender=manager,
-                            objects=[obj for obj in manager_objects.values() if not isinstance(obj, dict)],
-                            serialized_objects=[obj for obj in manager_objects.values() if isinstance(obj, dict)],
-                            user=self._user,
-                            comment=self._comment,
-                            meta=stack_frame.meta,
-                            ignore_duplicates=stack_frame.ignore_duplicates,
-                            db=self._db,
-                        )
-            finally:
-                self.clear()
+    def _invalidate(self):
+        self._current_frame.is_invalid = True
 
-    # Revision context properties that apply to the entire stack.
+    def _end(self, db):
+        stack_frame = self._current_frame
+        self._db_depths[db] -= 1
+        try:
+            if self._db_depths[db] == 0 and not stack_frame.is_invalid:
+                for manager, objects in stack_frame.manager_objects.items():
+                    post_revision_context_end.send(
+                        sender=manager,
+                        objects=[obj for obj in objects.values() if not isinstance(obj, dict)],
+                        serialized_objects=[obj for obj in objects.values() if isinstance(obj, dict)],
+                        user=stack_frame.user,
+                        comment=stack_frame.comment,
+                        meta=stack_frame.meta,
+                        ignore_duplicates=stack_frame.ignore_duplicates,
+                        db=db,
+                    )
+        finally:
+            self._stack.pop()
+            if self._stack:
+                self._current_frame.join(stack_frame)
 
-    def get_db(self):
-        """Returns the current DB alias being used."""
-        return self._db
-
-    def set_db(self, db):
-        """Sets the DB alias to use."""
-        self._db = db
-
-    def set_user(self, user):
-        """Sets the current user for the revision."""
-        self._assert_active()
-        self._user = user
-
-    def get_user(self):
-        """Gets the current user for the revision."""
-        self._assert_active()
-        return self._user
-
-    def set_comment(self, comment):
-        """Sets the comments for the revision."""
-        self._assert_active()
-        self._comment = comment
-
-    def get_comment(self):
-        """Gets the current comment for the revision."""
-        self._assert_active()
-        return self._comment
-
-    # Revision context properties that apply to the current stack frame.
+    # Block-scoped properties.
 
     def is_managing_manually(self):
         """Returns whether this revision context has manual management enabled."""
-        return self._current_frame.is_managing_manually
-
-    def invalidate(self):
-        """Marks this revision as broken, so should not be commited."""
-        self._current_frame.is_invalid = True
+        return self._current_frame.manage_manually
 
     def is_invalid(self):
         """Checks whether this revision is invalid."""
         return self._current_frame.is_invalid
 
-    def add_to_context(self, revision_manager, obj):
-        """
-        Adds an object to the current revision.
-        """
-        adapter = revision_manager.get_adapter(obj.__class__)
-        self._current_frame.objects[revision_manager][(
-            adapter.get_content_type(obj, self._db),
-            adapter.get_object_id(obj),
-        )] = obj
+    # Revision-scoped properties.
 
-    def add_to_context_serialized(self, revision_manager, version_data):
-        """
-        Adds a dict of pre-serialized version data to the current revision
-        """
-        self._current_frame.objects[revision_manager][get_version_data_key(version_data)] = version_data
+    def set_user(self, user):
+        """Sets the current user for the revision."""
+        self._current_frame.user = user
 
-    def add_meta(self, cls, **kwargs):
-        """Adds a class of meta information to the current revision."""
-        self._current_frame.meta.append((cls(**kwargs)))
+    def get_user(self):
+        """Gets the current user for the revision."""
+        return self._current_frame.user
+
+    def set_comment(self, comment):
+        """Sets the comments for the revision."""
+        self._current_frame.comment = comment
+
+    def get_comment(self):
+        """Gets the current comment for the revision."""
+        return self._current_frame.comment
 
     def set_ignore_duplicates(self, ignore_duplicates):
         """Sets whether to ignore duplicate revisions."""
@@ -286,52 +321,63 @@ class RevisionContextManager(local):
         """Gets whether to ignore duplicate revisions."""
         return self._current_frame.ignore_duplicates
 
-    # Signal receivers.
+    def add_to_context(self, revision_manager, obj):
+        """
+        Adds an object to the current revision.
+        """
+        adapter = revision_manager.get_adapter(obj.__class__)
+        self._current_frame.manager_objects[revision_manager][(
+            adapter.get_content_type_natural_key(obj),
+            adapter.get_object_id(obj),
+        )] = obj
 
-    def _request_finished_receiver(self, **kwargs):
+    def add_to_context_eager(self, revision_manager, version_data):
         """
-        Called at the end of a request, ensuring that any open revisions
-        are closed. Not closing all active revisions can cause memory leaks
-        and weird behaviour.
+        Adds a dict of pre-serialized version data to the current revision
         """
-        while self.is_active():  # pragma: no cover
-            warnings.warn("Active revision context open at the end of a request.")
-            self.end()
+        self._current_frame.manager_objects[revision_manager][(
+            version_data["content_type"],
+            version_data["object_id"],
+        )] = version_data
+
+    def add_meta(self, cls, **kwargs):
+        """Adds a model of meta information to the current revision."""
+        self._current_frame.meta.append((cls(**kwargs)))
 
     # High-level context management.
 
-    def create_revision(self, manage_manually=False):
+    def create_revision(self, manage_manually=False, db=None):
         """
         Marks up a block of code as requiring a revision to be created.
 
         The returned context manager can also be used as a decorator.
         """
-        return RevisionContext(self, manage_manually)
+        return RevisionContext(self, manage_manually, db)
 
 
 class RevisionContext(object):
 
-    """An individual context for a revision."""
-
-    def __init__(self, context_manager, manage_manually):
-        """Initializes the revision context."""
+    def __init__(self, context_manager, manage_manually, db):
         self._context_manager = context_manager
         self._manage_manually = manage_manually
+        self._db = db
+        self._transaction = transaction.atomic(using=db)
 
     def __enter__(self):
-        """Enters a block of revision management."""
-        self._context_manager.start(self._manage_manually)
+        self._transaction.__enter__()
+        self._context_manager._start(self._manage_manually, self._db)
 
     def __exit__(self, exc_type, exc_value, traceback):
-        """Leaves a block of revision management."""
         try:
             if exc_type is not None:
-                self._context_manager.invalidate()
+                self._context_manager._invalidate()
         finally:
-            self._context_manager.end()
+            try:
+                self._context_manager._end(self._db)
+            finally:
+                self._transaction.__exit__(exc_type, exc_value, traceback)
 
     def __call__(self, func):
-        """Allows this revision context to be used as a decorator."""
         @wraps(func)
         def do_revision_context(*args, **kwargs):
             with self:
@@ -507,9 +553,9 @@ class RevisionManager(object):
         follow(instance)
         return followed_objects
 
-    def _get_version_data_list(self, instance, db):
+    def _get_version_data_list(self, instance):
         return [
-            self.get_adapter(obj.__class__).get_version_data(obj, db)
+            self.get_adapter(obj.__class__).get_version_data(obj)
             for obj
             in self._follow_relationships(instance)
         ]
@@ -521,8 +567,8 @@ class RevisionManager(object):
         if self._revision_context_manager.is_active() and not self._revision_context_manager.is_managing_manually():
             adapter = self.get_adapter(instance.__class__)
             if signal in adapter.eager_signals:
-                for version_data in self._get_version_data_list(instance, self._revision_context_manager._db):
-                    self._revision_context_manager.add_to_context_serialized(self, version_data)
+                for version_data in self._get_version_data_list(instance):
+                    self._revision_context_manager.add_to_context_eager(self, version_data)
             else:
                 self._revision_context_manager.add_to_context(self, instance)
 
@@ -544,8 +590,6 @@ create_revision = revision_context_manager.create_revision
 
 
 # Revision meta data.
-get_db = revision_context_manager.get_db
-set_db = revision_context_manager.set_db
 get_user = revision_context_manager.get_user
 set_user = revision_context_manager.set_user
 get_comment = revision_context_manager.get_comment
