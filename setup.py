@@ -1,8 +1,5 @@
-import sys
-sys.path.insert(0, "src/reversion")  # noqa
-sys.path.insert(0, "src")  # noqa
 from setuptools import setup, find_packages
-from version import __version__
+from reversion import __version__
 
 
 # Load in babel support, if available.
@@ -26,10 +23,7 @@ setup(
     author_email="dave@etianen.com",
     url="http://github.com/etianen/django-reversion",
     zip_safe=False,
-    packages=find_packages("src"),
-    package_dir={
-        "": "src",
-    },
+    packages=find_packages(),
     package_data={
         "reversion": ["locale/*/LC_MESSAGES/django.*", "templates/reversion/*.html"]},
     cmdclass=cmdclass,

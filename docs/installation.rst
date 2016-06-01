@@ -27,9 +27,9 @@ The popular easy_install utility can be used to install the latest django-revers
 Git
 ---
 
-Using Git to install django-reversion provides an easy way of upgrading your installation at a later date. Simply clone the `public git repository <http://github.com/etianen/django-reversion>`_ and symlink the ``src/reversion`` directory into your ``PYTHONPATH``::
+Using Git to install django-reversion provides an easy way of upgrading your installation at a later date. Simply clone the `public git repository <http://github.com/etianen/django-reversion>`_ and symlink the ``reversion`` directory into your ``PYTHONPATH``::
 
     $ git clone git://github.com/etianen/django-reversion.git
     $ cd django-reversion.git
     $ git checkout release-1.9.3
-    $ ln -s src/reversion /your/pythonpath/location/reversion
+    $ ln -s reversion /your/pythonpath/location/reversion
