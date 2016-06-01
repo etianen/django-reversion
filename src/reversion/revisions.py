@@ -12,7 +12,7 @@ from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import models, transaction
+from django.db import models, transaction, router
 from django.db.models import Max
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save
@@ -339,6 +339,8 @@ class RevisionContextManager(local):
 
         The returned context manager can also be used as a decorator.
         """
+        from reversion.models import Revision
+        db = router.db_for_write(Revision) if db is None else db
         return ContextWrapper(self._create_revision_context, (manage_manually, db))
 
 
@@ -396,8 +398,6 @@ class RevisionManager(object):
         self._manager_slug = manager_slug
         self._registered_models = {}
         self._revision_context_manager = revision_context_manager
-        # Proxies to common context methods.
-        self._revision_context = revision_context_manager.create_revision()
 
     # Registration methods.
 
