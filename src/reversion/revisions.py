@@ -16,6 +16,7 @@ from django.db.models import Max
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save
 from django.utils.encoding import force_text
+from django.utils import timezone
 from reversion.compat import remote_field
 from reversion.errors import RevisionManagementError, RegistrationError
 from reversion.signals import pre_revision_commit, post_revision_commit
@@ -533,7 +534,7 @@ class RevisionManager(object):
     # Manual revision saving.
 
     def save_revision(self, objects=(), ignore_duplicates=False, user=None, comment="", meta=(),
-                      using=None):
+                      date_created=None, using=None):
         """
         Manually saves a new revision containing the given objects.
 
@@ -541,6 +542,7 @@ class RevisionManager(object):
         `serialized_objects` is an iterable of dicts of version data.
         """
         from reversion.models import Revision, Version
+        date_created = timezone.now() if date_created is None else date_created
         # Create the object versions.
         version_data_dict = {}
         for obj in objects:
@@ -612,6 +614,7 @@ class RevisionManager(object):
             # Save a new revision.
             revision = Revision(
                 manager_slug=self._manager_slug,
+                date_created=date_created,
                 user=user,
                 comment=comment,
             )

@@ -50,7 +50,6 @@ class Revision(models.Model):
     )
 
     date_created = models.DateTimeField(
-        auto_now_add=True,
         db_index=True,
         verbose_name=_("date created"),
         help_text="The date and time this revision was created.",
