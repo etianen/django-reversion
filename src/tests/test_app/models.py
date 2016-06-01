@@ -5,7 +5,6 @@ try:
     from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
 except ImportError:  # Django < 1.9  pragma: no cover
     from django.contrib.contenttypes.generic import GenericRelation, GenericForeignKey
-
 from reversion.models import Revision
 
 

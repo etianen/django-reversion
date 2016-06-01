@@ -11,34 +11,12 @@ from django.db import models
 from django.test import TestCase
 from django.core.management import call_command
 from django.contrib import admin
-from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
 from django.db.models.signals import pre_delete
 from django.utils import timezone
 from django.core.urlresolvers import reverse, resolve
 
-from reversion.revisions import (
-    register,
-    unregister,
-    is_registered,
-    get_registered_models,
-    get_adapter,
-    VersionAdapter,
-    create_revision,
-    default_revision_manager,
-    get_for_object_reference,
-    get_for_object,
-    get_unique_for_object,
-    get_for_date,
-    get_ignore_duplicates,
-    set_ignore_duplicates,
-    get_deleted,
-    set_comment,
-    get_comment,
-    set_user,
-    get_user,
-    add_meta,
-    RevisionManager,
-)
+import reversion
 from reversion.models import Revision, Version
 from reversion.errors import RegistrationError
 from reversion.signals import pre_revision_commit, post_revision_commit
@@ -61,8 +39,6 @@ from test_app.models import (
 )
 from test_app import admin  # noqa. Force early registration of all admin models.
 
-User = get_user_model()
-
 ZERO = datetime.timedelta(0)
 
 
@@ -70,19 +46,19 @@ class RegistrationTest(TestCase):
 
     def check_registration(self, test_model):
         # Register the model and test.
-        register(test_model)
-        self.assertTrue(is_registered(test_model))
-        self.assertRaises(RegistrationError, lambda: register(test_model))
-        self.assertTrue(test_model in get_registered_models())
-        self.assertTrue(isinstance(get_adapter(test_model), VersionAdapter))
+        reversion.register(test_model)
+        self.assertTrue(reversion.is_registered(test_model))
+        self.assertRaises(RegistrationError, lambda: reversion.register(test_model))
+        self.assertTrue(test_model in reversion.get_registered_models())
+        self.assertTrue(isinstance(reversion.get_adapter(test_model), reversion.VersionAdapter))
 
     def check_deregistration(self, test_model):
         # Unregister the model and test.
-        unregister(test_model)
-        self.assertFalse(is_registered(test_model))
-        self.assertRaises(RegistrationError, lambda: unregister(test_model))
-        self.assertTrue(test_model not in get_registered_models())
-        self.assertRaises(RegistrationError, lambda: isinstance(get_adapter(test_model)))
+        reversion.unregister(test_model)
+        self.assertFalse(reversion.is_registered(test_model))
+        self.assertRaises(RegistrationError, lambda: reversion.unregister(test_model))
+        self.assertTrue(test_model not in reversion.get_registered_models())
+        self.assertRaises(RegistrationError, lambda: isinstance(reversion.get_adapter(test_model)))
 
     def testRegistration(self):
         self.check_registration(ReversionTestModel1)
@@ -95,17 +71,17 @@ class RegistrationTest(TestCase):
 
     def testDecorator(self):
         # Test the use of register as a decorator
-        @register
+        @reversion.register
         class DecoratorModel(models.Model):
             pass
-        self.assertTrue(is_registered(DecoratorModel))
+        self.assertTrue(reversion.is_registered(DecoratorModel))
 
     def testDecoratorArgs(self):
         # Test a decorator with arguments
-        @register(format='yaml')
+        @reversion.register(format='yaml')
         class DecoratorArgsModel(models.Model):
             pass
-        self.assertTrue(is_registered(DecoratorArgsModel))
+        self.assertTrue(reversion.is_registered(DecoratorArgsModel))
 
 
 class ReversionTestBase(TestCase):
@@ -113,13 +89,13 @@ class ReversionTestBase(TestCase):
     def setUp(self):
         # Unregister all registered models.
         self.initial_registered_models = []
-        for registered_model in get_registered_models():
-            self.initial_registered_models.append((registered_model, get_adapter(registered_model).__class__))
-            unregister(registered_model)
+        for registered_model in reversion.get_registered_models():
+            self.initial_registered_models.append((registered_model, reversion.get_adapter(registered_model).__class__))
+            reversion.unregister(registered_model)
         # Register the test models.
-        register(ReversionTestModel1)
-        register(ReversionTestModel2)
-        register(ReversionTestModel3, eager_signals=[pre_delete])
+        reversion.register(ReversionTestModel1)
+        reversion.register(ReversionTestModel2)
+        reversion.register(ReversionTestModel3, eager_signals=[pre_delete])
         # Create some test data.
         self.test11 = ReversionTestModel1.objects.create(
             name="model1 instance1 version1",
@@ -145,21 +121,21 @@ class ReversionTestBase(TestCase):
 
     def tearDown(self):
         # Unregister the test models.
-        unregister(ReversionTestModel1)
-        unregister(ReversionTestModel2)
-        unregister(ReversionTestModel3)
+        reversion.unregister(ReversionTestModel1)
+        reversion.unregister(ReversionTestModel2)
+        reversion.unregister(ReversionTestModel3)
         # Unregister all remaining models.
-        for registered_model in get_registered_models():
-            unregister(registered_model)
+        for registered_model in reversion.get_registered_models():
+            reversion.unregister(registered_model)
         # Re-register initial registered models.
         for initial_model, adapter in self.initial_registered_models:
-            register(initial_model, adapter_cls=adapter)
+            reversion.register(initial_model, adapter_cls=adapter)
         del self.initial_registered_models
 
 
 class RevisionTestBase(ReversionTestBase):
 
-    @create_revision()
+    @reversion.create_revision()
     def setUp(self):
         super(RevisionTestBase, self).setUp()
 
@@ -174,8 +150,8 @@ class InternalsTest(RevisionTestBase):
         self.assertEqual(Revision.objects.count(), 1)
         self.assertEqual(Version.objects.count(), 6)
         # New revision should be created.
-        with create_revision():
-            with create_revision():
+        with reversion.create_revision():
+            with reversion.create_revision():
                 self.test11.name = "model1 instance1 version2"
                 self.test11.save()
         self.assertEqual(Revision.objects.count(), 2)
@@ -183,26 +159,26 @@ class InternalsTest(RevisionTestBase):
 
     def testManualRevisionManagement(self):
         # When manage manually is on, no revisions created.
-        with create_revision(manage_manually=True):
+        with reversion.create_revision(manage_manually=True):
             self.test11.name = "model1 instance1 version2"
             self.test11.save()
         self.assertEqual(Revision.objects.count(), 1)
         self.assertEqual(Version.objects.count(), 6)
         # Save a manual revision.
-        default_revision_manager.save_revision([self.test11])
+        reversion.save_revision([self.test11])
         self.assertEqual(Revision.objects.count(), 2)
         self.assertEqual(Version.objects.count(), 7)
 
     def testEmptyRevisionNotCreated(self):
-        with create_revision():
+        with reversion.create_revision():
             pass
         self.assertEqual(Revision.objects.count(), 1)
         self.assertEqual(Version.objects.count(), 6)
 
     def testRevisionContextAbandonedOnError(self):
-        with create_revision():
+        with reversion.create_revision():
             try:
-                with create_revision():
+                with reversion.create_revision():
                     self.test11.name = "model1 instance1 version2"
                     self.test11.save()
                     raise Exception("Foo")
@@ -212,7 +188,7 @@ class InternalsTest(RevisionTestBase):
         self.assertEqual(Version.objects.count(), 6)
 
     def testRevisionDecoratorAbandonedOnError(self):
-        @create_revision()
+        @reversion.create_revision()
         def make_revision():
             self.test11.name = "model1 instance1 version2"
             self.test11.save()
@@ -225,13 +201,13 @@ class InternalsTest(RevisionTestBase):
         self.assertEqual(Version.objects.count(), 6)
 
     def testRevisionCreatedOnDelete(self):
-        with create_revision():
+        with reversion.create_revision():
             self.test31.delete()
         self.assertEqual(Revision.objects.count(), 2)
         self.assertEqual(Version.objects.count(), 7)
 
     def testNoVersionForObjectCreatedAndDeleted(self):
-        with create_revision():
+        with reversion.create_revision():
             new_object = ReversionTestModel1.objects.create()
             new_object.delete()
         # No Revision and no Version should have been created.
@@ -243,7 +219,7 @@ class ApiTest(RevisionTestBase):
 
     def setUp(self):
         super(ApiTest, self).setUp()
-        with create_revision():
+        with reversion.create_revision():
             self.test11.name = "model1 instance1 version2"
             self.test11.save()
             self.test12.name = "model1 instance2 version2"
@@ -271,7 +247,7 @@ class ApiTest(RevisionTestBase):
         pre_revision_commit.connect(pre_revision_receiver)
         post_revision_commit.connect(post_revision_receiver)
         # Create a revision.
-        with create_revision():
+        with reversion.create_revision():
             self.test11.save()
         # Check the signals were called.
         self.assertTrue(pre_revision_receiver_called)
@@ -279,86 +255,86 @@ class ApiTest(RevisionTestBase):
 
     def testCanGetForObjectReference(self):
         # Test a model with an int pk.
-        versions = get_for_object_reference(ReversionTestModel1, self.test11.pk)
+        versions = reversion.get_for_object_reference(ReversionTestModel1, self.test11.pk)
         self.assertEqual(len(versions), 2)
         self.assertEqual(versions[0].field_dict["name"], "model1 instance1 version2")
         self.assertEqual(versions[1].field_dict["name"], "model1 instance1 version1")
         # Test a model with a str pk.
-        versions = get_for_object_reference(ReversionTestModel2, self.test21.pk)
+        versions = reversion.get_for_object_reference(ReversionTestModel2, self.test21.pk)
         self.assertEqual(len(versions), 2)
         self.assertEqual(versions[0].field_dict["name"], "model2 instance1 version2")
         self.assertEqual(versions[1].field_dict["name"], "model2 instance1 version1")
 
     def testCanGetForObject(self):
         # Test a model with an int pk.
-        versions = get_for_object(self.test11)
+        versions = reversion.get_for_object(self.test11)
         self.assertEqual(len(versions), 2)
         self.assertEqual(versions[0].field_dict["name"], "model1 instance1 version2")
         self.assertEqual(versions[1].field_dict["name"], "model1 instance1 version1")
         # Test a model with a str pk.
-        versions = get_for_object(self.test21)
+        versions = reversion.get_for_object(self.test21)
         self.assertEqual(len(versions), 2)
         self.assertEqual(versions[0].field_dict["name"], "model2 instance1 version2")
         self.assertEqual(versions[1].field_dict["name"], "model2 instance1 version1")
 
     def testCanGetUniqueForObject(self):
-        with create_revision():
+        with reversion.create_revision():
             self.test11.save()
             self.test21.save()
         # Test a model with an int pk.
-        self.assertEqual(get_for_object(self.test11).count(), 3)
-        self.assertEqual(len(get_unique_for_object(self.test11)), 2)
+        self.assertEqual(reversion.get_for_object(self.test11).count(), 3)
+        self.assertEqual(len(reversion.get_unique_for_object(self.test11)), 2)
         # Test a model with a str pk.
-        self.assertEqual(get_for_object(self.test21).count(), 3)
-        self.assertEqual(len(get_unique_for_object(self.test21)), 2)
+        self.assertEqual(reversion.get_for_object(self.test21).count(), 3)
+        self.assertEqual(len(reversion.get_unique_for_object(self.test21)), 2)
 
     def testCanGetUnique(self):
-        with create_revision():
+        with reversion.create_revision():
             self.test11.save()
             self.test21.save()
         # Test a model with an int pk.
-        self.assertEqual(get_for_object(self.test11).count(), 3)
-        self.assertEqual(len(list(get_for_object(self.test11).get_unique())), 2)
+        self.assertEqual(reversion.get_for_object(self.test11).count(), 3)
+        self.assertEqual(len(list(reversion.get_for_object(self.test11).get_unique())), 2)
         # Test a model with a str pk.
-        self.assertEqual(get_for_object(self.test21).count(), 3)
-        self.assertEqual(len(list(get_for_object(self.test21).get_unique())), 2)
+        self.assertEqual(reversion.get_for_object(self.test21).count(), 3)
+        self.assertEqual(len(list(reversion.get_for_object(self.test21).get_unique())), 2)
 
     def testCanGetForDate(self):
         now = timezone.now()
         # Test a model with an int pk.
-        version = get_for_date(self.test11, now)
+        version = reversion.get_for_date(self.test11, now)
         self.assertEqual(version.field_dict["name"], "model1 instance1 version2")
         self.assertRaises(
             Version.DoesNotExist,
-            lambda: get_for_date(self.test11, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)),
+            lambda: reversion.get_for_date(self.test11, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)),
         )
         # Test a model with a str pk.
-        version = get_for_date(self.test21, now)
+        version = reversion.get_for_date(self.test21, now)
         self.assertEqual(version.field_dict["name"], "model2 instance1 version2")
         self.assertRaises(
             Version.DoesNotExist,
-            lambda: get_for_date(self.test21, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)),
+            lambda: reversion.get_for_date(self.test21, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)),
         )
 
     def testCanGetDeleted(self):
-        with create_revision():
+        with reversion.create_revision():
             self.test11.delete()
             self.test21.delete()
         # Test a model with an int pk.
-        versions = get_deleted(ReversionTestModel1)
+        versions = reversion.get_deleted(ReversionTestModel1)
         self.assertEqual(len(versions), 1)
         self.assertEqual(versions[0].field_dict["name"], "model1 instance1 version2")
         # Test a model with a str pk.
-        versions = get_deleted(ReversionTestModel2)
+        versions = reversion.get_deleted(ReversionTestModel2)
         self.assertEqual(len(versions), 1)
         self.assertEqual(versions[0].field_dict["name"], "model2 instance1 version2")
 
     def testCanRevertVersion(self):
-        get_for_object(self.test11)[1].revert()
+        reversion.get_for_object(self.test11)[1].revert()
         self.assertEqual(ReversionTestModel1.objects.get(id=self.test11.pk).name, "model1 instance1 version1")
 
     def testCanRevertRevision(self):
-        get_for_object(self.test11)[1].revision.revert()
+        reversion.get_for_object(self.test11)[1].revision.revert()
         self.assertEqual(ReversionTestModel1.objects.get(id=self.test11.pk).name, "model1 instance1 version1")
         self.assertEqual(ReversionTestModel1.objects.get(id=self.test12.pk).name, "model1 instance2 version1")
         self.assertEqual(ReversionTestModel2.objects.get(id=self.test22.pk).name, "model2 instance2 version1")
@@ -367,7 +343,7 @@ class ApiTest(RevisionTestBase):
     def testCanRevertRevisionWithDeletedVersions(self):
         self.assertEqual(ReversionTestModel1.objects.count(), 2)
         self.assertEqual(ReversionTestModel2.objects.count(), 2)
-        with create_revision():
+        with reversion.create_revision():
             self.test11.name = "model1 instance1 version3"
             self.test11.save()
             self.test12.delete()
@@ -376,7 +352,7 @@ class ApiTest(RevisionTestBase):
             self.test22.delete()
         self.assertEqual(ReversionTestModel1.objects.count(), 1)
         self.assertEqual(ReversionTestModel2.objects.count(), 1)
-        with create_revision():
+        with reversion.create_revision():
             self.test11.name = "model1 instance1 version4"
             self.test11.save()
             self.test21.name = "model2 instance1 version4"
@@ -384,44 +360,44 @@ class ApiTest(RevisionTestBase):
         self.assertEqual(ReversionTestModel1.objects.count(), 1)
         self.assertEqual(ReversionTestModel2.objects.count(), 1)
         # Revert to a revision where some deletes were logged.
-        get_for_object(self.test11)[1].revision.revert()
+        reversion.get_for_object(self.test11)[1].revision.revert()
         self.assertEqual(ReversionTestModel1.objects.count(), 1)
         self.assertEqual(ReversionTestModel2.objects.count(), 1)
         self.assertEqual(ReversionTestModel1.objects.get(id=self.test11.id).name, "model1 instance1 version3")
         self.assertEqual(ReversionTestModel2.objects.get(id=self.test21.id).name, "model2 instance1 version3")
         # Revert the a revision before the deletes were logged.
-        get_for_object(self.test11)[2].revision.revert()
+        reversion.get_for_object(self.test11)[2].revision.revert()
         self.assertEqual(ReversionTestModel1.objects.count(), 2)
         self.assertEqual(ReversionTestModel2.objects.count(), 2)
 
     def testCanSaveIgnoringDuplicates(self):
-        with create_revision():
+        with reversion.create_revision():
             self.test11.save()
             self.test12.save()
             self.test21.save()
             self.test22.save()
-            self.assertFalse(get_ignore_duplicates())
-            set_ignore_duplicates(True)
-            self.assertTrue(get_ignore_duplicates())
-        self.assertEqual(get_for_object(self.test11).count(), 2)
+            self.assertFalse(reversion.get_ignore_duplicates())
+            reversion.set_ignore_duplicates(True)
+            self.assertTrue(reversion.get_ignore_duplicates())
+        self.assertEqual(reversion.get_for_object(self.test11).count(), 2)
         # Save a non-duplicate revision.
-        with create_revision():
+        with reversion.create_revision():
             self.test11.save()
-            self.assertFalse(get_ignore_duplicates())
-            set_ignore_duplicates(True)
-        self.assertEqual(get_for_object(self.test11).count(), 3)
+            self.assertFalse(reversion.get_ignore_duplicates())
+            reversion.set_ignore_duplicates(True)
+        self.assertEqual(reversion.get_for_object(self.test11).count(), 3)
 
     def testCanAddMetaToRevision(self):
         # Create a revision with lots of meta data.
-        with create_revision():
+        with reversion.create_revision():
             self.test11.save()
-            set_comment("Foo bar")
-            self.assertEqual(get_comment(), "Foo bar")
-            set_user(self.user)
-            self.assertEqual(get_user(), self.user)
-            add_meta(RevisionMeta, age=5)
+            reversion.set_comment("Foo bar")
+            self.assertEqual(reversion.get_comment(), "Foo bar")
+            reversion.set_user(self.user)
+            self.assertEqual(reversion.get_user(), self.user)
+            reversion.add_meta(RevisionMeta, age=5)
         # Test the revision data.
-        revision = get_for_object(self.test11)[0].revision
+        revision = reversion.get_for_object(self.test11)[0].revision
         self.assertEqual(revision.user, self.user)
         self.assertEqual(revision.comment, "Foo bar")
         self.assertEqual(revision.revisionmeta.age, 5)
@@ -431,14 +407,17 @@ class MultiTableInheritanceApiTest(RevisionTestBase):
 
     def setUp(self):
         super(MultiTableInheritanceApiTest, self).setUp()
-        register(ReversionTestModel1Child, follow=("reversiontestmodel1_ptr",))
-        with create_revision():
+        reversion.register(ReversionTestModel1Child, follow=("reversiontestmodel1_ptr",))
+        with reversion.create_revision():
             self.testchild1 = ReversionTestModel1Child.objects.create(
                 name="modelchild1 instance1 version 1",
             )
 
     def testCanRetreiveFullFieldDict(self):
-        self.assertEqual(get_for_object(self.testchild1)[0].field_dict["name"], "modelchild1 instance1 version 1")
+        self.assertEqual(
+            reversion.get_for_object(self.testchild1)[0].field_dict["name"],
+            "modelchild1 instance1 version 1",
+        )
 
 
 class ReversionTestModel1ChildProxy(ReversionTestModel1Child):
@@ -450,54 +429,54 @@ class ProxyModelApiTest(RevisionTestBase):
 
     def setUp(self):
         super(ProxyModelApiTest, self).setUp()
-        register(ReversionTestModel1Proxy)
+        reversion.register(ReversionTestModel1Proxy)
         self.concrete = self.test11
         self.proxy = ReversionTestModel1Proxy.objects.get(pk=self.concrete.pk)
 
-        with create_revision():
+        with reversion.create_revision():
             self.proxy.name = "proxy model"
             self.proxy.save()
 
     def testCanGetForObjectReference(self):
         # Can get version for proxy model
-        proxy_versions = get_for_object_reference(ReversionTestModel1Proxy, self.proxy.id)
+        proxy_versions = reversion.get_for_object_reference(ReversionTestModel1Proxy, self.proxy.id)
         self.assertEqual(len(proxy_versions), 2)
         self.assertEqual(proxy_versions[0].field_dict["name"], self.proxy.name)
         self.assertEqual(proxy_versions[1].field_dict["name"], self.concrete.name)
 
         # Can get the same version for concrete model
-        concrete_versions = get_for_object_reference(ReversionTestModel1, self.concrete.id)
+        concrete_versions = reversion.get_for_object_reference(ReversionTestModel1, self.concrete.id)
         self.assertEqual(list(concrete_versions), list(proxy_versions))
 
     def testCanGetForObject(self):
         # Can get version for proxy model
-        proxy_versions = get_for_object(self.proxy)
+        proxy_versions = reversion.get_for_object(self.proxy)
         self.assertEqual(len(proxy_versions), 2)
         self.assertEqual(proxy_versions[0].field_dict["name"], self.proxy.name)
         self.assertEqual(proxy_versions[1].field_dict["name"], self.concrete.name)
 
         # Can get the same version for concrete model
-        concrete_versions = get_for_object(self.concrete)
+        concrete_versions = reversion.get_for_object(self.concrete)
         self.assertEqual(list(concrete_versions), list(proxy_versions))
 
     def testCanRevertVersion(self):
         self.assertEqual(ReversionTestModel1.objects.get(pk=self.concrete.pk).name, self.proxy.name)
-        get_for_object(self.proxy)[1].revert()
+        reversion.get_for_object(self.proxy)[1].revert()
         self.assertEqual(ReversionTestModel1.objects.get(pk=self.concrete.pk).name, self.concrete.name)
 
     def testMultiTableInheritanceProxyModel(self):
-        register(ReversionTestModel1Child, follow=("reversiontestmodel1_ptr",))
-        register(ReversionTestModel1ChildProxy, follow=("reversiontestmodel1_ptr",))
+        reversion.register(ReversionTestModel1Child, follow=("reversiontestmodel1_ptr",))
+        reversion.register(ReversionTestModel1ChildProxy, follow=("reversiontestmodel1_ptr",))
 
-        with create_revision():
+        with reversion.create_revision():
             concrete = ReversionTestModel1Child.objects.create(name="modelchild1 instance1 version 1")
 
         proxy = ReversionTestModel1ChildProxy.objects.get(pk=concrete.pk)
-        with create_revision():
+        with reversion.create_revision():
             proxy.name = "proxy model"
             proxy.save()
 
-        proxy_versions = get_for_object(proxy)
+        proxy_versions = reversion.get_for_object(proxy)
 
         self.assertEqual(proxy_versions[0].field_dict["name"], proxy.name)
         self.assertEqual(proxy_versions[1].field_dict["name"], concrete.name)
@@ -507,10 +486,10 @@ class FollowModelsTest(ReversionTestBase):
 
     def setUp(self):
         super(FollowModelsTest, self).setUp()
-        unregister(ReversionTestModel1)
-        register(ReversionTestModel1, follow=("testfollowmodel_set",))
-        register(TestFollowModel, follow=("test_model_1", "test_model_2s",))
-        with create_revision():
+        reversion.unregister(ReversionTestModel1)
+        reversion.register(ReversionTestModel1, follow=("testfollowmodel_set",))
+        reversion.register(TestFollowModel, follow=("test_model_1", "test_model_2s",))
+        with reversion.create_revision():
             self.follow1 = TestFollowModel.objects.create(
                 name="related instance1 version 1",
                 test_model_1=self.test11,
@@ -520,47 +499,47 @@ class FollowModelsTest(ReversionTestBase):
     def testRelationsFollowed(self):
         self.assertEqual(Revision.objects.count(), 1)
         self.assertEqual(Version.objects.count(), 4)
-        with create_revision():
+        with reversion.create_revision():
             self.follow1.save()
         self.assertEqual(Revision.objects.count(), 2)
         self.assertEqual(Version.objects.count(), 8)
 
     def testRevertWithDelete(self):
-        with create_revision():
+        with reversion.create_revision():
             test23 = ReversionTestModel2.objects.create(
                 name="model2 instance3 version1",
             )
             self.follow1.test_model_2s.add(test23)
             self.follow1.save()
-        self.assertEqual(get_for_object(test23).count(), 1)
+        self.assertEqual(reversion.get_for_object(test23).count(), 1)
         self.assertEqual(self.follow1.test_model_2s.all().count(), 3)
         # Test that a revert with delete works.
         test23_pk = test23.pk
         self.assertEqual(ReversionTestModel2.objects.count(), 3)
-        with create_revision():
-            get_for_object(self.follow1)[1].revision.revert(delete=True)
+        with reversion.create_revision():
+            reversion.get_for_object(self.follow1)[1].revision.revert(delete=True)
         self.assertEqual(ReversionTestModel1.objects.get(id=self.test11.pk).name, "model1 instance1 version1")
         self.assertEqual(ReversionTestModel2.objects.get(id=self.test22.pk).name, "model2 instance2 version1")
         self.assertEqual(ReversionTestModel2.objects.get(id=self.test22.pk).name, "model2 instance2 version1")
         self.assertEqual(ReversionTestModel2.objects.count(), 2)
         self.assertRaises(ReversionTestModel2.DoesNotExist, lambda: ReversionTestModel2.objects.get(id=test23_pk))
         # Roll back to the revision where all models were present.
-        get_for_object(self.follow1)[1].revision.revert()
+        reversion.get_for_object(self.follow1)[1].revision.revert()
         self.assertEqual(self.follow1.test_model_2s.all().count(), 3)
         # Roll back to a revision where a delete flag is present.
-        get_for_object(self.follow1)[0].revision.revert(delete=True)
+        reversion.get_for_object(self.follow1)[0].revision.revert(delete=True)
         self.assertEqual(self.follow1.test_model_2s.all().count(), 2)
 
     def testReverseRelationsFollowed(self):
         self.assertEqual(Revision.objects.count(), 1)
         self.assertEqual(Version.objects.count(), 4)
-        with create_revision():
+        with reversion.create_revision():
             self.test11.save()
         self.assertEqual(Revision.objects.count(), 2)
         self.assertEqual(Version.objects.count(), 8)
 
     def testReverseFollowRevertWithDelete(self):
-        with create_revision():
+        with reversion.create_revision():
             follow2 = TestFollowModel.objects.create(
                 name="related instance2 version 1",
                 test_model_1=self.test11,
@@ -568,29 +547,29 @@ class FollowModelsTest(ReversionTestBase):
         # Test that a revert with delete works.
         follow2_pk = follow2.pk
         self.assertEqual(TestFollowModel.objects.count(), 2)
-        get_for_object(self.test11)[1].revision.revert(delete=True)
+        reversion.get_for_object(self.test11)[1].revision.revert(delete=True)
         self.assertEqual(TestFollowModel.objects.count(), 1)
         self.assertRaises(TestFollowModel.DoesNotExist, lambda: TestFollowModel.objects.get(id=follow2_pk))
 
     def testRecoverDeleted(self):
         # Delete the test model.
-        with create_revision():
+        with reversion.create_revision():
             self.test11.delete()
         self.assertEqual(TestFollowModel.objects.count(), 0)
         self.assertEqual(ReversionTestModel1.objects.count(), 1)
         # Recover the test model.
-        with create_revision():
-            get_deleted(ReversionTestModel1)[0].revision.revert()
+        with reversion.create_revision():
+            reversion.get_deleted(ReversionTestModel1)[0].revision.revert()
         # Make sure it was recovered.
         self.assertEqual(TestFollowModel.objects.count(), 1)
         self.assertEqual(ReversionTestModel1.objects.count(), 2)
 
     def tearDown(self):
-        unregister(TestFollowModel)
+        reversion.unregister(TestFollowModel)
         super(FollowModelsTest, self).tearDown()
 
 
-excluded_revision_manager = RevisionManager("excluded")
+excluded_revision_manager = reversion.RevisionManager("excluded")
 
 
 class ExcludedFieldsTest(RevisionTestBase):
@@ -604,9 +583,15 @@ class ExcludedFieldsTest(RevisionTestBase):
         self.assertEqual(excluded_revision_manager.get_for_object(self.test11).count(), 1)
 
     def testExcludedFieldsAreRespected(self):
-        self.assertEqual(excluded_revision_manager.get_for_object(self.test11)[0].field_dict["id"], self.test11.id)
+        self.assertEqual(
+            excluded_revision_manager.get_for_object(self.test11)[0].field_dict["id"],
+            self.test11.id,
+        )
         self.assertEqual(excluded_revision_manager.get_for_object(self.test11)[0].field_dict["name"], "")
-        self.assertEqual(excluded_revision_manager.get_for_object(self.test21)[0].field_dict["id"], self.test21.id)
+        self.assertEqual(
+            excluded_revision_manager.get_for_object(self.test21)[0].field_dict["id"],
+            self.test21.id,
+        )
         self.assertEqual(excluded_revision_manager.get_for_object(self.test21)[0].field_dict["name"], "")
 
     def tearDown(self):
@@ -678,11 +663,11 @@ class VersionAdminTest(TestCase):
         self.client.logout()
 
     def testAutoRegisterWorks(self):
-        self.assertTrue(is_registered(ChildTestAdminModel))
-        self.assertTrue(is_registered(ParentTestAdminModel))
-        self.assertTrue(is_registered(InlineTestChildModel))
-        self.assertTrue(is_registered(InlineTestChildGenericModel))
-        self.assertTrue(is_registered(InlineTestParentModel))
+        self.assertTrue(reversion.is_registered(ChildTestAdminModel))
+        self.assertTrue(reversion.is_registered(ParentTestAdminModel))
+        self.assertTrue(reversion.is_registered(InlineTestChildModel))
+        self.assertTrue(reversion.is_registered(InlineTestChildGenericModel))
+        self.assertTrue(reversion.is_registered(InlineTestParentModel))
 
     def testChangelist(self):
         response = self.client.get("/admin/test_app/childtestadminmodel/")
@@ -700,7 +685,7 @@ class VersionAdminTest(TestCase):
         obj_pk = resolve(response["Location"].replace("http://testserver", "")).args[0]
         obj = ChildTestAdminModel.objects.get(id=obj_pk)
         # Check that a version is created.
-        versions = get_for_object(obj)
+        versions = reversion.get_for_object(obj)
         self.assertEqual(versions.count(), 1)
         self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version1")
         self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version1")
@@ -712,7 +697,7 @@ class VersionAdminTest(TestCase):
         })
         self.assertEqual(response.status_code, 302)
         # Check that a version is created.
-        versions = get_for_object(obj)
+        versions = reversion.get_for_object(obj)
         self.assertEqual(versions.count(), 2)
         self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version2")
         self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version2")
@@ -731,7 +716,7 @@ class VersionAdminTest(TestCase):
         obj = ChildTestAdminModel.objects.get(pk=obj.pk)
         self.assertEqual(obj.child_name, "child instance1 version2")
         self.assertEqual(obj.parent_name, "parent instance1 version2")
-        self.assertEqual(get_for_object(obj).count(), 2)
+        self.assertEqual(reversion.get_for_object(obj).count(), 2)
         # Check that a version can be rolled back.
         response = self.client.post(
             reverse(
@@ -749,7 +734,7 @@ class VersionAdminTest(TestCase):
         self.assertEqual(obj.child_name, "child instance1 version3")
         self.assertEqual(obj.parent_name, "parent instance1 version3")
         # Check that a version is created.
-        versions = get_for_object(obj)
+        versions = reversion.get_for_object(obj)
         self.assertEqual(versions.count(), 3)
         self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version3")
         self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version3")
@@ -771,7 +756,7 @@ class VersionAdminTest(TestCase):
         self.assertEqual(obj.child_name, "child instance1 version4")
         self.assertEqual(obj.parent_name, "parent instance1 version4")
         # Check that a version is created.
-        versions = get_for_object_reference(ChildTestAdminModel, obj_pk)
+        versions = reversion.get_for_object_reference(ChildTestAdminModel, obj_pk)
         self.assertEqual(versions.count(), 4)
         self.assertEqual(versions[0].field_dict["parent_name"], "parent instance1 version4")
         self.assertEqual(versions[0].field_dict["child_name"], "child instance1 version4")
@@ -806,18 +791,18 @@ class VersionAdminTest(TestCase):
         generic_children = parent.generic_children.all()
         self.assertEqual(generic_children.count(), 1)
         # get list of versions
-        version_list = get_for_object(parent)
+        version_list = reversion.get_for_object(parent)
         self.assertEqual(len(version_list), 2)
         # All done!
         return parent_pk
 
     def testInlineAdmin(self):
-        self.assertTrue(is_registered(InlineTestParentModel))
+        self.assertTrue(reversion.is_registered(InlineTestParentModel))
         # make sure model is following the child FK
-        self.assertTrue('children' in get_adapter(InlineTestParentModel).follow)
+        self.assertTrue('children' in reversion.get_adapter(InlineTestParentModel).follow)
         parent_pk = self.createInlineObjects()
         # Check that the current version includes the inlines.
-        versions = list(get_for_object_reference(InlineTestParentModel, parent_pk))
+        versions = list(reversion.get_for_object_reference(InlineTestParentModel, parent_pk))
         response = self.client.get(reverse(
             "admin:test_app_inlinetestparentmodel_revision",
             args=(parent_pk, versions[0].pk),
@@ -857,18 +842,18 @@ class VersionAdminTest(TestCase):
         children = InlineTestChildModelProxy.objects.filter(parent=parent_pk)
         self.assertEqual(children.count(), 1)
         # get list of versions
-        version_list = get_for_object(parent)
+        version_list = reversion.get_for_object(parent)
         self.assertEqual(len(version_list), 2)
         # All done!
         return parent_pk
 
     def testInlineProxyAdmin(self):
-        self.assertTrue(is_registered(InlineTestParentModelProxy))
+        self.assertTrue(reversion.is_registered(InlineTestParentModelProxy))
         # make sure model is following the child FK
-        self.assertTrue('children' in get_adapter(InlineTestParentModelProxy).follow)
+        self.assertTrue('children' in reversion.get_adapter(InlineTestParentModelProxy).follow)
         parent_pk = self.createInlineProxyObjects()
         # Check that the current version includes the inlines.
-        versions = list(get_for_object_reference(InlineTestParentModelProxy, parent_pk))
+        versions = list(reversion.get_for_object_reference(InlineTestParentModelProxy, parent_pk))
         response = self.client.get(reverse(
             "admin:test_app_inlinetestparentmodelproxy_revision",
             args=(parent_pk, versions[0].pk),
@@ -898,10 +883,10 @@ class PatchTest(RevisionTestBase):
 
     def setUp(self):
         super(PatchTest, self).setUp()
-        with create_revision():
+        with reversion.create_revision():
             self.test11.name = "model1 instance1 version2"
             self.test11.save()
-        self.version2, self.version1 = get_for_object(self.test11)
+        self.version2, self.version1 = reversion.get_for_object(self.test11)
 
     @skipUnless(can_test_patch, "Diff match patch library not installed")
     def testCanGeneratePatch(self):

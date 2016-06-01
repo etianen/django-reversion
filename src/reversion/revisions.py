@@ -9,7 +9,6 @@ from itertools import chain
 from threading import local
 from weakref import WeakValueDictionary
 from django.apps import apps
-from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction, router
@@ -457,6 +456,7 @@ class RevisionManager(object):
 
     def _get_versions(self, model, db=None):
         """Returns all versions that apply to this manager."""
+        from django.contrib.contenttypes.models import ContentType
         from reversion.models import Version
         adapter = self.get_adapter(model)
         content_type = (ContentType.objects.db_manager(db)
@@ -530,6 +530,7 @@ class RevisionManager(object):
         `objects` is an iterable of model instances.
         `serialized_objects` is an iterable of dicts of version data.
         """
+        from django.contrib.contenttypes.models import ContentType
         from reversion.models import Revision, Version
         date_created = timezone.now() if date_created is None else date_created
         # Create the object versions.
@@ -667,6 +668,10 @@ is_registered = default_revision_manager.is_registered
 unregister = default_revision_manager.unregister
 get_adapter = default_revision_manager.get_adapter
 get_registered_models = default_revision_manager.get_registered_models
+
+
+# Manual revision saving.
+save_revision = default_revision_manager.save_revision
 
 
 # Context management.
