@@ -41,6 +41,12 @@ def safe_revert(versions, using=None):
 
 class RevisionModelManager(models.Manager):
 
+    def for_revision_manager(self, revision_manager):
+        """
+        Returns all revisions created using the given revision manager.
+        """
+        return self.filter(manager_slug=revision_manager._manager_slug)
+
     def save_revision(self, objects=(), serialized_objects=(), ignore_duplicates=False, user=None, comment="", meta=(),
                       revision_manager=default_revision_manager):
         """
@@ -192,7 +198,6 @@ class Revision(models.Model):
         safe_revert(version_set, using)
 
     def __str__(self):
-        """Returns a unicode representation."""
         return ", ".join(force_text(version) for version in self.version_set.all())
 
     class Meta:
