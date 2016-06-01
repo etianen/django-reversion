@@ -115,14 +115,14 @@ class RevisionModelManager(models.Manager):
             if latest_revision is not None:
                 previous_versions = latest_revision.version_set.all()
 
-                # Creates a sorted list of version dicts for comparison.
-                def get_version_dicts(versions):
+                # Creates a sorted list of version keys for comparison.
+                def get_version_keys(versions):
                     return [
-                        version.local_field_dict
+                        (version.object_id, version.content_type_id, version.db, version.local_field_dict)
                         for version
-                        in sorted(versions, key=lambda v: (v.content_type_id, v.object_id))
+                        in sorted(versions, key=lambda v: (v.object_id, v.content_type_id, v.db))
                     ]
-                save_revision = get_version_dicts(previous_versions) != get_version_dicts(new_versions)
+                save_revision = get_version_keys(previous_versions) != get_version_keys(new_versions)
         # Only save if we're always saving, or have changes.
         if save_revision:
             # Save a new revision.
@@ -229,7 +229,7 @@ class Revision(models.Model):
                     # Delete objects that are no longer in the current revision.
                     for item in current_revision:
                         if item not in old_revision:
-                            item.delete()
+                            item.delete(using=version.db)
                 # Attempt to revert all revisions.
                 safe_revert(versions)
 
@@ -266,11 +266,12 @@ class VersionQuerySet(models.QuerySet):
         """
         Returns a generator of unique version data.
         """
-        last_field_dict = None
+        last_key = None
         for version in self.iterator():
-            if last_field_dict != version.local_field_dict:
+            key = (version.object_id, version.content_type_id, version.db, version.local_field_dict)
+            if last_key != key:
                 yield version
-            last_field_dict = version.local_field_dict
+            last_key = key
 
 
 @python_2_unicode_compatible
@@ -381,7 +382,7 @@ class Version(models.Model):
     class Meta:
         app_label = 'reversion'
         unique_together = (
-            ("object_id", "content_type", "revision"),
+            ("object_id", "content_type", "db", "revision"),
         )
 
 
