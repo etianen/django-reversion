@@ -76,7 +76,7 @@ class VersionAdmin(admin.ModelAdmin):
 
     @contextmanager
     def _create_revision(self, request):
-        with transaction.atomic(), self.revision_context_manager.create_revision():
+        with self.revision_context_manager.create_revision():
             self.revision_context_manager.set_user(request.user)
             self.revision_context_manager.set_ignore_duplicates(self.ignore_duplicate_revisions)
             yield
@@ -186,7 +186,7 @@ class VersionAdmin(admin.ModelAdmin):
 
     def revisionform_view(self, request, version, template_name, extra_context=None):
         try:
-            with transaction.atomic():
+            with transaction.atomic(using=version.db):
                 # Revert the revision.
                 version.revision.revert(delete=True)
                 # Run the normal changeform view.
