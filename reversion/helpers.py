@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+import warnings
 from django.contrib import admin
 from django.contrib.admin.sites import NotRegistered
 from django.utils.encoding import force_text
@@ -43,6 +44,7 @@ else:
 
     def generate_diffs(old_version, new_version, field_name, cleanup):
         """Generates a diff array for the named field between the two versions."""
+        warnings.warn("generate_diffs will be removed in django-reversion 1.12.0", DeprecationWarning)
         # Extract the text from the versions.
         old_text = old_version.field_dict[field_name] or ""
         new_text = new_version.field_dict[field_name] or ""
@@ -54,7 +56,7 @@ else:
             dmp.diff_cleanupEfficiency(diffs)
         elif cleanup is None:
             pass
-        else:  # pragma: no cover
+        else:
             raise ValueError("cleanup parameter should be one of 'semantic', 'efficiency' or None.")
         return diffs
 
@@ -65,6 +67,7 @@ else:
         The cleanup parameter can be None, "semantic" or "efficiency" to clean up the diff
         for greater human readibility.
         """
+        warnings.warn("generate_patch will be removed in django-reversion 1.12.0", DeprecationWarning)
         diffs = generate_diffs(old_version, new_version, field_name, cleanup)
         patch = dmp.patch_make(diffs)
         return dmp.patch_toText(patch)
@@ -77,5 +80,6 @@ else:
         The cleanup parameter can be None, "semantic" or "efficiency" to clean up the diff
         for greater human readibility.
         """
+        warnings.warn("generate_patch_html will be removed in django-reversion 1.12.0", DeprecationWarning)
         diffs = generate_diffs(old_version, new_version, field_name, cleanup)
         return dmp.diff_prettyHtml(diffs)
