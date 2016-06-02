@@ -40,12 +40,12 @@ django-reversion can be used to add rollback and recovery facility to your admin
 
     admin.site.register(YourModel, YourModelAdmin)
 
-Whenever you register a model with ``VersionAdmin``, run ``./manage.py createinitialrevisions`` command to populate the version database with an initial set of data. For large databases, this command can take a while to execute.
+**Important:** Whenever you register a model with django-reversion, run ``./manage.py createinitialrevisions`` command to populate the version database with an initial set of data. For large databases, this command can take a while to execute.
 
 For more information about admin integration, please read the :ref:`admin integration <admin>` documentation.
 
 
-Low Level API
+Low-level API
 -------------
 
 You can use django-reversion's API to build version-controlled applications. For more information, please read the :ref:`API <api>` documentation.
@@ -63,6 +63,7 @@ Installation
    django-versions
    migrations
    admin
+   common-problems
 
 Usage
 ^^^^^

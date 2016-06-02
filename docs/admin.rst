@@ -15,6 +15,8 @@ django-reversion can be used to add rollback and recovery to your admin site. To
 
     admin.site.register(YourModel, YourModelAdmin)
 
+**Important:** Whenever you register a model with django-reversion, run ``./manage.py createinitialrevisions`` command to populate the version database with an initial set of data. For large databases, this command can take a while to execute.
+
 **Note:** If you've registered your models using the :ref:`low level API <api>`, the admin class will honour the configuration you specify there. Otherwise, the admin class will auto-register your model, following all inline model relations
 and parent superclasses.
 
@@ -67,7 +69,8 @@ Customize the way django-reversion integrates with your admin site by overriding
 
         def reversion_register(self, model, **kwargs):
             """Registers the model with reversion."""
-            self.revision_manager.register(model, **kwargs)
+            # Customize registration kwargs here.
+            super(YourModelAdmin, self).reversion_register(model, **kwargs)
 
 
 Customizing admin templates

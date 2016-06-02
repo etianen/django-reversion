@@ -23,8 +23,8 @@ else:
         register,
         is_registered,
         unregister,
-        get_adapter,
         get_registered_models,
+        get_adapter,
         # Manual revision saving.
         save_revision,
         # Context management.
@@ -40,8 +40,6 @@ else:
         # Low level API.
         get_for_object_reference,
         get_for_object,
-        get_unique_for_object,
-        get_for_date,
         get_deleted,
     )
 

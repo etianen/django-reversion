@@ -65,8 +65,8 @@ class VersionAdapter(object):
     Foreign-key relationships to follow when saving a version of this model.
 
     `ForeignKey`, `ManyToManyField` and reversion `ForeignKey` relationships
-    are all supported. Any property that returns a `Model` or `QuerySet`
-    are also supported.
+    are supported. Any property that returns a `Model` or `QuerySet`
+    is also supported.
     """
 
     def get_followed_relations(self, obj):
@@ -509,6 +509,13 @@ class RevisionManager(object):
 
     def get_for_date(self, obj, date, db=None):
         """Returns the latest version of an object for the given date."""
+        warnings.warn(
+            (
+                "Use get_for_object().filter(revision__date_created__lte=date)[:1].get() instead "
+                "of get_for_date(). get_for_date() will be removed in django-reversion 1.12.0"
+            ),
+            DeprecationWarning
+        )
         return self.get_for_object(obj, db).filter(revision__date_created__lte=date)[:1].get()
 
     def get_deleted(self, model, db=None, model_db=None):

@@ -13,7 +13,6 @@ from django.core.management import call_command
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.db.models.signals import pre_delete
-from django.utils import timezone
 from django.core.urlresolvers import reverse, resolve
 
 import reversion
@@ -277,17 +276,6 @@ class ApiTest(RevisionTestBase):
         self.assertEqual(versions[0].field_dict["name"], "model2 instance1 version2")
         self.assertEqual(versions[1].field_dict["name"], "model2 instance1 version1")
 
-    def testCanGetUniqueForObject(self):
-        with reversion.create_revision():
-            self.test11.save()
-            self.test21.save()
-        # Test a model with an int pk.
-        self.assertEqual(reversion.get_for_object(self.test11).count(), 3)
-        self.assertEqual(len(reversion.get_unique_for_object(self.test11)), 2)
-        # Test a model with a str pk.
-        self.assertEqual(reversion.get_for_object(self.test21).count(), 3)
-        self.assertEqual(len(reversion.get_unique_for_object(self.test21)), 2)
-
     def testCanGetUnique(self):
         with reversion.create_revision():
             self.test11.save()
@@ -298,23 +286,6 @@ class ApiTest(RevisionTestBase):
         # Test a model with a str pk.
         self.assertEqual(reversion.get_for_object(self.test21).count(), 3)
         self.assertEqual(len(list(reversion.get_for_object(self.test21).get_unique())), 2)
-
-    def testCanGetForDate(self):
-        now = timezone.now()
-        # Test a model with an int pk.
-        version = reversion.get_for_date(self.test11, now)
-        self.assertEqual(version.field_dict["name"], "model1 instance1 version2")
-        self.assertRaises(
-            Version.DoesNotExist,
-            lambda: reversion.get_for_date(self.test11, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)),
-        )
-        # Test a model with a str pk.
-        version = reversion.get_for_date(self.test21, now)
-        self.assertEqual(version.field_dict["name"], "model2 instance1 version2")
-        self.assertRaises(
-            Version.DoesNotExist,
-            lambda: reversion.get_for_date(self.test21, datetime.datetime(1970, 1, 1, tzinfo=timezone.utc)),
-        )
 
     def testCanGetDeleted(self):
         with reversion.create_revision():
