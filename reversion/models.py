@@ -51,6 +51,10 @@ class Revision(models.Model):
         default="default",
     )
 
+    @property
+    def revision_manager(self):
+        return RevisionManager.get_manager(self.manager_slug)
+
     date_created = models.DateTimeField(
         db_index=True,
         verbose_name=_("date created"),
@@ -97,9 +101,8 @@ class Revision(models.Model):
                         except model_cls.DoesNotExist:
                             pass
                     # Calculate the set of all objects that are in the revision now.
-                    revision_manager = RevisionManager.get_manager(self.manager_slug)
                     current_revision = chain.from_iterable(
-                        revision_manager._follow_relationships(obj)
+                        self.revision_manager._follow_relationships(obj)
                         for obj in old_revision
                     )
                     # Delete objects that are no longer in the current revision.
@@ -224,15 +227,15 @@ class Version(models.Model):
         result = self.local_field_dict
         # Add parent data.
         for parent_class, field in obj._meta.concrete_model._meta.parents.items():
-            field = field or obj.pk
-            if obj._meta.proxy and parent_class == obj._meta.concrete_model:
+            if field is None:
                 continue
-            content_type = ContentType.objects.get_for_model(parent_class)
+            content_type = self.revision.revision_manager._get_content_type(parent_class, self._state.db)
             parent_id = getattr(obj, field.attname)
-            parent_version = Version.objects.get(
-                revision__id=self.revision_id,
+            parent_version = Version.objects.using(self._state.db).get(
+                revision=self.revision,
                 content_type=content_type,
                 object_id=parent_id,
+                db=self.db,
             )
             result.update(parent_version.field_dict)
         return result

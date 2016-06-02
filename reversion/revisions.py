@@ -454,16 +454,16 @@ class RevisionManager(object):
         for signal in adapter_obj.get_all_signals():
             signal.disconnect(self._signal_receiver, model)
 
-    def _get_versions(self, model, db=None):
-        """Returns all versions that apply to this manager."""
+    def _get_content_type(self, model, db):
         from django.contrib.contenttypes.models import ContentType
-        from reversion.models import Version
         adapter = self.get_adapter(model)
-        content_type = (ContentType.objects.db_manager(db)
-                        .get_by_natural_key(*adapter.get_content_type_natural_key(model)))
+        return ContentType.objects.db_manager(db).get_by_natural_key(*adapter.get_content_type_natural_key(model))
+
+    def _get_versions(self, model, db):
+        from reversion.models import Version
         return Version.objects.using(db).filter(
             revision__manager_slug=self._manager_slug,
-            content_type=content_type,
+            content_type=self._get_content_type(model, db),
         )
 
     # Revision management API.
