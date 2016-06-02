@@ -30,14 +30,6 @@ setup(
     install_requires=[
         "django>=1.8",
     ],
-    extras_require={
-        "diff": [
-            "diff_match_patch",
-        ],
-        "test": [
-            "tox>=2.0.0",
-        ],
-    },
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Web Environment",
