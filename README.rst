@@ -56,7 +56,7 @@ commands:
 
 ::
 
-    $ pip install -e .[test]
+    $ pip install tox
     $ tox
 
 The django-reversion project is built on every push with `Travis CI <https://travis-ci.org/etianen/django-reversion>`_.
