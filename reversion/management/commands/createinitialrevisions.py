@@ -6,7 +6,6 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
-from django.contrib.contenttypes.models import ContentType
 from django.db import reset_queries
 from django.utils import translation
 from django.utils.encoding import force_text
@@ -115,7 +114,7 @@ class Command(BaseCommand):
             if verbosity >= 2:
                 print("Creating initial revision(s) for model %s ..." % (force_text(model_class._meta.verbose_name)))
             created_count = 0
-            content_type = ContentType.objects.db_manager(database).get_for_model(model_class)
+            content_type = default_revision_manager._get_content_type(model_class, db=database)
             live_objs = model_class._base_manager.using(database).exclude(
                 pk__reversion_in=(Version.objects.using(database).filter(
                     content_type=content_type,
