@@ -45,7 +45,7 @@ services:
   - postgresql
   - mysql
 install:
-  - pip install tox
+  - pip install 'tox>=2.3.1'
 before_script:
   - mysql -e 'create database test_project'
   - psql -c 'create database test_project;' -U postgres;
