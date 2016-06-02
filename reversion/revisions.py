@@ -207,7 +207,7 @@ class RevisionContextStackFrame(object):
                 for manager, objects
                 in self.manager_objects.items()
             }),
-            self.meta.copy(),
+            self.meta[:],
         )
 
     def join(self, other_frame):
