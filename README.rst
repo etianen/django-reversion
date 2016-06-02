@@ -2,22 +2,14 @@ django-reversion
 ================
 
 **django-reversion** is an extension to the Django web framework that provides
-comprehensive version control facilities.
+version control for model instances.
 
 Features
 --------
 
--  Roll back to any point in a model's history - an unlimited undo facility!
--  Recover deleted models - never lose data again!
--  Admin integration for maximum usability.
--  Group related changes into revisions that can be rolled back in a single
-   transaction.
--  Automatically save a new version whenever your model changes using Django's
-   flexible signalling framework.
--  Automate your revision management with easy-to-use middleware.
-
-**django-reversion** can be easily added to your existing Django project with an
-absolute minimum of code changes.
+-  Roll back to any point in a model instance's history.
+-  Recover deleted model instances.
+-  Simple admin integration.
 
 
 Documentation
@@ -68,12 +60,5 @@ The django-reversion project is built on every push with `Travis CI <https://tra
 More information
 ----------------
 
-The django-reversion project was developed by Dave Hall. You can get the code
+The django-reversion project was developed by `Dave Hall <http://www.etianen.com/>`. You can get the code
 from the `django-reversion project site <http://github.com/etianen/django-reversion>`_.
-
-Dave Hall is a freelance web developer, based in Cambridge, UK. You can usually
-find him on the Internet in a number of different places:
-
--  `Website <http://www.etianen.com/>`_
--  `Twitter <http://twitter.com/etianen>`_
--  `Google Profile <http://www.google.com/profiles/david.etianen>`_
