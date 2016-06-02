@@ -60,5 +60,5 @@ The django-reversion project is built on every push with `Travis CI <https://tra
 More information
 ----------------
 
-The django-reversion project was developed by `Dave Hall <http://www.etianen.com/>`. You can get the code
+The django-reversion project was developed by `Dave Hall <http://www.etianen.com/>`_. You can get the code
 from the `django-reversion project site <http://github.com/etianen/django-reversion>`_.
