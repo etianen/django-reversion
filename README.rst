@@ -15,11 +15,11 @@ Features
 Documentation
 -------------
 
-Please read the `Getting Started <http://django-reversion.readthedocs.org/en/latest/>`_
+Please read the `Getting Started <https://django-reversion.readthedocs.io/>`_
 guide for more information.
 
-Download instructions, bug reporting and links to full documentation can be
-found at the `main project website <http://github.com/etianen/django-reversion>`_.
+Issue tracking and source code can be found at the
+`main project website <http://github.com/etianen/django-reversion>`_.
 
 You can keep up to date with the latest announcements by joining the
 `django-reversion discussion group <http://groups.google.com/group/django-reversion>`_.
