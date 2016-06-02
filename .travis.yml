@@ -35,6 +35,7 @@ env:
     - TOXENV=py35-django-110-mysql
     - TOXENV=py35-django-110-sqlite
     - TOXENV=flake8
+    - TOXENV=docs
   global:
     - PYTHONWARNINGS=default,ignore::PendingDeprecationWarning,ignore::ResourceWarning
     - DJANGO_DATABASE_USER_POSTGRES=postgres
