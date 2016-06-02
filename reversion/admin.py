@@ -144,7 +144,7 @@ class VersionAdmin(admin.ModelAdmin):
             inline_model = inline.model
             fk_name = inline.fk_name
             if not fk_name:
-                for field in inline_model._meta.fields:
+                for field in inline_model._meta.get_fields():
                     if (
                         isinstance(field, (models.ForeignKey, models.OneToOneField)) and
                         issubclass(self.model, remote_model(field))

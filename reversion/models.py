@@ -209,7 +209,9 @@ class Version(models.Model):
         object_version = self.object_version
         obj = object_version.object
         result = {}
-        for field in obj._meta.fields:
+        for field in obj._meta.get_fields():
+            if not field.concrete:
+                continue
             result[field.name] = field.value_from_object(obj)
         result.update(object_version.m2m_data)
         return result
