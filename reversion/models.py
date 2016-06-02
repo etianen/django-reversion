@@ -242,7 +242,8 @@ class Version(models.Model):
 
     def revert(self):
         """Recovers the model in this version."""
-        self.object_version.save(using=self.db)
+        content_type = ContentType.objects.db_manager(self._state.db).get_for_id(self.content_type_id)
+        self.revision.revision_manager.get_adapter(content_type.model_class()).revert(self)
 
     def __str__(self):
         """Returns a unicode representation."""

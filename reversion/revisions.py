@@ -181,6 +181,12 @@ class VersionAdapter(object):
             "object_repr": force_text(obj),
         }
 
+    def revert(self, version):
+        """
+        Reverts the given version to the database.
+        """
+        version.object_version.save(using=version.db)
+
 
 class RevisionContextStackFrame(object):
 
