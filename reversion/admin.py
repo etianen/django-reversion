@@ -37,25 +37,29 @@ class VersionAdmin(admin.ModelAdmin):
     change_list_template = "reversion/change_list.html"
 
     revision_form_template = None
-    """The template to use to render the revision form."""
+    """The template to render the revision form."""
 
     recover_list_template = None
-    """The template to use to render the recover list."""
+    """The template to render the recover list."""
 
     recover_form_template = None
-    """The template to use to render the recover form."""
+    """The template to render the recover form."""
 
     revision_manager = default_revision_manager
-    """The revision manager instance used to manage revisions."""
+    """The revision manager used to manage revisions."""
 
     reversion_format = "json"
-    """The serialization format to use when registering models with reversion."""
+    """The serialization format to use when registering models."""
 
     ignore_duplicate_revisions = False
     """Whether to ignore duplicate revision data."""
 
     history_latest_first = False
-    """If True, then the default ordering of object_history and recover lists will be reversed."""
+    """Display versions with the most recent version first."""
+
+    def reversion_register(self, model, **kwargs):
+        """Registers the model with reversion."""
+        self.revision_manager.register(model, **kwargs)
 
     # Revision helpers.
 
@@ -107,14 +111,6 @@ class VersionAdmin(admin.ModelAdmin):
         super(VersionAdmin, self).log_change(request, object, message)
 
     # Auto-registration.
-
-    def reversion_register(self, model, **kwargs):
-        """
-        Registers the given model with reversion, using the given kwargs.
-
-        Override to provide additional arguments to the reversion.register() call.
-        """
-        self.revision_manager.register(model, **kwargs)
 
     def _reversion_autoregister(self, model, follow):
         if not self.revision_manager.is_registered(model):

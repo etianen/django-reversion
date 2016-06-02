@@ -3,7 +3,7 @@
 Admin integration
 =================
 
-django-reversion can be used to add a powerful rollback and recovery facility to your admin site. To enable this, simply register your models with a subclass of ``reversion.VersionAdmin``.
+django-reversion can be used to add rollback and recovery to your admin site. To enable this, register your models with a subclass of ``reversion.VersionAdmin``.
 
 ::
 
@@ -15,8 +15,7 @@ django-reversion can be used to add a powerful rollback and recovery facility to
 
     admin.site.register(YourModel, YourModelAdmin)
 
-**Note:** If you've registered your models explicitly using the :ref:`low level API <api>`, then the admin class will honour the
-configuration you specify there. Otherwise, the admin class will auto-register your model, following all inline model relations
+**Note:** If you've registered your models using the :ref:`low level API <api>`, the admin class will honour the configuration you specify there. Otherwise, the admin class will auto-register your model, following all inline model relations
 and parent superclasses.
 
 You can also use ``VersionAdmin`` as a mixin with another specialized admin class.
@@ -27,7 +26,7 @@ You can also use ``VersionAdmin`` as a mixin with another specialized admin clas
 
         pass
 
-If you're using an existing third party app, then you can add patch django-reversion into its admin class by using the ``reversion.helpers.patch_admin()`` method. For example, to add version control to the built-in User model:
+If you're using an existing third party app, you can add patch django-reversion into its admin class by using the ``reversion.helpers.patch_admin()`` method. For example, to add version control to the built-in User model:
 
 ::
 
@@ -39,30 +38,44 @@ If you're using an existing third party app, then you can add patch django-rever
 Admin customizations
 --------------------
 
-It's possible to customize the way django-reversion integrates with your admin site by specifying options on the subclass of ``VersionAdmin`` as follows:
+Customize the way django-reversion integrates with your admin site by overriding options and methods on a subclass of ``VersionAdmin``:
 
 ::
 
     class YourModelAdmin(VersionAdmin):
 
-        option_name = option_value
+        revision_form_template = None
+        """The template to render the revision form."""
 
-The available admin options are:
+        recover_list_template = None
+        """The template to render the recover list."""
 
-*   **history_latest_first:** Whether to display the available versions in reverse chronological order on the revert and recover views (default ``False``)
-*   **ignore_duplicate_revisions:** Whether to ignore duplicate revisions when storing version data (default ``False``)
-*   **recover_form_template:** The name of the template to use when rendering the recover form (default ``'reversion/recover_form.html'``)
-*   **reversion_format:** The name of a serialization format to use when storing version data (default ``'json'``)
-*   **revision_form_template:** The name of the template to use when rendering the revert form (default ``'reversion/revision_form.html'``)
-*   **recover_list_template:** The name of the template to use when rendering the recover list view (default ``'reversion/recover_list.html'``)
+        recover_form_template = None
+        """The template to render the recover form."""
+
+        revision_manager = default_revision_manager
+        """The revision manager used to manage revisions."""
+
+        reversion_format = "json"
+        """The serialization format to use when registering models."""
+
+        ignore_duplicate_revisions = False
+        """Whether to ignore duplicate revision data."""
+
+        history_latest_first = False
+        """Display versions with the most recent version first."""
+
+        def reversion_register(self, model, **kwargs):
+            """Registers the model with reversion."""
+            self.revision_manager.register(model, **kwargs)
 
 
 Customizing admin templates
 ---------------------------
 
-In addition to specifying custom templates using the options above, you can also place specially named templates on your template root to override the default templates on a per-model or per-app basis.
+Create specially named templates to override the default templates on a per-model or per-app basis.
 
-For example, to override the recover_list template for the user model, the auth app, or all registered models, you could create a template with one of the following names:
+For example, to override the ``recover_list`` template for the ``User`` model, the ``auth`` app, or all registered models, create a template with one of the following names:
 
 *   ``'reversion/auth/user/recover_list.html'``
 *   ``'reversion/auth/recover_list.html'``
