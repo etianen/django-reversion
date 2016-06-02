@@ -277,6 +277,8 @@ class VersionAdmin(admin.ModelAdmin):
             each_context = self.admin_site.each_context(request)
         except TypeError:  # Django <= 1.7 pragma: no cover
             each_context = self.admin_site.each_context()
+        # Set the app name.
+        request.current_app = self.admin_site.name
         # Get the rest of the context.
         context = dict(
             each_context,
