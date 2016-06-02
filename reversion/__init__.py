@@ -1,5 +1,5 @@
 """
-Transactional version control for Django models.
+An extension to the Django web framework that provides version control for model instances.
 
 Developed by Dave Hall.
 
