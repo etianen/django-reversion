@@ -1,60 +1,34 @@
 from __future__ import unicode_literals
 import datetime
-import operator
 import warnings
-from functools import reduce
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
-from django.db.models import Q, Count
+from django.db import transaction
+from django.db.models import Count
+from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 from django.utils.six.moves import input
 from reversion.models import Revision, Version
-from django.db.utils import DatabaseError
+from reversion.management.commands import parse_app_labels
+from reversion.revisions import RevisionManager
 
 
 class Command(BaseCommand):
-    help = """Deletes revisions for a given app [and model] and/or before a specified delay or date.
 
-If an app or a model is specified, revisions that have an other app/model involved will not be
-deleted. Use --force to avoid that.
-
-You can specify only apps/models or only delay or date or only a nuber of revision to keep or use
-all possible combinations of these options.
-
-Examples:
-
-        deleterevisions myapp
-
-    That will delete every revisions of myapp (except if there's an other app involved in the
-    revision)
-
-        deleterevisions --date=2010-11-01
-
-    That will delete every revision created before November 1, 2010 for all apps.
-
-        deleterevisions myapp.mymodel --days=365 --force
-
-    That will delete every revision of myapp.model that are older than 365 days, even if there's
-    revisions involving other apps and/or models.
-
-        deleterevisions myapp.mymodel --keep=10
-
-    That will delete only revisions of myapp.model if there's more than 10 revisions for an object,
-    keeping the 10 most recent revisons.
-"""
+    help = "Deletes revisions for a given app [and model]."
 
     def add_arguments(self, parser):
         parser.add_argument(
-            'args',
-            metavar='app_label',
-            nargs='*',
+            "args",
+            metavar="app_label",
+            nargs="*",
             help="Optional apps or app.Model list.",
         )
         parser.add_argument(
             "-t",
             "--date",
             help=(
-                "Delete only revisions older than the specify date. "
+                "Delete only revisions older than the specied date. "
                 "The date should be a valid date given in the ISO format (YYYY-MM-DD)"
             ),
         )
@@ -63,7 +37,7 @@ Examples:
             "--days",
             default=0,
             type=int,
-            help="Delete only revisions older than the specify number of days.",
+            help="Delete only revisions older than the specified number of days.",
         )
         parser.add_argument(
             "-k",
@@ -78,7 +52,7 @@ Examples:
             "--force",
             action="store_true",
             default=False,
-            help="Force the deletion of revisions even if an other app/model is involved",
+            help="Force the deletion of revisions even if an other app/model is involved.",
         )
         parser.add_argument(
             "--noinput",
@@ -87,31 +61,36 @@ Examples:
             dest="interactive",
             default=True,
             help="Do NOT prompt the user for input of any kind before deleting revisions.",
-        ),
+        )
         parser.add_argument(
             "-c",
             "--no-confirmation",
             action="store_false",
             dest="confirmation",
             default=True,
-            help="Disable the confirmation before deleting revisions (DEPRECATED)",
+            help="Disable the confirmation before deleting revisions (DEPRECATED).",
         )
         parser.add_argument(
             "-m",
             "--manager",
-            help="Delete revisions only from specified manager. Defaults from all managers.",
+            default="default",
+            help="Delete revisions from specified revision manager. Defaults to the default revision manager.",
         )
         parser.add_argument(
             "--database",
-            help='Nominates a database to delete revisions from.',
+            default=None,
+            help="Nominates a database to delete revisions from.",
         )
 
     def handle(self, *app_labels, **options):
         days = options["days"]
         keep = options["keep"]
         force = options["force"]
-        interactive = options.get("interactive")
-        if not options.get("confirmation"):
+        interactive = options["interactive"]
+        # Load admin classes.
+        admin.autodiscover()
+        # Check for deprecated confirmation option.
+        if not options["confirmation"]:
             interactive = False
             warnings.warn(
                 (
@@ -120,22 +99,14 @@ Examples:
                 ),
                 DeprecationWarning
             )
-
-        manager = options.get('manager')
-        database = options.get('database')
-        # I don't know why verbosity is not already an int in Django?
-        try:
-            verbosity = int(options["verbosity"])
-        except ValueError:
-            raise CommandError("option -v: invalid choice: '%s' (choose from '0', '1', '2')" % options["verbosity"])
-
+        revision_manager = RevisionManager.get_manager(options["manager"])
+        database = options.get("database")
+        verbosity = int(options.get("verbosity", 1))
+        # Parse date.
         date = None
-
-        # Validating arguments
         if options["date"]:
             if days:
                 raise CommandError("You cannot use --date and --days at the same time. They are exclusive.")
-
             try:
                 date = datetime.datetime.strptime(options["date"], "%Y-%m-%d").date()
             except ValueError:
@@ -143,137 +114,62 @@ Examples:
                     "The date you gave (%s) is not a valid date. ",
                     "The date should be in the ISO format (YYYY-MM-DD)."
                 ) % options["date"])
-
         # Find the date from the days arguments.
         elif days:
-            date = datetime.datetime.now() - datetime.timedelta(days)
-
+            date = datetime.date.today() - datetime.timedelta(days)
         # Build the queries
-        revision_query = Revision.objects.using(database).all()
-
-        if manager:
-            revision_query = revision_query.filter(manager_slug=manager)
-
+        revision_query = Revision.objects.using(database).filter(
+            manager_slug=revision_manager._manager_slug,
+        )
         if date:
             revision_query = revision_query.filter(date_created__lt=date)
-
         if app_labels:
-            app_list = set()
-            mod_list = set()
-            for label in app_labels:
-                try:
-                    app_label, model_label = label.split(".")
-                    mod_list.add((app_label, model_label))
-                except ValueError:
-                    # This is just an app, no model qualifier.
-                    app_list.add(label)
-
-            # Remove models that their app is already in app_list
-            for app, model in mod_list.copy():
-                if app in app_list:
-                    mod_list.remove((app, model))
-
-            # Build apps/models subqueries
-            subqueries = []
-            if app_list:
-                subqueries.append(Q(app_label__in=app_list))
-            if mod_list:
-                subqueries.extend([Q(app_label=app, model=model) for app, model in mod_list])
-            subqueries = reduce(operator.or_, subqueries)
-
-            if force:
-                models = ContentType.objects.using(database).filter(subqueries)
-                revision_query = revision_query.filter(version__content_type__in=models)
-            else:
-                models = ContentType.objects.using(database).exclude(subqueries)
-                revision_query = revision_query.exclude(version__content_type__in=models)
-
+            model_classes = parse_app_labels(revision_manager, app_labels)
+            content_types = [
+                revision_manager._get_content_type(model_class, db=database)
+                for model_class
+                in model_classes
+            ]
+            revision_query = revision_query.filter(version__content_type__in=content_types)
+            if not force:
+                excluded_content_types = ContentType.objects.db_manager(database).exclude(pk__in=[
+                    content_type.pk
+                    for content_type
+                    in content_types
+                ])
+                revision_query = revision_query.exclude(version__content_type__in=excluded_content_types)
+        # Handle keeping n versions.
         if keep:
-            objs = Version.objects.using(database).all()
-
-            # If app is specified, to speed up the loop on theses objects,
-            # get only the specified subset.
-            if app_labels:
-                if force:
-                    objs = objs.filter(content_type__in=models)
-                else:
-                    objs = objs.exclude(content_type__in=models)
-
-            # Get all the objects that have more than the maximum revisions
-            objs = objs.values("object_id", "content_type_id").annotate(
+            objs = Version.objects.using(database).filter(
+                revision__manager_slug=revision_manager._manager_slug,
+                revision__in=revision_query,
+            )
+            # Get all the objects that have more than the maximum revisions.
+            objs = objs.values("object_id", "content_type_id", "db").annotate(
                 total_ver=Count("object_id"),
             ).filter(total_ver__gt=keep)
-
-            revisions_not_keeped = set()
-
-            # Get all ids of the oldest revisions minus the max allowed
-            # revisions for all objects.
-            # Was not able to avoid this loop...
+            # Get all ids of the oldest revisions minus the max allowed revisions for all objects.
+            revisions_not_kept = set()
             for obj in objs:
-                revisions_not_keeped.update(list(Version.objects.using(database).filter(
+                revisions_not_kept.update(list(Version.objects.using(database).filter(
                     content_type__id=obj["content_type_id"],
                     object_id=obj["object_id"],
-                ).order_by("-revision__date_created").values_list("revision_id", flat=True)[keep:]))
-
-            revision_query = revision_query.filter(pk__in=revisions_not_keeped)
-
-        # Prepare message if verbose
-        if verbosity > 0:
-            if not date and not app_labels and not keep:
-                print("All revisions will be deleted for all models.")
-            else:
-                date_msg = ""
-                if date:
-                    date_msg = " older than %s" % date.isoformat()
-                models_msg = " "
-                if app_labels:
-                    force_msg = ""
-                    if not force:
-                        force_msg = " only"
-                    models_msg = " having%s theses apps and models:\n- %s\n" % (
-                        force_msg,
-                        "\n- ".join(sorted(app_list.union(["%s.%s" % (app, model) for app, model in mod_list])),)
-                    )
-                    if date:
-                        models_msg = " and" + models_msg
-                keep_msg = ""
-                if keep:
-                    keep_msg = " keeping the %s most recent revisions of each object" % keep
-
-                revision_count = revision_query.count()
-                if revision_count:
-                    version_query = Version.objects.using(database).all()
-                    if date or app_labels or keep:
-                        version_query = version_query.filter(revision__in=revision_query)
-                    print("%s revision(s)%s%swill be deleted%s.\n%s model version(s) will be deleted." % (
-                        revision_count,
-                        date_msg,
-                        models_msg,
-                        keep_msg,
-                        version_query.count(),
-                    ))
-                else:
-                    print("No revision%s%sto delete%s.\nDone" % (date_msg, models_msg, keep_msg))
-                    return
-
+                    db=obj["db"],
+                ).order_by("-pk").values_list("revision_id", flat=True)[keep:]))
+            revision_query = revision_query.filter(pk__in=revisions_not_kept)
+        revision_count = revision_query.count()
         # Ask confirmation
         if interactive:
-            choice = input("Are you sure you want to delete theses revisions? [y|N] ")
+            choice = input("Are you sure you want to delete %s revisions? [y|N] " % revision_count)
             if choice.lower() != "y":
-                print("Aborting revision deletion.")
+                self.stdout.write("Aborting revision deletion.")
                 return
-
         # Delete versions and revisions
-        if verbosity > 0:
-            print("Deleting revisions...")
-
-        try:
+        if verbosity >= 2:
+            self.stdout.write("Deleting %s revisions..." % revision_count)
+        # Delete the revisions.
+        with transaction.atomic(using=database):
             revision_query.delete()
-        except DatabaseError:
-            # may fail on sqlite if the query is too long
-            print("Delete failed. Trying again with slower method.")
-            for item in revision_query:
-                item.delete()
-
-        if verbosity > 0:
-            return "Done"
+        # Final logging.
+        if verbosity >= 2:
+            self.stdout.write("Deleted %s revisions." % revision_count)
