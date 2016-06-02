@@ -14,13 +14,13 @@
                         <tr>
                             <th scope="col">{% trans 'Date/time' %}</th>
                             <th scope="col">{% trans 'User' %}</th>
-                            <th scope="col">{% trans 'Comment' %}</th>
+                            <th scope="col">{% trans 'Action' %}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for action in action_list %}
                             <tr>
-                                <th scope="row"><a href="{{action.url}}">{{action.revision.date_created}}</a></th>
+                                <th scope="row"><a href="{{action.url}}">{{action.revision.date_created|date:"DATETIME_FORMAT"}}</a></th>
                                 <td>
                                     {% if action.revision.user %}
                                         {{action.revision.user.get_username}}
@@ -40,4 +40,3 @@
         </div>
     </div>
 {% endblock %}
-
