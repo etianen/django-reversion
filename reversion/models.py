@@ -227,8 +227,6 @@ class Version(models.Model):
         result = self.local_field_dict
         # Add parent data.
         for parent_class, field in obj._meta.concrete_model._meta.parents.items():
-            if field is None:
-                continue
             content_type = self.revision.revision_manager._get_content_type(parent_class, self._state.db)
             parent_id = getattr(obj, field.attname)
             parent_version = Version.objects.using(self._state.db).get(

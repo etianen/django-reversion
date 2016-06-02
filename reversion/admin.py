@@ -37,22 +37,25 @@ class VersionAdmin(admin.ModelAdmin):
     change_list_template = "reversion/change_list.html"
 
     revision_form_template = None
+    """The template to use to render the revision form."""
 
     recover_list_template = None
+    """The template to use to render the recover list."""
 
     recover_form_template = None
+    """The template to use to render the recover form."""
 
-    # The revision manager instance used to manage revisions.
     revision_manager = default_revision_manager
+    """The revision manager instance used to manage revisions."""
 
-    # The serialization format to use when registering models with reversion.
     reversion_format = "json"
+    """The serialization format to use when registering models with reversion."""
 
-    # Whether to ignore duplicate revision data.
     ignore_duplicate_revisions = False
+    """Whether to ignore duplicate revision data."""
 
-    # If True, then the default ordering of object_history and recover lists will be reversed.
     history_latest_first = False
+    """If True, then the default ordering of object_history and recover lists will be reversed."""
 
     # Revision helpers.
 
@@ -61,7 +64,19 @@ class VersionAdmin(admin.ModelAdmin):
         """The revision context manager for this VersionAdmin."""
         return self.revision_manager._revision_context_manager
 
-    def _get_template_list(self, template_name):
+    @contextmanager
+    def create_revision(self, request):
+        """
+        Marks up a block of code as requiring a revision to be created.
+
+        Set the revision user as the current user, and honours admin reversion configuration.
+        """
+        with self.revision_context_manager.create_revision():
+            self.revision_context_manager.set_user(request.user)
+            self.revision_context_manager.set_ignore_duplicates(self.ignore_duplicate_revisions)
+            yield
+
+    def _reversion_get_template_list(self, template_name):
         opts = self.model._meta
         return (
             "reversion/%s/%s/%s" % (opts.app_label, opts.object_name.lower(), template_name),
@@ -69,18 +84,11 @@ class VersionAdmin(admin.ModelAdmin):
             "reversion/%s" % template_name,
         )
 
-    def _order_version_queryset(self, queryset):
+    def _reversion_order_version_queryset(self, queryset):
         """Applies the correct ordering to the given version queryset."""
         if self.history_latest_first:
             return queryset.order_by("-pk")
         return queryset.order_by("pk")
-
-    @contextmanager
-    def _create_revision(self, request):
-        with self.revision_context_manager.create_revision():
-            self.revision_context_manager.set_user(request.user)
-            self.revision_context_manager.set_ignore_duplicates(self.ignore_duplicate_revisions)
-            yield
 
     # Messages.
 
@@ -100,7 +108,7 @@ class VersionAdmin(admin.ModelAdmin):
 
     # Auto-registration.
 
-    def register_model_with_reversion(self, model, **kwargs):
+    def reversion_register(self, model, **kwargs):
         """
         Registers the given model with reversion, using the given kwargs.
 
@@ -108,18 +116,14 @@ class VersionAdmin(admin.ModelAdmin):
         """
         self.revision_manager.register(model, **kwargs)
 
-    def _autoregister(self, model, follow=None):
-        """Registers a model with reversion, if required."""
+    def _reversion_autoregister(self, model, follow):
         if not self.revision_manager.is_registered(model):
-            follow = follow or []
-            # Use model_meta.concrete_model to catch proxy models
             for parent_cls, field in model._meta.concrete_model._meta.parents.items():
-                follow.append(field.name)
-                self._autoregister(parent_cls)
-            self.register_model_with_reversion(model, follow=follow, format=self.reversion_format)
+                follow += (field.name,)
+                self._reversion_autoregister(parent_cls, ())
+            self.reversion_register(model, follow=follow, format=self.reversion_format)
 
-    def _introspect_inline_admin(self, inline):
-        """Introspects the given inline admin, returning a tuple of (inline_model, follow_field)."""
+    def _reversion_introspect_inline_admin(self, inline):
         inline_model = None
         follow_field = None
         fk_name = None
@@ -154,24 +158,22 @@ class VersionAdmin(admin.ModelAdmin):
         return inline_model, follow_field, fk_name
 
     def __init__(self, *args, **kwargs):
-        """Initializes the VersionAdmin"""
         super(VersionAdmin, self).__init__(*args, **kwargs)
         # Check that database transactions are supported.
-        if not connection.features.uses_savepoints:  # pragma: no cover
+        if not connection.features.uses_savepoints:
             raise ImproperlyConfigured("Cannot use VersionAdmin with a database that does not support savepoints.")
         # Automatically register models if required.
         if not self.revision_manager.is_registered(self.model):
-            inline_fields = []
+            inline_fields = ()
             for inline in self.inlines:
-                inline_model, follow_field, _ = self._introspect_inline_admin(inline)
+                inline_model, follow_field, _ = self._reversion_introspect_inline_admin(inline)
                 if inline_model:
-                    self._autoregister(inline_model)
+                    self._reversion_autoregister(inline_model, ())
                 if follow_field:
-                    inline_fields.append(follow_field)
-            self._autoregister(self.model, inline_fields)
+                    inline_fields += (follow_field,)
+            self._reversion_autoregister(self.model, inline_fields)
 
     def get_urls(self):
-        """Returns the additional urls used by the Reversion admin."""
         urls = super(VersionAdmin, self).get_urls()
         admin_site = self.admin_site
         opts = self.model._meta
@@ -186,11 +188,11 @@ class VersionAdmin(admin.ModelAdmin):
     # Views.
 
     def add_view(self, request, form_url='', extra_context=None):
-        with self._create_revision(request):
+        with self.create_revision(request):
             return super(VersionAdmin, self).add_view(request, form_url, extra_context)
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
-        with self._create_revision(request):
+        with self.create_revision(request):
             return super(VersionAdmin, self).change_view(request, object_id, form_url, extra_context)
 
     def revisionform_view(self, request, version, template_name, extra_context=None):
@@ -199,7 +201,7 @@ class VersionAdmin(admin.ModelAdmin):
                 # Revert the revision.
                 version.revision.revert(delete=True)
                 # Run the normal changeform view.
-                with self._create_revision(request):
+                with self.create_revision(request):
                     response = self.changeform_view(request, version.object_id, request.path, extra_context)
                     # Decide on whether the keep the changes.
                     if request.method == "POST" and response.status_code == 302:
@@ -224,7 +226,7 @@ class VersionAdmin(admin.ModelAdmin):
         """Displays a form that can recover a deleted model."""
         # The revisionform view will check for change permission (via changeform_view),
         # but we also need to check for add permissions here.
-        if not self.has_add_permission(request):  # pragma: no cover
+        if not self.has_add_permission(request):
             raise PermissionDenied
         # Render the recover view.
         version = get_object_or_404(Version, pk=version_id)
@@ -235,7 +237,7 @@ class VersionAdmin(admin.ModelAdmin):
         return self.revisionform_view(
             request,
             version,
-            self.recover_form_template or self._get_template_list("recover_form.html"),
+            self.recover_form_template or self._reversion_get_template_list("recover_form.html"),
             context,
         )
 
@@ -250,13 +252,12 @@ class VersionAdmin(admin.ModelAdmin):
         return self.revisionform_view(
             request,
             version,
-            self.revision_form_template or self._get_template_list("revision_form.html"),
+            self.revision_form_template or self._reversion_get_template_list("revision_form.html"),
             context,
         )
 
     def changelist_view(self, request, extra_context=None):
-        """Renders the change view."""
-        with self._create_revision(request):
+        with self.create_revision(request):
             context = {
                 "has_change_permission": self.has_change_permission(request),
             }
@@ -265,12 +266,12 @@ class VersionAdmin(admin.ModelAdmin):
 
     def recoverlist_view(self, request, extra_context=None):
         """Displays a deleted model to allow recovery."""
-        # Check if user has change or add permissions for model
-        if not self.has_change_permission(request) or not self.has_add_permission(request):  # pragma: no cover
+        # Check if user has change and add permissions for model
+        if not self.has_change_permission(request) or not self.has_add_permission(request):
             raise PermissionDenied
         model = self.model
         opts = model._meta
-        deleted = self._order_version_queryset(self.revision_manager.get_deleted(self.model))
+        deleted = self._reversion_order_version_queryset(self.revision_manager.get_deleted(self.model))
         # Get the site context.
         try:
             each_context = self.admin_site.each_context(request)
@@ -286,12 +287,16 @@ class VersionAdmin(admin.ModelAdmin):
             deleted=deleted,
         )
         context.update(extra_context or {})
-        return render(request, self.recover_list_template or self._get_template_list("recover_list.html"), context)
+        return render(
+            request,
+            self.recover_list_template or self._reversion_get_template_list("recover_list.html"),
+            context,
+        )
 
     def history_view(self, request, object_id, extra_context=None):
         """Renders the history view."""
         # Check if user has change permissions for model
-        if not self.has_change_permission(request):  # pragma: no cover
+        if not self.has_change_permission(request):
             raise PermissionDenied
         object_id = unquote(object_id)  # Underscores in primary key get quoted to "_5F"
         opts = self.model._meta
@@ -304,7 +309,7 @@ class VersionAdmin(admin.ModelAdmin):
                 ),
             }
             for version
-            in self._order_version_queryset(self.revision_manager.get_for_object_reference(
+            in self._reversion_order_version_queryset(self.revision_manager.get_for_object_reference(
                 self.model,
                 object_id,
             ).select_related("revision__user"))
