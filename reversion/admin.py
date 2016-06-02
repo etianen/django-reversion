@@ -212,9 +212,9 @@ class VersionAdmin(admin.ModelAdmin):
                         response.template_name = template_name  # Set the template name to the correct template.
                         response.render()  # Eagerly render the response, so it's using the latest version.
                         raise RollBackRevisionView  # Raise an exception to undo the transaction and the revision.
-        except RevertError:
+        except RevertError as ex:
             opts = self.model._meta
-            messages.error(request, "Could not revert revision due to database integrity errors.")
+            messages.error(request, force_text(ex))
             return redirect("%s:%s_%s_changelist" % (self.admin_site.name, opts.app_label, opts.model_name))
         except RollBackRevisionView:
             pass

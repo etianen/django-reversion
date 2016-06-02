@@ -12,7 +12,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, IntegrityError, transaction
 from django.db.models.lookups import In
 from django.utils.functional import cached_property
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy as _, ugettext
 from django.utils.encoding import force_text, python_2_unicode_compatible
 from reversion.errors import RevertError
 from reversion.revisions import RevisionManager
@@ -33,7 +33,9 @@ def safe_revert(versions):
         except (IntegrityError, ObjectDoesNotExist):
             unreverted_versions.append(version)
     if len(unreverted_versions) == len(versions):
-        raise RevertError("Could not revert revision due to database integrity errors.")
+        raise RevertError(ugettext("Could not save %(object_repr)s version - missing dependency.") % {
+            "object_repr": unreverted_versions[0],
+        })
     if unreverted_versions:
         safe_revert(unreverted_versions)
 
@@ -181,7 +183,17 @@ class Version(models.Model):
         """The stored version of the model."""
         data = self.serialized_data
         data = force_text(data.encode("utf8"))
-        return list(serializers.deserialize(self.format, data, ignorenonexistent=True))[0]
+        try:
+            return list(serializers.deserialize(self.format, data, ignorenonexistent=True))[0]
+        except serializers.DeserializationError:
+            raise RevertError(ugettext("Could not load %(object_repr)s version - incompatible version data.") % {
+                "object_repr": self.object_repr,
+            })
+        except serializers.SerializerDoesNotExist:
+            raise RevertError(ugettext("Could not load %(object_repr)s version - unknown serializer %(format)s.") % {
+                "object_repr": self.object_repr,
+                "format": self.format,
+            })
 
     @cached_property
     def local_field_dict(self):
