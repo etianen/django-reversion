@@ -152,6 +152,8 @@ reversion.register(model, \*\*options)
 
 Registers a model with django-reversion.
 
+Throws :ref:`RegistrationError` if the model has already been registered.
+
 ``model``
     The Django model to register.
 
@@ -199,6 +201,8 @@ reversion.unregister(model)
 
 Unregisters the given model from django-reversion.
 
+Throws :ref:`RegistrationError` if the model has not been registered with django-reversion.
+
 ``model``
     The Django model to unregister.
 
@@ -238,6 +242,8 @@ reversion.set_ignore_duplicates(ignore_duplicates)
 
 .. include:: _include/ignore-duplicates.rst
 
+Throws :ref:`RevisionManagementError` if there is no active revision block.
+
 ``ignore_duplicates``
     A ``bool`` indicating whether duplicate revisions should be saved.
 
@@ -246,6 +252,8 @@ reversion.get_ignore_duplicates()
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Returns whether duplicate revisions will be saved.
+
+Throws :ref:`RevisionManagementError` if there is no active revision block.
 
 
 Metadata API
@@ -256,6 +264,8 @@ reversion.set_user(user)
 
 Sets the user for the current revision.
 
+Throws :ref:`RevisionManagementError` if there is no active revision block.
+
 ``user``
     A ``User`` model instance (or whatever your ``settings.AUTH_USER_MODEL`` is).
 
@@ -265,11 +275,15 @@ reversion.get_user()
 
 Returns the user for the current revision.
 
+Throws :ref:`RevisionManagementError` if there is no active revision block.
+
 
 reversion.set_comment(comment)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Sets the comment for the current revision.
+
+Throws :ref:`RevisionManagementError` if there is no active revision block.
 
 ``comment``
     The text comment for the revision.
@@ -280,11 +294,15 @@ reversion.get_comment()
 
 Returns the comment for the current revision.
 
+Throws :ref:`RevisionManagementError` if there is no active revision block.
+
 
 reversion.add_meta(model_cls, \*\*values)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Adds custom metadata to a revision.
+
+Throws :ref:`RevisionManagementError` if there is no active revision block.
 
 ``model_cls``
     A Django model to store the custom metadata. The model must have a ``ForeignKey`` or ``OneToOneField`` to :ref:`Revision`.
@@ -336,6 +354,8 @@ reversion.get_for_object(obj, db=None)
 
 Returns a :ref:`VersionQuerySet` for the given model instance. The results are ordered with the most recent :ref:`Version` first.
 
+Throws :ref:`RegistrationError` if the model has not been registered with django-reversion.
+
 ``obj``
     An instance of a registered model.
 
@@ -348,6 +368,8 @@ reversion.get_for_object_reference(model, pk, db=None)
 
 Returns a :ref:`VersionQuerySet` for the given model instance. The results are ordered with the most recent :ref:`Version` first.
 
+Throws :ref:`RegistrationError` if the model has not been registered with django-reversion.
+
 ``model``
     A registered model.
 
@@ -358,13 +380,15 @@ Returns a :ref:`VersionQuerySet` for the given model instance. The results are o
     The database to load the versions from.
 
 
-reversion.get_deleted(model_cls, db=None, model_db=None)
+reversion.get_deleted(model, db=None, model_db=None)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Returns a :ref:`VersionQuerySet` for the given model containing versions where the serialized model no longer exists in the database. The results are ordered with the most recent :ref:`Version` first.
 
-``obj``
-    An instance of a registered model.
+Throws :ref:`RegistrationError` if the model has not been registered with django-reversion.
+
+``model``
+    A registered model.
 
 ``db``
     The database to load the versions from.
@@ -448,11 +472,15 @@ Version.field_dict
 
 A dictionary of stored model fields. This includes fields from any parent models in the same revision.
 
+Throws :ref:`RevertError` if the model could not be loaded, e.g. the serialized data is not compatible with the current database schema, due to database migrations.
+
 
 Version.revert()
 ^^^^^^^^^^^^^^^^
 
 Restores the serialized model instance to the database. To restore the entire revision, use :ref:`Revision-revert`.
+
+Throws :ref:`RevertError` if the model could not be reverted, e.g. the serialized data is not compatible with the current database schema, due to database migrations.
 
 
 .. _Revision:
@@ -499,6 +527,8 @@ Revision.revert(delete=False)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Restores all contained serialized model instances to the database.
+
+Throws :ref:`RevertError` if the model could not be reverted, e.g. the serialized data is not compatible with the current database schema, due to database migrations.
 
 ``delete``
     If ``True``, any model instances which have been created and are reachable by the ``follow`` clause of any model instances in this revision will be deleted. This effectively restores a group of related models to the state they were in when the revision was created.
