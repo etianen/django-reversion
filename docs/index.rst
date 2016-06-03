@@ -15,8 +15,8 @@ Features
 -  Simple admin integration.
 
 
-Getting started
----------------
+Installation
+------------
 
 To install django-reversion, follow these steps:
 
@@ -24,31 +24,26 @@ To install django-reversion, follow these steps:
 2.  Add ``'reversion'`` to ``INSTALLED_APPS``.
 3.  Run ``manage.py migrate``.
 
-If you are using anything older than the latest LTS release of Django, please check the :ref:`compatible Django versions <django-versions>` page before installing django-reversion.
+.. Important:: If you are using anything older than the latest release of Django, see :ref:`django-versions`.
 
+
+Basic usage
+-----------
 
 Admin integration
------------------
+^^^^^^^^^^^^^^^^^
 
-django-reversion can be used to add rollback and recovery facility to your admin site. Simply register your models with a subclass of ``reversion.VersionAdmin``::
+django-reversion can be used to add rollback and recovery to your admin site.
 
-    from reversion.admin import VersionAdmin
+.. include:: _include/admin.rst
 
-    class YourModelAdmin(VersionAdmin):
-
-        pass
-
-    admin.site.register(YourModel, YourModelAdmin)
-
-**Important:** Whenever you register a model with django-reversion, run ``./manage.py createinitialrevisions`` command to populate the version database with an initial set of data. For large databases, this command can take a while to execute.
-
-For more information about admin integration, please read the :ref:`admin integration <admin>` documentation.
+For more information about admin integration, see :ref:`admin`.
 
 
 Low-level API
--------------
+^^^^^^^^^^^^^
 
-You can use django-reversion's API to build version-controlled applications. For more information, please read the :ref:`API <api>` documentation.
+You can the django-reversion API to build version-controlled applications. See :ref:`api`.
 
 
 More information
@@ -62,8 +57,8 @@ Installation
 
    django-versions
    migrations
-   admin
    common-problems
+
 
 Usage
 ^^^^^
@@ -71,6 +66,7 @@ Usage
 .. toctree::
    :maxdepth: 1
 
+   admin
    api
    commands
    signals

@@ -198,6 +198,8 @@ Creating revisions
     Manually saves a revision without having to create a revision block and call `save()` on registered model instances.
     Returns the ``Revision`` that was created, or ``None`` if no revision was saved.
 
+    **Note:** Checking for duplicate revisions adds significant overhead to the process of creating revisions. Don't enable it unless you really need it!
+
     **Arguments:**
 
     - ``objects``: An iterable of registered model instances to save in the revision.

@@ -14,6 +14,10 @@ def patch_admin(model, admin_site=None):
     This is excellent for adding version control to existing Django contrib
     applications.
     """
+    warnings.warn((
+        "Use reversion.admin.VersionAdmin as a mixin for 3rd party apps. "
+        "patch_admin will be removed in django-reversion 1.12.0."
+    ), DeprecationWarning)
     admin_site = admin_site or admin.site
     try:
         ModelAdmin = admin_site._registry[model].__class__
