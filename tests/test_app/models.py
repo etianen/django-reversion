@@ -1,28 +1,24 @@
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 import reversion
+from reversion.models import Revision
 
 
 @reversion.register()
-@python_2_unicode_compatible
-class TestParentModel(models.Model):
+class TestModel(models.Model):
 
-    parent_field = models.CharField(
+    name = models.CharField(
         max_length=191,
+        default="v1",
     )
 
 
-@reversion.register(fields=("field",), exclude=("excluded_field",), follow=("testparentmodel_ptr",))
-@python_2_unicode_compatible
-class TestModel(TestParentModel):
+class TestMeta(models.Model):
 
-    field = models.CharField(
-        max_length=191,
+    revision = models.OneToOneField(
+        Revision,
+        on_delete=models.CASCADE,
     )
 
-    excluded_field = models.CharField(
+    name = models.CharField(
         max_length=191,
     )
-
-    def __str__(self):
-        return self.name

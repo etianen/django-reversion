@@ -193,7 +193,7 @@ class VersionAdmin(admin.ModelAdmin):
 
     def revisionform_view(self, request, version, template_name, extra_context=None):
         try:
-            with transaction.atomic():
+            with transaction.atomic(using=version.db):
                 # Revert the revision.
                 version.revision.revert(delete=True)
                 # Run the normal changeform view.
