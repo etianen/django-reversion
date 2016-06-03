@@ -71,13 +71,3 @@ Usage
    middleware
    errors
    signals
-
-
-More information
-^^^^^^^^^^^^^^^^
-
-.. toctree::
-   :maxdepth: 1
-
-   how-it-works
-   diffs
