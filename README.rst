@@ -44,7 +44,7 @@ Bug reports, bug fixes, and new features are always welcome. Please raise issues
 pull requests for any new code.
 
 You can run the test suite yourself from within a virtual environment with the following
-commands:
+commands. The test suite requires that both MySQL and PostgreSQL be installed.
 
 .. code:: bash
 
