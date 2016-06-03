@@ -54,8 +54,8 @@ Installation
    :maxdepth: 1
 
    django-versions
-   migrations
    common-problems
+   changelog
 
 
 Usage
