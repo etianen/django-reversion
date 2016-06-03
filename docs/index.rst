@@ -64,11 +64,19 @@ Usage
 ^^^^^
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 3
 
    admin
    api
    commands
    signals
+
+
+More information
+^^^^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 1
+
    how-it-works
    diffs

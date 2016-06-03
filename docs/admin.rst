@@ -46,8 +46,8 @@ If the 3rd party model is already registered with the Django admin, you may have
 API reference
 -------------
 
-``reversion.admin.VersionAdmin``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reversion.admin.VersionAdmin
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A subclass of ``django.contrib.ModelAdmin`` providing rollback and recovery.
 
@@ -69,7 +69,7 @@ A subclass of ``django.contrib.ModelAdmin`` providing rollback and recovery.
 
 ``VersionAdmin.revision_manager = reversion.default_revision_manager``
 
-    The revision manager used to manage revisions. See :ref:`low-level API <api>`.
+    The ``RevisionManager`` used to manage revisions. See :ref:`revisionmanager`.
 
 
 ``VersionAdmin.reversion_format = "json"``
@@ -97,7 +97,7 @@ A subclass of ``django.contrib.ModelAdmin`` providing rollback and recovery.
             options["exclude"] = ("some_field",)
             super(YourModelAdmin, self).reversion_register(model, **options)
 
-    See :ref:`low-level API <api>`.
+    See :ref:`register`.
 
 
 Customizing admin templates

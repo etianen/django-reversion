@@ -130,6 +130,8 @@ Registering models
 
 Models must be registered with django-reversion before they can be used with the API.
 
+.. _register:
+
 ``reversion.register(model_cls, **options)``
 
     Registers a model with django-reversion.
@@ -438,3 +440,9 @@ A ``Revision`` model contains metadata about a revision, and groups together all
     **Arguments:**
 
     - ``delete``: If True, then any model instances which have been created and are reachable by the ``follow`` clause of any model instances in this revision will be deleted. This effectively restores a group of related models to the state they were in when the revision was created.
+
+
+.. _revisionmanager:
+
+RevisionManager
+^^^^^^^^^^^^^^^
