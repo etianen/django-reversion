@@ -88,14 +88,14 @@ class VersionAdapter(object):
             # Get the referenced obj(s).
             try:
                 related = getattr(obj, relationship)
-            except ObjectDoesNotExist:  # pragma: no cover
+            except ObjectDoesNotExist:
                 continue
             if isinstance(related, models.Model):
                 yield related
             elif isinstance(related, (models.Manager, QuerySet)):
                 for related_obj in related.all():
                     yield related_obj
-            elif related is not None:  # pragma: no cover
+            elif related is not None:
                 raise TypeError((
                     "Cannot follow the relationship {relationship}. "
                     "Expected a model or QuerySet, found {related}"
@@ -390,12 +390,12 @@ class RevisionManager(object):
         """Returns the manager with the given slug."""
         if manager_slug in cls._created_managers:
             return cls._created_managers[manager_slug]
-        raise RegistrationError("No revision manager exists with the slug %r" % manager_slug)  # pragma: no cover
+        raise RegistrationError("No revision manager exists with the slug %r" % manager_slug)
 
     def __init__(self, manager_slug, revision_context_manager=revision_context_manager):
         """Initializes the revision manager."""
         # Check the slug is unique for this revision manager.
-        if manager_slug in RevisionManager._created_managers:  # pragma: no cover
+        if manager_slug in RevisionManager._created_managers:
             raise RegistrationError("A revision manager has already been created with the slug %r" % manager_slug)
         # Store a reference to this manager.
         self.__class__._created_managers[manager_slug] = self
@@ -431,8 +431,7 @@ class RevisionManager(object):
                 model=model,
             ))
         # Perform any customization.
-        if field_overrides:
-            adapter_cls = type(adapter_cls.__name__, (adapter_cls,), field_overrides)
+        adapter_cls = type(adapter_cls.__name__, (adapter_cls,), field_overrides)
         # Perform the registration.
         adapter_obj = adapter_cls(model)
         self._registered_models[self._get_registration_key(model)] = adapter_obj

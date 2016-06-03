@@ -8,7 +8,7 @@ from django.contrib.admin.utils import unquote, quote
 try:
     from django.contrib.contenttypes.admin import GenericInlineModelAdmin
     from django.contrib.contenttypes.fields import GenericRelation
-except ImportError:  # Django < 1.9  pragma: no cover
+except ImportError:  # Django < 1.9
     from django.contrib.contenttypes.generic import GenericInlineModelAdmin, GenericRelation
 from django.core.urlresolvers import reverse
 from django.core.exceptions import PermissionDenied, ImproperlyConfigured
@@ -102,7 +102,7 @@ class VersionAdmin(admin.ModelAdmin):
             self.revision_context_manager.set_comment(change_message)
         try:
             super(VersionAdmin, self).log_addition(request, object, change_message)
-        except TypeError:  # Django < 1.9 pragma: no cover
+        except TypeError:  # Django < 1.9
             super(VersionAdmin, self).log_addition(request, object)
 
     def log_change(self, request, object, message):
@@ -271,7 +271,7 @@ class VersionAdmin(admin.ModelAdmin):
         # Get the site context.
         try:
             each_context = self.admin_site.each_context(request)
-        except TypeError:  # Django <= 1.7 pragma: no cover
+        except TypeError:  # Django <= 1.7
             each_context = self.admin_site.each_context()
         # Set the app name.
         request.current_app = self.admin_site.name

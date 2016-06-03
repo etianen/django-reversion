@@ -4,7 +4,7 @@ from itertools import chain
 from django.contrib.contenttypes.models import ContentType
 try:
     from django.contrib.contenttypes.fields import GenericForeignKey
-except ImportError:  # Django < 1.9 pragma: no cover
+except ImportError:  # Django < 1.9
     from django.contrib.contenttypes.generic import GenericForeignKey
 from django.conf import settings
 from django.core import serializers
