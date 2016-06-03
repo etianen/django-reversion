@@ -12,7 +12,7 @@ Overview
 Registering models
 ^^^^^^^^^^^^^^^^^^
 
-.. include:: _include/admin.rst
+.. include:: /_include/admin.rst
 
 .. Note::
 
@@ -107,7 +107,7 @@ The serialization format to use when registering models.
 ignore_duplicate_revisions = False
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    .. include:: _include/ignore-duplicates.rst
+    .. include:: /_include/ignore-duplicates.rst
 
 
 history_latest_first = False

@@ -10,4 +10,4 @@ Register your models with a subclass of :ref:`VersionAdmin`.
 
         pass
 
-.. include:: _include/post-register.rst
+.. include:: /_include/post-register.rst

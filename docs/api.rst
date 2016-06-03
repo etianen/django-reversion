@@ -27,7 +27,7 @@ Models must be registered with django-reversion before they can be used with the
 .. Hint::
     If you're using the :ref:`admin`, model registration is automatic. If you’re using django-reversion in a management command, make sure you call ``django.contrib.admin.autodiscover`` to load the admin modules before using the django-reversion API.
 
-.. include:: _include/post-register.rst
+.. include:: /_include/post-register.rst
 
 
 Creating revisions
@@ -188,7 +188,7 @@ Throws :ref:`RegistrationError` if the model has already been registered.
 .. Hint::
     By default, django-reversion will not register any parent classes of a model that uses multi-table inheritance. If you wish to also add parent models to your revision, you must explicitly add their ``parent_ptr`` fields to the ``follow`` parameter when you register the model.
 
-.. include:: _include/post-register.rst
+.. include:: /_include/post-register.rst
 
 
 reversion.is_registered(model)
@@ -244,7 +244,7 @@ Marks a block of code as a *revision block*. Can also be used as a decorator. Th
 reversion.set_ignore_duplicates(ignore_duplicates)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. include:: _include/ignore-duplicates.rst
+.. include:: /_include/ignore-duplicates.rst
 
 Throws :ref:`RevisionManagementError` if there is no active revision block.
 
@@ -330,7 +330,7 @@ Returns the :ref:`Revision` that was created, or ``None`` if no revision was sav
     An iterable of model instances to save in the revision.
 
 ``ignore_duplicates``
-    .. include:: _include/ignore-duplicates.rst
+    .. include:: /_include/ignore-duplicates.rst
 
 ``user``
     A ``User`` model to add to the revision metadata.

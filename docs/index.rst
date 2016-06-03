@@ -33,7 +33,7 @@ Admin integration
 
 django-reversion can be used to add rollback and recovery to your admin site.
 
-.. include:: _include/admin.rst
+.. include:: /_include/admin.rst
 
 For more information about admin integration, see :ref:`admin`.
 
