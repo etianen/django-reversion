@@ -17,7 +17,6 @@ from django.core.urlresolvers import reverse, resolve
 
 import reversion
 from reversion.models import Revision, Version
-from reversion.errors import RegistrationError
 from reversion.signals import pre_revision_commit, post_revision_commit
 
 from test_app.models import (
@@ -47,7 +46,7 @@ class RegistrationTest(TestCase):
         # Register the model and test.
         reversion.register(test_model)
         self.assertTrue(reversion.is_registered(test_model))
-        self.assertRaises(RegistrationError, lambda: reversion.register(test_model))
+        self.assertRaises(reversion.RegistrationError, lambda: reversion.register(test_model))
         self.assertTrue(test_model in reversion.get_registered_models())
         self.assertTrue(isinstance(reversion.get_adapter(test_model), reversion.VersionAdapter))
 
@@ -55,9 +54,9 @@ class RegistrationTest(TestCase):
         # Unregister the model and test.
         reversion.unregister(test_model)
         self.assertFalse(reversion.is_registered(test_model))
-        self.assertRaises(RegistrationError, lambda: reversion.unregister(test_model))
+        self.assertRaises(reversion.RegistrationError, lambda: reversion.unregister(test_model))
         self.assertTrue(test_model not in reversion.get_registered_models())
-        self.assertRaises(RegistrationError, lambda: isinstance(reversion.get_adapter(test_model)))
+        self.assertRaises(reversion.RegistrationError, lambda: isinstance(reversion.get_adapter(test_model)))
 
     def testRegistration(self):
         self.check_registration(ReversionTestModel1)

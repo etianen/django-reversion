@@ -140,6 +140,8 @@ Reverting a :ref:`Revision` will restore any serialized model instances that hav
     assert obj.name == "version 2"
 
 
+.. _registration-api:
+
 Registration API
 ----------------
 
@@ -154,10 +156,10 @@ Registers a model with django-reversion.
     The Django model to register.
 
 ``fields=None``
-    An iterable of field named to include in the serialized data. If ``None``, all fields will be included.
+    An iterable of field names to include in the serialized data. If ``None``, all fields will be included.
 
 ``exclude=()``
-    An iterable of fields to exclude from the serialized data.
+    An iterable of field names to exclude from the serialized data.
 
 ``follow=()``
     An iterable of model relationships to follow when saving a version of this model. ``ForeignKey``, ``ManyToManyField`` and reversion ``ForeignKey`` relationships are supported. Any property that returns a ``Model`` or ``QuerySet`` is also supported.
@@ -173,6 +175,9 @@ Registers a model with django-reversion.
 
 ``eager_signals=()``
     A tuple of Django signals that will trigger adding the model instance to an active revision. Unlike ``signals``, model instances triggering this signal will be serialized immediately, rather than at the end of the revision block. This makes it suitable for usage with signals like ``pre_delete``.
+
+``adapter_cls=reversion.VersionAdapter``
+    A subclass of :ref:`VersionAdapter` to use to register the model.
 
 .. Hint::
     By default, django-reversion will not register any parent classes of a model that uses multi-table inheritance. If you wish to also add parent models to your revision, you must explicitly add their ``parent_ptr`` fields to the ``follow`` parameter when you register the model.
@@ -288,6 +293,8 @@ Adds custom metadata to a revision.
     Values to be stored on ``model_cls`` when it is saved.
 
 
+.. _raw-revision-api:
+
 Raw revision API
 ----------------
 
@@ -318,6 +325,8 @@ Returns the :ref:`Revision` that was created, or ``None`` if no revision was sav
 ``db``
     The database to save the revision into.
 
+
+.. _lookup-api:
 
 Lookup API
 ----------
@@ -378,7 +387,7 @@ VersionQuerySet.get_unique()
 Returns an iterable of :ref:`Version`, where each version is unique for a given database, model instance, and set of serialized fields.
 
 
-.. _version:
+.. _Version:
 
 reversion.models.Version
 ------------------------
@@ -498,10 +507,99 @@ Restores all contained serialized model instances to the database.
 .. _RevisionManager:
 
 reversion.RevisionManager
-^^^^^^^^^^^^^^^^^^^^^^^^^
+-------------------------
+
+To support multiple configurations of django-reversion in the same project, create a standalone :ref:`RevisionManager` to act as a completely separate source of registration.
+
+.. code:: python
+
+    from django.db import models
+    import reversion
+
+    # Create a custom revision manager.
+    my_revision_manager = RevisionManager("custom")
+
+    # Register with the default revision manager.
+    @reversion.register()
+    # Register with a custom revision manager.
+    @my_revision_manager.register()
+    class MyModel(models.Model):
+
+        pass
+
+A separate :ref:`Revision` will be saved for every :ref:`RevisionManager` that a given model is registered with.
+
+Use your custom :ref:`RevisionManager` as a namespace to access the :ref:`registration-api`, :ref:`raw-revision-api` and :ref:`lookup-api`.
+
+.. code:: python
+
+    versions = my_revision_manager.get_for_object(my_instance)
 
 
-.. _RevisionManager:
+RevisionManager.__init__(self, manager_slug)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Creates a new :ref:`RevisionManager`.
+
+``manager_slug``
+    A unique text name for the manager. If the name has already been used in your project, a :ref:`RegistrationError` will be raised.
+
+
+.. _VersionAdapter:
 
 reversion.VersionAdapter
-^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------
+
+Customize almost every aspect of model registration by supplying a subclass of :ref:`VersionAdapter` to :ref:`register`.
+
+
+VersionAdapter.fields = None
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An iterable of field names to include in the serialized data. If ``None``, all fields will be included.
+
+
+VersionAdapter.exclude = ()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An iterable of field names to exclude from the serialized data.
+
+
+VersionAdapter.follow = ()
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An iterable of model relationships to follow when saving a version of this model. ``ForeignKey``, ``ManyToManyField`` and reversion ``ForeignKey`` relationships are supported. Any property that returns a ``Model`` or ``QuerySet`` is also supported.
+
+
+VersionAdapter.format = "json"
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The name of a Django serialization format to use when saving the model instance.
+
+
+VersionAdapter.for_concrete_model = True
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If ``True`` proxy models will be saved under the same content type as their concrete model. If ``False``, proxy models will be saved under their own content type, effectively giving proxy models their own distinct history.
+
+
+VersionAdapter.signals = (post_save,)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A tuple of Django signals that will trigger adding the model instance to an active revision.
+
+
+VersionAdapter.eager_signals = ()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A tuple of Django signals that will trigger adding the model instance to an active revision. Unlike ``signals``, model instances triggering this signal will be serialized immediately, rather than at the end of the revision block. This makes it suitable for usage with signals like ``pre_delete``.
+
+
+VersionAdapter.revert(self, version):
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Saves the :ref:`Version` to the database.
+
+``version``
+
+    The :ref:`Version` to save to the database.

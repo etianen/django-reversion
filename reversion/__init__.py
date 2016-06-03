@@ -13,6 +13,11 @@ except ImportError:  # pragma: no cover
     # is importing reversion to get __version__.
     pass
 else:
+    from reversion.errors import (  # noqa
+        RevertError,
+        RevisionManagementError,
+        RegistrationError,
+    )
     from reversion.revisions import (  # noqa
         VersionAdapter,
         RevisionManager,

@@ -69,6 +69,7 @@ Usage
    api
    views
    middleware
+   errors
    signals
 
 
