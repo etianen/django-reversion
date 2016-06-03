@@ -896,17 +896,17 @@ class PrimaryKeyDataTypesTest(TestCase):
         ]
 
         for table_type in self.table_types:
-            register(table_type)
+            reversion.register(table_type)
 
     def testPKs(self):
 
         for table_type in self.table_types:
-            self.assertTrue(is_registered(table_type))
-            with create_revision():
+            self.assertTrue(reversion.is_registered(table_type))
+            with reversion.create_revision():
                 record = table_type.objects.create(name="Testing")
-            versions = get_for_object(record)
+            versions = reversion.get_for_object(record)
             self.assertEqual(versions.count(), 1)
 
     def tearDown(self):
         for table_type in self.table_types:
-            unregister(table_type)
+            reversion.unregister(table_type)
