@@ -1,44 +1,42 @@
 .. _signals:
 
-Signals sent by django-reversion
-================================
+Signals
+=======
 
-django-reversion provides a number of custom signals that can be used to tie-in additional functionality to the version creation mechanism.
+django-reversion provides a number of custom signals.
 
 
 reversion.signals.pre_revision_commit
 -------------------------------------
 
-This signal is triggered just before a revision is saved to the database. It receives the following keyword arguments:
+Sent just before a revision is saved to the database.
 
-* **instances** - A list of the model instances in the revision.
-* **revision** - The unsaved Revision model.
-* **versions** - The unsaved Version models in the revision.
+``sender``
+    The :ref:`RevisionManager` creating the revision.
 
+``instances``
+    An iterable of model instances in the revision.
 
-reversion.signals..post_revision_commit
----------------------------------------
+``revision``
+    The unsaved :ref:`Revision` model.
 
-This signal is triggered just after a revision is saved to the database. It receives the following keyword arguments:
-
-* **instances** - A list of the model instances in the revision.
-* **revision** - The saved Revision model.
-* **versions** - The saved Version models in the revision.
+``versions``
+    The unsaved :ref:`Version` models in the revision.
 
 
-Connecting to signals
----------------------
+reversion.signals.post_revision_commit
+--------------------------------------
 
-The signals listed above are sent only once *per revision*, rather than once *per model in the revision*. In practice, this means that you should connect to the signals without specifying a `sender`, as below::
+Sent just after a revision is saved to the database.
 
-    def on_revision_commit(**kwargs):
-        pass  # Your signal handler code here.
-    reversion.post_revision_commit.connect(on_revision_commit)
+``sender``
+    The :ref:`RevisionManager` creating the revision.
 
-To execute code only when a revision has been saved for a particular Model, you should inspect the contents of the `instances` parameter, as below::
+``instances``
+    An iterable of model instances in the revision.
 
-    def on_revision_commit(instances, **kwargs):
-        for instance in instances:
-            if isinstance(instance, MyModel):
-                pass  # Your signal handler code here.
-    reversion.post_revision_commit.connect(on_revision_commit)
+``revision``
+    The saved :ref:`Revision` model.
+
+``versions``
+    The saved :ref:`Version` models in the revision.

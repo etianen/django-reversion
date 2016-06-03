@@ -8,7 +8,7 @@
 dist
 build
 MANIFEST
-src/django_reversion.egg-info/
+*.egg-info/
 docs/_build
 .coverage
 *.sqlite3

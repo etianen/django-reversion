@@ -7,34 +7,35 @@ cache:
     - $HOME/.cache/pip
 env:
   matrix:
-    - TOXENV=py27-django-18-postgres
-    - TOXENV=py27-django-18-mysql
-    - TOXENV=py27-django-18-sqlite
-    - TOXENV=py27-django-19-postgres
-    - TOXENV=py27-django-19-mysql
-    - TOXENV=py27-django-19-sqlite
-    - TOXENV=py27-django-110-postgres
-    - TOXENV=py27-django-110-mysql
-    - TOXENV=py27-django-110-sqlite
-    - TOXENV=py34-django-18-postgres
-    - TOXENV=py34-django-18-mysql
-    - TOXENV=py34-django-18-sqlite
-    - TOXENV=py34-django-19-postgres
-    - TOXENV=py34-django-19-mysql
-    - TOXENV=py34-django-19-sqlite
-    - TOXENV=py34-django-110-postgres
-    - TOXENV=py34-django-110-mysql
-    - TOXENV=py34-django-110-sqlite
-    - TOXENV=py35-django-18-postgres
-    - TOXENV=py35-django-18-mysql
-    - TOXENV=py35-django-18-sqlite
-    - TOXENV=py35-django-19-postgres
-    - TOXENV=py35-django-19-mysql
-    - TOXENV=py35-django-19-sqlite
-    - TOXENV=py35-django-110-postgres
-    - TOXENV=py35-django-110-mysql
-    - TOXENV=py35-django-110-sqlite
+    - TOXENV=py27-django18-postgres
+    - TOXENV=py27-django18-mysql
+    - TOXENV=py27-django18-sqlite
+    - TOXENV=py27-django19-postgres
+    - TOXENV=py27-django19-mysql
+    - TOXENV=py27-django19-sqlite
+    - TOXENV=py27-django110-postgres
+    - TOXENV=py27-django110-mysql
+    - TOXENV=py27-django110-sqlite
+    - TOXENV=py34-django18-postgres
+    - TOXENV=py34-django18-mysql
+    - TOXENV=py34-django18-sqlite
+    - TOXENV=py34-django19-postgres
+    - TOXENV=py34-django19-mysql
+    - TOXENV=py34-django19-sqlite
+    - TOXENV=py34-django110-postgres
+    - TOXENV=py34-django110-mysql
+    - TOXENV=py34-django110-sqlite
+    - TOXENV=py35-django18-postgres
+    - TOXENV=py35-django18-mysql
+    - TOXENV=py35-django18-sqlite
+    - TOXENV=py35-django19-postgres
+    - TOXENV=py35-django19-mysql
+    - TOXENV=py35-django19-sqlite
+    - TOXENV=py35-django110-postgres
+    - TOXENV=py35-django110-mysql
+    - TOXENV=py35-django110-sqlite
     - TOXENV=flake8
+    - TOXENV=docs
   global:
     - PYTHONWARNINGS=default,ignore::PendingDeprecationWarning,ignore::ResourceWarning
     - DJANGO_DATABASE_USER_POSTGRES=postgres
@@ -45,7 +46,7 @@ services:
   - postgresql
   - mysql
 install:
-  - pip install tox
+  - pip install 'tox>=2.3.1'
 before_script:
   - mysql -e 'create database test_project'
   - psql -c 'create database test_project;' -U postgres;

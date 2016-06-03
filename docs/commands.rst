@@ -3,27 +3,38 @@
 Management commands
 ===================
 
-django-reversion comes with a number of additional django-admin.py management commands, detailed below.
+django-reversion includes a number of ``django-admin.py`` management commands.
+
+
+.. _createinitialrevisions:
 
 createinitialrevisions
 ----------------------
 
-This command is used to create a single, base revision for all registered models in your project. It should be run after installing django-reversion, or registering a new model with django-reversion. If your project contains a lot of version-controlled data, then this might take a while to complete.
+Creates an initial revision for all registered models in your project. It should be run after installing django-reversion, or registering a new model with django-reversion.
 
-::
+.. code:: bash
 
-    django-admin.py createinitialrevisions
-    django-admin.py createinitialrevisions someapp
-    django-admin.py createinitialrevisions someapp.SomeModel
+    ./manage.py createinitialrevisions
+    ./manage.py createinitialrevisions your_app.YourModel --comment="Initial revision."
+
+Run ``./manage.py createinitialrevisions --help`` for more information.
+
+.. Warning::
+    For large databases, this command can take a long time to run.
+
 
 deleterevisions
-----------------------
+---------------
 
-This command is used to delete old revisions. It can be run regularly to keep storage requirements of models history sane. You can specify to delete revisions older than N days or delete only revisions older than the specified date or keep only the N most recent revisions for each object.
+Deletes old revisions. It can be run regularly to keep revision history manageable.
 
-::
+.. code:: bash
 
-    django-admin.py deleterevisions myapp
-    django-admin.py deleterevisions --date=2015-01-15
-    django-admin.py deleterevisions myapp.mymodel --days=365 --force
-    django-admin.py deleterevisions myapp.mymodel --keep=10
+    ./manage.py deleterevisions
+    ./manage.py deleterevisions your_app.YourModel --days=30
+
+Run ``./manage.py deleterevisions --help`` for more information.
+
+.. Warning::
+    With no arguments, this command will delete your entire revision history! Read the command help for ways to limit which revisions should be deleted.

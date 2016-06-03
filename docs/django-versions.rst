@@ -1,47 +1,19 @@
 .. _django-versions:
 
-Compatible Django Versions
+Compatible Django versions
 ==========================
 
-django-reversion is an actively-maintained project, and aims to stay compatible with the latest version of Django.  Unfortunately, this means that the latest release of django-reversion might not work with older versions of Django.
+django-reversion aims to stay compatible with the latest LTS release of Django, along with any more recent releases. See :ref:`changelog`.
 
-If you are using anything other than the latest release of Django, it is important that you check the table below to ensure that your django-reversion download will be compatible.
+Older versions of Django require an older version of django-reversion to be installed.
 
 ==============  =================
 Django version  Reversion release
 ==============  =================
-1.8+            1.10.2
+1.8+            1.11.0
 1.7+            1.10.0
 1.6+            1.8.5
-1.5.1+          1.7.2
-1.5             1.7
-1.4.4+          1.6.6
-1.4.3           1.6.5
-1.4.2           1.6.4
-1.4.1           1.6.3
-1.4             1.6.1
-1.3.6           1.5.7
-1.3.5           1.5.6
-1.3.4           1.5.5
-1.3.3           1.5.4
-1.3.2           1.5.3
-1.3.1           1.5.2
-1.3             1.5
-1.2.5           1.3.3
-1.2.4           1.3.3
-1.2.3           1.3.2
-1.2             1.3
-1.1.1           1.2.1
-1.1             1.2
-1.0.4           1.1.2
-1.0.3           1.1.2
-1.0.2           1.1.1
 ==============  =================
 
-
-Getting the code
-----------------
-
-All django-reversion releases are available from the `project downloads area <http://github.com/etianen/django-reversion/downloads>`_.  You can also use Git to checkout tags from the `public git repository <http://github.com/etianen/django-reversion>`_.
-
-There are a number of alternative methods you can use when installing django-reversion. Please check the :ref:`installation methods <installation>` page for more information.
+.. Warning::
+    Older versions of django-reversion receive very limited support. It's advised to upgrade your Django to remain compatible with the latest release of django-reversion.

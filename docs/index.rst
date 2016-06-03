@@ -1,10 +1,22 @@
 .. _index:
 
-django-reversion documentation
-==============================
+django-reversion
+================
 
-Getting started with django-reversion
--------------------------------------
+**django-reversion** is an extension to the Django web framework that provides
+version control for model instances.
+
+
+Features
+--------
+
+-  Roll back to any point in a model instance's history.
+-  Recover deleted model instances.
+-  Simple admin integration.
+
+
+Installation
+------------
 
 To install django-reversion, follow these steps:
 
@@ -12,33 +24,24 @@ To install django-reversion, follow these steps:
 2.  Add ``'reversion'`` to ``INSTALLED_APPS``.
 3.  Run ``manage.py migrate``.
 
-If you have installed anything other than the latest version of Django, please check the :ref:`compatible Django versions <django-versions>` page before installing django-reversion.
-
-There are a number of alternative methods you can use when installing django-reversion. Please check the :ref:`installation methods <installation>` page for more information.
+.. Important::
+    See :ref:`django-versions` if you're not using the latest release of Django.
 
 
 Admin integration
 -----------------
 
-django-reversion can be used to add a powerful rollback and recovery facility to your admin site. To enable this, simply register your models with a subclass of ``reversion.VersionAdmin``::
+django-reversion can be used to add rollback and recovery to your admin site.
 
-    from reversion.admin import VersionAdmin
+.. include:: /_include/admin.rst
 
-    class YourModelAdmin(VersionAdmin):
-
-        pass
-
-    admin.site.register(YourModel, YourModelAdmin)
-
-Whenever you register a model with the ``VersionAdmin`` class, be sure to run the ``./manage.py createinitialrevisions`` command to populate the version database with an initial set of model data. Depending on the number of rows in your database, this command could take a while to execute.
-
-For more information about admin integration, please read the :ref:`admin integration <admin>` documentation.
+For more information about admin integration, see :ref:`admin`.
 
 
-Low Level API
+Low-level API
 -------------
 
-You can use django-reversion's API to build powerful version-controlled views. For more information, please read the :ref:`low level API <api>` documentation.
+You can the django-reversion API to build version-controlled applications. See :ref:`api`.
 
 
 More information
@@ -50,19 +53,21 @@ Installation
 .. toctree::
    :maxdepth: 1
 
-   installation
    django-versions
-   migrations
-   admin
+   common-problems
+   changelog
 
-Further reading
-^^^^^^^^^^^^^^^
+
+Usage
+^^^^^
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
-   api
+   admin
    commands
+   api
+   views
+   middleware
+   errors
    signals
-   how-it-works
-   diffs

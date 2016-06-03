@@ -1,5 +1,3 @@
-import sys
-sys.path.insert(0, "src")  # noqa
 from setuptools import setup, find_packages
 from reversion import __version__
 
@@ -25,24 +23,13 @@ setup(
     author_email="dave@etianen.com",
     url="http://github.com/etianen/django-reversion",
     zip_safe=False,
-    packages=find_packages("src"),
-    package_dir={
-        "": "src",
-    },
+    packages=find_packages(),
     package_data={
         "reversion": ["locale/*/LC_MESSAGES/django.*", "templates/reversion/*.html"]},
     cmdclass=cmdclass,
     install_requires=[
         "django>=1.8",
     ],
-    extras_require={
-        "diff": [
-            "diff_match_patch",
-        ],
-        "test": [
-            "tox>=2.0.0",
-        ],
-    },
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Web Environment",
