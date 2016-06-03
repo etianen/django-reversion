@@ -60,6 +60,10 @@ A *revision* represents one or more changes made to your model instances, groupe
         reversion.set_user(request.user)
         reversion.set_comment("Created revision 2")
 
+.. Important::
+
+    Bulk actions, such as ``Queryset.update()``, do not send signals, so won't be noticed by django-reversion.
+
 
 Loading revisions
 ^^^^^^^^^^^^^^^^^
