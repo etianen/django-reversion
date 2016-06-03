@@ -152,7 +152,7 @@ Registration API
 .. _register:
 
 reversion.register(model, \*\*options)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Registers a model with django-reversion.
 
