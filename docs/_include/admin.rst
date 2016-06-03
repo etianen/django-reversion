@@ -1,4 +1,4 @@
-Register your models with a subclass of ``reversion.VersionAdmin``.
+Register your models with a subclass of :ref:`VersionAdmin`.
 
 .. code:: python
 
@@ -10,4 +10,4 @@ Register your models with a subclass of ``reversion.VersionAdmin``.
 
         pass
 
-.. include:: _include/register.rst
+.. include:: _include/post-register.rst

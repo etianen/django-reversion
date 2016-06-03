@@ -12,7 +12,7 @@ Low-Level API
 
 It is possible to generate two types of diff using the diff helper functions.  For the purpose of these examples, it is assumed that you have created a model called ``Page``, which contains a text field called ``content``.
 
-First of all, you need to use the :ref:`low level API <api>` to retrieve the versions you want to compare.
+First of all, you need to use the :ref:`api` to retrieve the versions you want to compare.
 
 ::
 

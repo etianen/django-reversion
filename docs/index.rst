@@ -24,14 +24,12 @@ To install django-reversion, follow these steps:
 2.  Add ``'reversion'`` to ``INSTALLED_APPS``.
 3.  Run ``manage.py migrate``.
 
-.. Important:: If you are using anything older than the latest release of Django, see :ref:`django-versions`.
+.. Important::
+    See :ref:`django-versions` if you're not using the latest release of Django.
 
-
-Basic usage
------------
 
 Admin integration
-^^^^^^^^^^^^^^^^^
+-----------------
 
 django-reversion can be used to add rollback and recovery to your admin site.
 
@@ -41,7 +39,7 @@ For more information about admin integration, see :ref:`admin`.
 
 
 Low-level API
-^^^^^^^^^^^^^
+-------------
 
 You can the django-reversion API to build version-controlled applications. See :ref:`api`.
 
@@ -64,11 +62,13 @@ Usage
 ^^^^^
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    admin
-   api
    commands
+   api
+   views
+   middleware
    signals
 
 

@@ -7,7 +7,7 @@ Schema migrations
 1.11.0
 ------
 
-This release significantly improves the performance of ``Version`` queries for models with non-integer primary keys.
+This release significantly improves the performance of :ref:`Version` queries for models with non-integer primary keys.
 
 To apply this migration, run::
 

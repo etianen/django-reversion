@@ -6,13 +6,10 @@ Management commands
 django-reversion includes a number of ``django-admin.py`` management commands.
 
 
-Command reference
------------------
-
 .. _createinitialrevisions:
 
 createinitialrevisions
-^^^^^^^^^^^^^^^^^^^^^^
+----------------------
 
 Creates an initial revision for all registered models in your project. It should be run after installing django-reversion, or registering a new model with django-reversion.
 
@@ -28,7 +25,7 @@ Run ``./manage.py createinitialrevisions --help`` for more information.
 
 
 deleterevisions
-^^^^^^^^^^^^^^^
+---------------
 
 Deletes old revisions. It can be run regularly to keep revision history manageable.
 
