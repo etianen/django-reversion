@@ -212,7 +212,7 @@ Throws :ref:`RegistrationError` if the model has not been registered with django
 
 
 reversion.get_registered_models()
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Returns an iterable of all registered models.
 
@@ -225,6 +225,8 @@ Returns the :ref:`VersionAdapter` for the given model.
 ``model``
     The Django model look up.
 
+
+.. _revision-api:
 
 Revision API
 ------------
@@ -275,7 +277,7 @@ Throws :ref:`RevisionManagementError` if there is no active revision block.
 
 
 reversion.get_user()
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 Returns the user for the current revision.
 
@@ -338,7 +340,7 @@ Returns the :ref:`Revision` that was created, or ``None`` if no revision was sav
 ``comment``
     A text comment to add to the revision metadata.
 
-``meta`
+``meta``
     An iterable of unsaved model instances representing additional meta information about the revision. Each model must have a ``ForeignKey`` or ``OneToOneField`` to ``reversion.models.Revision``. When the revision is saved, all meta model instances will be saved in the same transaction.
 
 ``date_created``
