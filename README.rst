@@ -46,10 +46,10 @@ pull requests for any new code.
 You can run the test suite yourself from within a virtual environment with the following
 commands:
 
-::
+.. code:: bash
 
-    $ pip install 'tox>=2.3.1'
-    $ tox
+    pip install 'tox>=2.3.1'
+    tox
 
 The django-reversion project is built on every push with `Travis CI <https://travis-ci.org/etianen/django-reversion>`_.
 

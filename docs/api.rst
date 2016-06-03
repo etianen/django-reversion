@@ -90,7 +90,7 @@ Revision metadata
 
 :ref:`Revision` stores meta-information about the revision.
 
-::
+.. code:: python
 
     # Check the revision metadata for the first revision.
     assert versions[1].revision.comment = "Created revision 1"
@@ -108,7 +108,7 @@ Reverting revisions
 
 Revert a :ref:`Revision` to restore the serialized model instances.
 
-::
+.. code:: python
 
     # Revert the first revision.
     versions[1].revision.revert()
@@ -130,7 +130,7 @@ Restoring deleted model instances
 
 Reverting a :ref:`Revision` will restore any serialized model instances that have been deleted.
 
-::
+.. code:: python
 
     # Delete the model instance, but store the pk.
     pk = obj.pk
