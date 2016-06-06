@@ -14,7 +14,7 @@ class TestModel(models.Model):
 
 class TestMeta(models.Model):
 
-    revision = models.OneToOneField(
+    revision = models.ForeignKey(
         Revision,
         on_delete=models.CASCADE,
     )
