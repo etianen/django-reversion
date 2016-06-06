@@ -303,18 +303,14 @@ Returns the comment for the current revision.
 Throws :ref:`RevisionManagementError` if there is no active revision block.
 
 
-reversion.add_meta(model_cls, \*\*values)
+reversion.add_meta(model, \*\*values)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Adds custom metadata to a revision.
 
 Throws :ref:`RevisionManagementError` if there is no active revision block.
 
-``model_cls``
-    A Django model to store the custom metadata. The model must have a ``ForeignKey`` or ``OneToOneField`` to :ref:`Revision`.
-
-``**values``
-    Values to be stored on ``model_cls`` when it is saved.
+.. include:: /_include/meta-args.rst
 
 
 .. _raw-revision-api:
@@ -341,7 +337,7 @@ Returns the :ref:`Revision` that was created, or ``None`` if no revision was sav
     A text comment to add to the revision metadata.
 
 ``meta``
-    An iterable of unsaved model instances representing additional meta information about the revision. Each model must have a ``ForeignKey`` or ``OneToOneField`` to ``reversion.models.Revision``. When the revision is saved, all meta model instances will be saved in the same transaction.
+    An iterable of :ref:`RevisionMeta`.
 
 ``date_created``
     The date to associate with the revision. Defaults to ``django.utils.timezone.now()``.
@@ -544,6 +540,23 @@ Throws :ref:`RevertError` if the model could not be reverted, e.g. the serialize
 
 ``delete``
     If ``True``, any model instances which have been created and are reachable by the ``follow`` clause of any model instances in this revision will be deleted. This effectively restores a group of related models to the state they were in when the revision was created.
+
+
+.. _RevisionMeta:
+
+reversion.RevisionMeta
+----------------------
+
+Custom metadata to be assigned to a revision.
+
+
+RevisionMeta.__init__(self, model, \*\*values)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Creates a new :ref:`RevisionMeta`.
+
+.. include:: /_include/meta-args.rst
+
 
 
 .. _RevisionManager:

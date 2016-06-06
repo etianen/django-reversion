@@ -77,7 +77,7 @@ class Command(BaseCommand):
             ))
         created_count = 0
         content_type = revision_manager._get_content_type(model_class, db=database)
-        live_objs = model_class._base_manager.using(database).exclude(
+        live_objs = model_class._default_manager.using(database).exclude(
             pk__reversion_in=(Version.objects.using(database).filter(
                 content_type=content_type,
             ), "object_id")

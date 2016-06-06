@@ -35,23 +35,29 @@ class ReversionTestBase(TestCase):
 
 class RevisionAPITest(ReversionTestBase):
 
-    def testRevisionCreatedInRevisionBlock(self):
+    def testRevisionCreated(self):
         with reversion.create_revision():
             obj = TestModel.objects.create()
         self.assertRevisionCreated(obj)
 
-    def testRevisionCreatedInNestedRevisionBlock(self):
+    def testRevisionCreatedNested(self):
         with reversion.create_revision():
             with reversion.create_revision():
                 obj = TestModel.objects.create()
         self.assertRevisionCreated(obj)
 
-    def testEmptyRevisionBlockCreatesNoRevision(self):
+    def testRevisionCreatedMultiDb(self):
+        with reversion.create_revision(db="mysql"), reversion.create_revision(db="postgres"):
+            obj = TestModel.objects.create()
+        self.assertRevisionCreated(obj, db="mysql")
+        self.assertRevisionCreated(obj, db="postgres")
+
+    def testRevisionNotCreatedEmptyRevisionBlock(self):
         with reversion.create_revision():
             pass
         self.assertEqual(Version.objects.count(), 0)
 
-    def testExceptionInRevisionBlockCreatesNoRevision(self):
+    def testRevisionNotCreatedException(self):
         try:
             with reversion.create_revision():
                 obj = TestModel.objects.create()
@@ -60,7 +66,7 @@ class RevisionAPITest(ReversionTestBase):
             pass
         self.assertRevisionNotCreated(obj)
 
-    def testSaveOutsideRevisionBlockCreatesNoRevision(self):
+    def testRevisionNotCreatedNoBlock(self):
         obj = TestModel.objects.create()
         self.assertRevisionNotCreated(obj)
 
@@ -76,32 +82,11 @@ class RevisionAPITest(ReversionTestBase):
             self.assertEqual(reversion.get_ignore_duplicates(), True)
         self.assertRevisionCreated(obj, count=1)
 
-    # Multi DB.
-
-    def testRevisionCreatedInMySQL(self):
-        with reversion.create_revision(db="mysql"):
-            obj = TestModel.objects.create()
-        self.assertRevisionCreated(obj, db="mysql")
-
-    def testRevisionCreatedInPostgres(self):
-        with reversion.create_revision(db="postgres"):
-            obj = TestModel.objects.create()
-        self.assertRevisionCreated(obj, db="postgres")
-
-    def testMultipleRevisionsCreatedInMultipleDatabases(self):
-        with reversion.create_revision():
-            with reversion.create_revision(db="mysql"):
-                with reversion.create_revision(db="postgres"):
-                    obj = TestModel.objects.create()
-        self.assertRevisionCreated(obj)
-        self.assertRevisionCreated(obj, db="mysql")
-        self.assertRevisionCreated(obj, db="postgres")
-
 
 class MetadataAPITest(ReversionTestBase):
 
     def testGetSetComment(self):
-        comment = "v1 comment"
+        comment = "comment v1"
         with reversion.create_revision():
             obj = TestModel.objects.create()
             self.assertEqual(reversion.get_comment(), "")
@@ -119,11 +104,19 @@ class MetadataAPITest(ReversionTestBase):
         self.assertRevisionCreated(obj, user=user)
 
     def testAddMeta(self):
-        meta_name = "meta 1"
+        meta_name = "meta v1"
         with reversion.create_revision():
             obj = TestModel.objects.create()
             reversion.add_meta(TestMeta, name=meta_name)
         self.assertRevisionCreated(obj, meta_names=(meta_name,))
+
+    def testAddMetaMultDb(self):
+        meta_name = "meta v1"
+        with reversion.create_revision(db="mysql"), reversion.create_revision(db="postgres"):
+            obj = TestModel.objects.create()
+            reversion.add_meta(TestMeta, name=meta_name)
+        self.assertRevisionCreated(obj, meta_names=(meta_name,), db="mysql")
+        self.assertRevisionCreated(obj, meta_names=(meta_name,), db="postgres")
 
 
 class RawRevisionAPITest(ReversionTestBase):
@@ -132,3 +125,38 @@ class RawRevisionAPITest(ReversionTestBase):
         obj = TestModel.objects.create()
         reversion.save_revision((obj,))
         self.assertRevisionCreated(obj)
+
+    def testSaveRevisionDb(self):
+        obj = TestModel.objects.create()
+        reversion.save_revision((obj,), db="postgres")
+        self.assertRevisionCreated(obj, db="postgres")
+
+    def testSaveRevisionComment(self):
+        comment = "comment v1"
+        obj = TestModel.objects.create()
+        reversion.save_revision((obj,), comment=comment)
+        self.assertRevisionCreated(obj, comment=comment)
+
+    def testSaveRevisionUser(self):
+        user = User.objects.create(username="test")
+        obj = TestModel.objects.create()
+        reversion.save_revision((obj,), user=user)
+        self.assertRevisionCreated(obj, user=user)
+
+    def testSaveRevisionMeta(self):
+        meta_name = "meta v1"
+        obj = TestModel.objects.create()
+        reversion.save_revision((obj,), meta=(reversion.RevisionMeta(TestMeta, name=meta_name),))
+        self.assertRevisionCreated(obj, meta_names=(meta_name,))
+
+    def testSaveRevisionMetaDb(self):
+        meta_name = "meta v1"
+        obj = TestModel.objects.create()
+        reversion.save_revision((obj,), meta=(reversion.RevisionMeta(TestMeta, name=meta_name),), db="postgres")
+        self.assertRevisionCreated(obj, meta_names=(meta_name,), db="postgres")
+
+    def testSaveRevisionIgnoreDuplicates(self):
+        obj = TestModel.objects.create()
+        reversion.save_revision((obj,), ignore_duplicates=True)
+        reversion.save_revision((obj,), ignore_duplicates=True)
+        self.assertRevisionCreated(obj, count=1)

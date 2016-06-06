@@ -97,7 +97,7 @@ class Revision(models.Model):
                         model_cls = content_type.model_class()
                         try:
                             # Load the model instance from the same DB as it was saved under.
-                            old_revision.add(model_cls._base_manager.using(version.db).get(pk=version.object_id))
+                            old_revision.add(model_cls._default_manager.using(version.db).get(pk=version.object_id))
                         except model_cls.DoesNotExist:
                             pass
                     # Calculate the set of all objects that are in the revision now.

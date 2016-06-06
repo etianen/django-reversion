@@ -188,6 +188,18 @@ class VersionAdapter(object):
         version.object_version.save(using=version.db)
 
 
+class RevisionMeta(object):
+
+    """Custom metadata assigned to a revision."""
+
+    def __init__(self, model, **values):
+        self.model = model
+        self.values = values
+
+    def save(self, revision, db):
+        return self.model._default_manager.db_manager(db).create(revision=revision, **self.values)
+
+
 class RevisionContextStackFrame(object):
 
     def __init__(self, manage_manually, db, user, comment, ignore_duplicates, manager_objects, meta):
@@ -295,9 +307,9 @@ class RevisionContextManager(local):
                 relation,
             )] = version_data
 
-    def add_meta(self, cls, **kwargs):
+    def add_meta(self, model, **values):
         """Adds a model of meta information to the current revision."""
-        self._current_frame.meta.append((cls(**kwargs)))
+        self._current_frame.meta.append(RevisionMeta(model, **values))
 
     # High-level context management.
 
@@ -527,7 +539,7 @@ class RevisionManager(object):
         """
         return self._get_versions(model, db, model_db).filter(
             pk__reversion_in=(self._get_versions(model, db, model_db).exclude(
-                object_id__reversion_in=(model._base_manager.using(model_db), model._meta.pk.name),
+                object_id__reversion_in=(model._default_manager.using(model_db), model._meta.pk.name),
             ).values_list("object_id").annotate(
                 id=Max("id"),
             ), "id")
@@ -539,9 +551,6 @@ class RevisionManager(object):
                       date_created=None, db=None):
         """
         Manually saves a new revision containing the given objects.
-
-        `objects` is an iterable of model instances.
-        `serialized_objects` is an iterable of dicts of version data.
         """
         from django.contrib.contenttypes.models import ContentType
         from reversion.models import Revision, Version
@@ -634,8 +643,7 @@ class RevisionManager(object):
                     version.save(using=db)
                 # Save the meta information.
                 for meta_obj in meta:
-                    meta_obj.revision = revision
-                    meta_obj.save(using=db)
+                    meta_obj.save(revision, db=db)
             # Send the post_revision_commit signal.
             post_revision_commit.send(
                 sender=self,
