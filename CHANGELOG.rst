@@ -17,6 +17,7 @@ django-reversion changelog
 * Deprecated ``reversion.helpers.generate_diffs``, ``reversion.helpers.generate_patch`` and ``reversion.helpers.generate_patch_html``. django-reversion does not concern itself with diffs directly, and there are probably much better ways of doing this than the outdated helpers. (@etianen).
 * Deprecated ``reversion.revision.get_for_date()`` in favor of ``get_for_object().filter(revision__date_created__lte=date)[:1].get()`` (@etianen).
 * Deprecated ``--no-confirmation`` argument to ``./manage.py deleterevisions`` in favour of the standard ``--no-input`` argument (@crccheck).
+* **Breaking:** The default ``model_db`` for ``get_deleted()`` was changed to the default database for the model (@etianen).
 * Major documentation overhaul (@etianen).
 * Major tests overhaul (@etianen).
 * Minor tweaks and bugfixes (@etianen, @bmarika, @ticosax).

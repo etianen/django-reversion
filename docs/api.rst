@@ -322,8 +322,8 @@ Throws :ref:`RevisionManagementError` if there is no active revision block.
 Raw revision API
 ----------------
 
-reversion.save_revision(objects=(), ignore_duplicates=False, user=None, comment="", meta=(), date_created=None, db=None)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reversion.save_revision(objects, ignore_duplicates=False, user=None, comment="", meta=(), date_created=None, db=None)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Manually saves a revision without having to create a revision block and call `save()` on registered model instances.
 Returns the :ref:`Revision` that was created, or ``None`` if no revision was saved.
@@ -355,8 +355,8 @@ Returns the :ref:`Revision` that was created, or ``None`` if no revision was sav
 Lookup API
 ----------
 
-reversion.get_for_object(obj, db=None)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reversion.get_for_object(obj, db=None, model_db=None)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Returns a :ref:`VersionQuerySet` for the given model instance. The results are ordered with the most recent :ref:`Version` first.
 
@@ -368,9 +368,12 @@ Throws :ref:`RegistrationError` if the model has not been registered with django
 ``db``
     The database to load the versions from.
 
+``model_db``
+    The database where the model is saved. Defaults to the default database for the model.
 
-reversion.get_for_object_reference(model, pk, db=None)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+reversion.get_for_object_reference(model, pk, db=None, model_db=None)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Returns a :ref:`VersionQuerySet` for the given model instance. The results are ordered with the most recent :ref:`Version` first.
 
@@ -385,9 +388,12 @@ Throws :ref:`RegistrationError` if the model has not been registered with django
 ``db``
     The database to load the versions from.
 
+``model_db``
+    The database where the model is saved. Defaults to the default database for the model.
+
 
 reversion.get_deleted(model, db=None, model_db=None)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Returns a :ref:`VersionQuerySet` for the given model containing versions where the serialized model no longer exists in the database. The results are ordered with the most recent :ref:`Version` first.
 
@@ -400,7 +406,7 @@ Throws :ref:`RegistrationError` if the model has not been registered with django
     The database to load the versions from.
 
 ``model_db``
-    The database to check against for live model instances. Defaults to `db`.
+    The database to check against for live model instances. Defaults to the default database for the model.
 
 
 .. _VersionQuerySet:

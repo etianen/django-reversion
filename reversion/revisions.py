@@ -464,34 +464,36 @@ class RevisionManager(object):
         adapter = self.get_adapter(model)
         return ContentType.objects.db_manager(db).get_by_natural_key(*adapter.get_content_type_natural_key(model))
 
-    def _get_versions(self, model, db):
+    def _get_versions(self, model, db, model_db):
         from reversion.models import Version
+        model_db = router.db_for_write(model) if model_db is None else model_db
         return Version.objects.using(db).filter(
             revision__manager_slug=self._manager_slug,
             content_type=self._get_content_type(model, db),
+            db=model_db,
         )
 
     # Revision management API.
 
-    def get_for_object_reference(self, model, object_id, db=None):
+    def get_for_object_reference(self, model, object_id, db=None, model_db=None):
         """
         Returns all versions for the given object reference.
 
         The results are returned with the most recent versions first.
         """
-        return self._get_versions(model, db).filter(
+        return self._get_versions(model, db, model_db).filter(
             object_id=object_id,
         ).order_by("-pk")
 
-    def get_for_object(self, obj, db=None):
+    def get_for_object(self, obj, db=None, model_db=None):
         """
         Returns all the versions of the given object, ordered by date created.
 
         The results are returned with the most recent versions first.
         """
-        return self.get_for_object_reference(obj.__class__, obj.pk, db)
+        return self.get_for_object_reference(obj.__class__, obj.pk, db=db, model_db=model_db)
 
-    def get_unique_for_object(self, obj, db=None):
+    def get_unique_for_object(self, obj, db=None, model_db=None):
         """
         Returns unique versions associated with the object.
 
@@ -504,9 +506,9 @@ class RevisionManager(object):
             ),
             DeprecationWarning
         )
-        return list(self.get_for_object(obj, db).get_unique())
+        return list(self.get_for_object(obj, db=db, model_db=model_db).get_unique())
 
-    def get_for_date(self, obj, date, db=None):
+    def get_for_date(self, obj, date, db=None, model_db=None):
         """Returns the latest version of an object for the given date."""
         warnings.warn(
             (
@@ -515,7 +517,7 @@ class RevisionManager(object):
             ),
             DeprecationWarning
         )
-        return self.get_for_object(obj, db).filter(revision__date_created__lte=date)[:1].get()
+        return self.get_for_object(obj, db=db, model_db=model_db).filter(revision__date_created__lte=date)[:1].get()
 
     def get_deleted(self, model, db=None, model_db=None):
         """
@@ -523,9 +525,8 @@ class RevisionManager(object):
 
         The results are returned with the most recent versions first.
         """
-        model_db = model_db or db
-        return self._get_versions(model, db).filter(
-            pk__reversion_in=(self._get_versions(model, db).exclude(
+        return self._get_versions(model, db, model_db).filter(
+            pk__reversion_in=(self._get_versions(model, db, model_db).exclude(
                 object_id__reversion_in=(model._base_manager.using(model_db), model._meta.pk.name),
             ).values_list("object_id").annotate(
                 id=Max("id"),
@@ -534,7 +535,7 @@ class RevisionManager(object):
 
     # Manual revision saving.
 
-    def save_revision(self, objects=(), ignore_duplicates=False, user=None, comment="", meta=(),
+    def save_revision(self, objects, ignore_duplicates=False, user=None, comment="", meta=(),
                       date_created=None, db=None):
         """
         Manually saves a new revision containing the given objects.
