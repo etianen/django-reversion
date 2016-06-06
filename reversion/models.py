@@ -252,7 +252,7 @@ class Version(models.Model):
     class Meta:
         app_label = 'reversion'
         unique_together = (
-            ("object_id", "content_type", "db", "revision"),
+            ("db", "content_type", "object_id", "revision"),
         )
 
 

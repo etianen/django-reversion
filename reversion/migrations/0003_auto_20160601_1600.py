@@ -52,6 +52,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterUniqueTogether(
             name='version',
-            unique_together=set([('object_id', 'content_type', 'db', 'revision')]),
+            unique_together=set([('db', 'content_type', 'object_id', 'revision')]),
         ),
     ]
