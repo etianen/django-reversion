@@ -42,8 +42,9 @@ INSTALLED_APPS = [
     "test_app",
 ]
 
-MIDDLEWARE = [
+MIDDLEWARE = MIDDLEWARE_CLASSES = [
     "django.middleware.security.SecurityMiddleware",
+    "django.contrib.auth.middleware.SessionAuthenticationMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",

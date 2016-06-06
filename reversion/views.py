@@ -2,12 +2,16 @@ from functools import wraps
 from reversion.revisions import revision_context_manager
 
 
-def request_creates_revision(request):
-    """Introspects the request, and returns True if the request should create a new revision."""
+def _request_creates_revision(request):
     return request.method not in ("OPTIONS", "GET", "HEAD")
 
 
-def create_revision(revision_context_manager=revision_context_manager):
+def _set_user_from_request(request, revision_context_manager):
+    if hasattr(request, "user") and request.user.is_authenticated():
+        revision_context_manager.set_user(request.user)
+
+
+def create_revision(revision_context_manager=revision_context_manager, manage_manually=False, db=None):
     """
     View decorator that wraps the request in a revision.
 
@@ -16,11 +20,11 @@ def create_revision(revision_context_manager=revision_context_manager):
     def decorator(func):
         @wraps(func)
         def do_revision_view(request, *args, **kwargs):
-            if request_creates_revision(request):
-                with revision_context_manager.create_revision():
-                    revision_context_manager.set_user(request.user)
+            if _request_creates_revision(request):
+                with revision_context_manager.create_revision(manage_manually=manage_manually, db=None):
+                    _set_user_from_request(request, revision_context_manager)
                     return func(request, *args, **kwargs)
-                return func(request, *args, **kwargs)
+            return func(request, *args, **kwargs)
         return do_revision_view
     return decorator
 
@@ -35,6 +39,14 @@ class RevisionMixin(object):
 
     revision_context_manager = revision_context_manager
 
+    revision_manage_manually = False
+
+    revision_db = False
+
     def __init__(self, *args, **kwargs):
         super(RevisionMixin, self).__init__(*args, **kwargs)
-        self.dispatch = create_revision(self.revision_context_manager)(self.dispatch)
+        self.dispatch = create_revision(
+            revision_context_manager=self.revision_context_manager,
+            manage_manually=self.revision_manage_manually,
+            db=self.revision_db,
+        )(self.dispatch)

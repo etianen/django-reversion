@@ -236,11 +236,7 @@ reversion.create_revision(manage_manually=False, db=None)
 
 Marks a block of code as a *revision block*. Can also be used as a decorator. The revision block will be wrapped in a ``transaction.atomic()``.
 
-``manage_manually``
-    If ``True``, versions will not be saved when a model's ``save()`` method is called. This allows version control to be switched off for a given revision block.
-
-``db``:
-    The database to save the revision data. The revision block will be wrapped in a transaction using this database. If ``None``, the default database for :ref:`Revision` will be used.
+.. include:: /_include/create-revision-args.rst
 
 
 reversion.set_ignore_duplicates(ignore_duplicates)

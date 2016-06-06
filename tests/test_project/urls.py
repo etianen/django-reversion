@@ -6,6 +6,6 @@ urlpatterns = [
 
     url(r"^admin/", admin.site.urls),
 
-    url(r"^", include("test_app.urls", namespace="test")),
+    url(r"^test-app/", include("test_app.urls", namespace="test")),
 
 ]

@@ -19,6 +19,8 @@ The request user will also be added to the revision metadata.
 ``revision_manager``
     The :ref:`RevisionManager` used to manage revisions.
 
+.. include:: /_include/create-revision-args.rst
+
 
 reversion.views.RevisionMixin
 -----------------------------
@@ -41,3 +43,14 @@ RevisionMixin.revision_manager = default_revision_manager
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The :ref:`RevisionManager` used to manage revisions.
+
+
+RevisionMixin.manage_manually = False
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: /_include/create-revision-manage-manually.rst
+
+
+RevisionMixin.db = None
+
+.. include:: /_include/create-revision-db.rst
