@@ -3,7 +3,7 @@ from test_app import views
 
 
 urlpatterns = [
-    url("^test/", views.test_view),
-    url("^test-revision/", views.test_revision_view),
-    url("^test-revision-cls/", views.TestRevisionView.as_view()),
+    url("^save-obj/", views.save_obj_view),
+    url("^create-revision/", views.create_revision_view),
+    url("^revision-mixin/", views.RevisionMixinView.as_view()),
 ]

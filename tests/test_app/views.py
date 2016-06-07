@@ -4,16 +4,16 @@ from reversion.views import create_revision, RevisionMixin
 from test_app.models import TestModel
 
 
-def test_view(request):
+def save_obj_view(request):
     return HttpResponse(TestModel.objects.create().id)
 
 
 @create_revision()
-def test_revision_view(request):
-    return test_view(request)
+def create_revision_view(request):
+    return save_obj_view(request)
 
 
-class TestRevisionView(RevisionMixin, View):
+class RevisionMixinView(RevisionMixin, View):
 
     def dispatch(self, request):
-        return test_view(request)
+        return save_obj_view(request)

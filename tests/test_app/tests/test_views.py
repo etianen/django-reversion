@@ -1,0 +1,42 @@
+from test_app.models import TestModel
+from test_app.tests.base import TestBase, LoginTestBase
+
+
+class CreateRevisionTest(TestBase):
+
+    def testCreateRevision(self):
+        response = self.client.post("/test-app/create-revision/")
+        obj = TestModel.objects.get(pk=response.content)
+        self.assertSingleRevision((obj,))
+
+    def testCreateRevisionGet(self):
+        self.client.get("/test-app/create-revision/")
+        self.assertNoRevision()
+
+
+class CreateRevisionUserTest(LoginTestBase):
+
+    def testCreateRevisionUser(self):
+        response = self.client.post("/test-app/create-revision/")
+        obj = TestModel.objects.get(pk=response.content)
+        self.assertSingleRevision((obj,), user=self.user)
+
+
+class RevisionMixinTest(TestBase):
+
+    def testRevisionMixin(self):
+        response = self.client.post("/test-app/revision-mixin/")
+        obj = TestModel.objects.get(pk=response.content)
+        self.assertSingleRevision((obj,))
+
+    def testRevisionMixinGet(self):
+        self.client.get("/test-app/revision-mixin/")
+        self.assertNoRevision()
+
+
+class RevisionMixinUserTest(LoginTestBase):
+
+    def testCreateRevisionUser(self):
+        response = self.client.post("/test-app/revision-mixin/")
+        obj = TestModel.objects.get(pk=response.content)
+        self.assertSingleRevision((obj,), user=self.user)
