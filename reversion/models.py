@@ -309,6 +309,9 @@ class ReversionSubqueryLookup(models.Lookup):
         """
         lhs = self.lhs
         rhs = self.rhs
+        # If the connections don't match, run as in-memory query.
+        if connection.alias != rhs.db:
+            return self._as_in_memory_sql(compiler, connection)
         # If fields are not the same internal type, we have to cast both to string.
         if self.lhs_field.get_internal_type() != self.rhs_field.get_internal_type():
             # If the left hand side is not a text field, we need to cast it.
