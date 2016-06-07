@@ -1,5 +1,5 @@
 import reversion
-from test_app.models import TestModel, TestMeta
+from test_app.models import TestModel, TestModelUnregistered, TestMeta
 from test_app.tests.base import TestBase, UserTestBase
 
 
@@ -8,6 +8,57 @@ class DefaultTest(TestBase):
     def testModelSave(self):
         TestModel.objects.create()
         self.assertNoRevision()
+
+
+class IsRegisteredTest(TestBase):
+
+    def testIsRegistered(self):
+        self.assertTrue(reversion.is_registered(TestModel))
+
+    def testIsRegisteredFalse(self):
+        self.assertFalse(reversion.is_registered(TestModelUnregistered))
+
+
+class GetRegisteredModelsTest(TestBase):
+
+    def testGetRegisteredModels(self):
+        self.assertEqual(list(reversion.get_registered_models()), [TestModel])
+
+
+class GetAdapterTest(TestBase):
+
+    def testGetAdapter(self):
+        self.assertIsInstance(reversion.get_adapter(TestModel), reversion.VersionAdapter)
+
+    def testGetAdapterUnregistered(self):
+        with self.assertRaises(reversion.RegistrationError):
+            reversion.get_adapter(TestModelUnregistered)
+
+
+class RegisterTest(TestBase):
+
+    def testRegister(self):
+        reversion.register(TestModelUnregistered)
+        try:
+            self.assertTrue(reversion.is_registered(TestModelUnregistered))
+        finally:
+            reversion.unregister(TestModelUnregistered)
+
+    def testRegisterAlreadyRegistered(self):
+        with self.assertRaises(reversion.RegistrationError):
+            reversion.register(TestModel)
+
+
+class UnregisterTest(TestBase):
+
+    def testUnregister(self):
+        reversion.register(TestModelUnregistered)
+        reversion.unregister(TestModelUnregistered)
+        self.assertFalse(reversion.is_registered(TestModelUnregistered))
+
+    def testUnregisterNotRegistered(self):
+        with self.assertRaises(reversion.RegistrationError):
+            reversion.unregister(TestModelUnregistered)
 
 
 class CreateRevisionTest(TestBase):

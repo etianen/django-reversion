@@ -12,6 +12,14 @@ class TestModel(models.Model):
     )
 
 
+class TestModelUnregistered(models.Model):
+
+    name = models.CharField(
+        max_length=191,
+        default="v1",
+    )
+
+
 class TestMeta(models.Model):
 
     revision = models.ForeignKey(

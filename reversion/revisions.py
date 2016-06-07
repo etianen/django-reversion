@@ -430,7 +430,7 @@ class RevisionManager(object):
 
     def get_registered_models(self):
         """Returns an iterable of all registered models."""
-        return [apps.get_model(*key) for key in self._registered_models.keys()]
+        return (apps.get_model(*key) for key in self._registered_models.keys())
 
     def register(self, model=None, adapter_cls=VersionAdapter, **field_overrides):
         """Registers a model with this revision manager."""
