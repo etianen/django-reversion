@@ -38,11 +38,9 @@ class GetAdapterTest(TestBase):
 class RegisterTest(TestBase):
 
     def testRegister(self):
-        reversion.register(TestModelUnregistered)
-        try:
-            self.assertTrue(reversion.is_registered(TestModelUnregistered))
-        finally:
-            reversion.unregister(TestModelUnregistered)
+        revision_manager = reversion.RevisionManager("test")
+        revision_manager.register(TestModelUnregistered)
+        self.assertTrue(revision_manager.is_registered(TestModelUnregistered))
 
     def testRegisterAlreadyRegistered(self):
         with self.assertRaises(reversion.RegistrationError):
@@ -52,8 +50,9 @@ class RegisterTest(TestBase):
 class UnregisterTest(TestBase):
 
     def testUnregister(self):
-        reversion.register(TestModelUnregistered)
-        reversion.unregister(TestModelUnregistered)
+        revision_manager = reversion.RevisionManager("test")
+        revision_manager.register(TestModelUnregistered)
+        revision_manager.unregister(TestModelUnregistered)
         self.assertFalse(reversion.is_registered(TestModelUnregistered))
 
     def testUnregisterNotRegistered(self):
