@@ -17,9 +17,9 @@ Models must be registered with django-reversion before they can be used with the
 .. code:: python
 
     from django.db import models
-    import reversion
+    from reversion import revisions
 
-    @reversion.register()
+    @revisions.register()
     class YourModel(models.Model):
 
         pass
@@ -38,7 +38,7 @@ A *revision* represents one or more changes made to your model instances, groupe
 .. code:: python
 
     # Declare a revision block.
-    with reversion.create_revision():
+    with revisions.create_revision():
 
         # Save a new model instance.
         obj = YourModel()
@@ -46,19 +46,19 @@ A *revision* represents one or more changes made to your model instances, groupe
         obj.save()
 
         # Store some meta-information.
-        reversion.set_user(request.user)
-        reversion.set_comment("Created revision 1")
+        revisions.set_user(request.user)
+        revisions.set_comment("Created revision 1")
 
     # Declare a new revision block.
-    with reversion.create_revision():
+    with revisions.create_revision():
 
         # Update the model instance.
         obj.name = "obj v2"
         obj.save()
 
         # Store some meta-information.
-        reversion.set_user(request.user)
-        reversion.set_comment("Created revision 2")
+        revisions.set_user(request.user)
+        revisions.set_comment("Created revision 2")
 
 .. Important::
 
@@ -75,7 +75,7 @@ You can load a ``Queryset`` of versions from the database. Versions are loaded w
 .. code:: python
 
     # Load a queryset of versions for a specific model instance.
-    versions = reversion.get_for_object(instance)
+    versions = revisions.get_for_object(instance)
     assert len(versions) == 2
 
     # Check the serialized data for the first version.
@@ -151,8 +151,8 @@ Registration API
 
 .. _register:
 
-reversion.register(model, \*\*options)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reversion.revisions.register(model, \*\*options)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Registers a model with django-reversion.
 
@@ -182,7 +182,7 @@ Throws :ref:`RegistrationError` if the model has already been registered.
 ``eager_signals=()``
     A tuple of Django signals that will trigger adding the model instance to an active revision. Unlike ``signals``, model instances triggering this signal will be serialized immediately, rather than at the end of the revision block. This makes it suitable for usage with signals like ``pre_delete``.
 
-``adapter_cls=reversion.VersionAdapter``
+``adapter_cls=reversion.revisions.VersionAdapter``
     A subclass of :ref:`VersionAdapter` to use to register the model.
 
 .. Hint::
@@ -191,8 +191,8 @@ Throws :ref:`RegistrationError` if the model has already been registered.
 .. include:: /_include/post-register.rst
 
 
-reversion.is_registered(model)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reversion.revisions.is_registered(model)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Returns whether the given model has been registered with django-reversion.
 
@@ -200,8 +200,8 @@ Returns whether the given model has been registered with django-reversion.
     The Django model to check.
 
 
-reversion.unregister(model)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reversion.revisions.unregister(model)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Unregisters the given model from django-reversion.
 
@@ -211,14 +211,14 @@ Throws :ref:`RegistrationError` if the model has not been registered with django
     The Django model to unregister.
 
 
-reversion.get_registered_models()
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reversion.revisions.get_registered_models()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Returns an iterable of all registered models.
 
 
-reversion.get_adapter(model)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reversion.revisions.get_adapter(model)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Returns the :ref:`VersionAdapter` for the given model.
 
@@ -231,8 +231,8 @@ Returns the :ref:`VersionAdapter` for the given model.
 Revision API
 ------------
 
-reversion.create_revision(manage_manually=False, db=None)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reversion.revisions.create_revision(manage_manually=False, db=None)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Marks a block of code as a *revision block*. Can also be used as a decorator. The revision block will be wrapped in a ``transaction.atomic()``.
 
@@ -243,8 +243,8 @@ Marks a block of code as a *revision block*. Can also be used as a decorator. Th
     The database to save the revision data. The revision block will be wrapped in a transaction using this database. If ``None``, the default database for :ref:`Revision` will be used.
 
 
-reversion.set_ignore_duplicates(ignore_duplicates)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reversion.revisions.set_ignore_duplicates(ignore_duplicates)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: /_include/ignore-duplicates.rst
 
@@ -254,8 +254,8 @@ Throws :ref:`RevisionManagementError` if there is no active revision block.
     A ``bool`` indicating whether duplicate revisions should be saved.
 
 
-reversion.get_ignore_duplicates()
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reversion.revisions.get_ignore_duplicates()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Returns whether duplicate revisions will be saved.
 
@@ -265,8 +265,8 @@ Throws :ref:`RevisionManagementError` if there is no active revision block.
 Metadata API
 ------------
 
-reversion.set_user(user)
-^^^^^^^^^^^^^^^^^^^^^^^^
+reversion.revisions.set_user(user)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Sets the user for the current revision.
 
@@ -276,16 +276,16 @@ Throws :ref:`RevisionManagementError` if there is no active revision block.
     A ``User`` model instance (or whatever your ``settings.AUTH_USER_MODEL`` is).
 
 
-reversion.get_user()
-^^^^^^^^^^^^^^^^^^^^
+reversion.revisions.get_user()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Returns the user for the current revision.
 
 Throws :ref:`RevisionManagementError` if there is no active revision block.
 
 
-reversion.set_comment(comment)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reversion.revisions.set_comment(comment)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Sets the comment for the current revision.
 
@@ -295,16 +295,16 @@ Throws :ref:`RevisionManagementError` if there is no active revision block.
     The text comment for the revision.
 
 
-reversion.get_comment()
-^^^^^^^^^^^^^^^^^^^^^^^
+reversion.revisions.get_comment()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Returns the comment for the current revision.
 
 Throws :ref:`RevisionManagementError` if there is no active revision block.
 
 
-reversion.add_meta(model_cls, \*\*values)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reversion.revisions.add_meta(model_cls, \*\*values)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Adds custom metadata to a revision.
 
@@ -322,8 +322,8 @@ Throws :ref:`RevisionManagementError` if there is no active revision block.
 Raw revision API
 ----------------
 
-reversion.save_revision(objects=(), ignore_duplicates=False, user=None, comment="", meta=(), date_created=None, db=None)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reversion.revisions.save_revision(objects=(), ignore_duplicates=False, user=None, comment="", meta=(), date_created=None, db=None)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Manually saves a revision without having to create a revision block and call `save()` on registered model instances.
 Returns the :ref:`Revision` that was created, or ``None`` if no revision was saved.
@@ -355,8 +355,8 @@ Returns the :ref:`Revision` that was created, or ``None`` if no revision was sav
 Lookup API
 ----------
 
-reversion.get_for_object(obj, db=None)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reversion.revisions.get_for_object(obj, db=None)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Returns a :ref:`VersionQuerySet` for the given model instance. The results are ordered with the most recent :ref:`Version` first.
 
@@ -369,8 +369,8 @@ Throws :ref:`RegistrationError` if the model has not been registered with django
     The database to load the versions from.
 
 
-reversion.get_for_object_reference(model, pk, db=None)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reversion.revisions.get_for_object_reference(model, pk, db=None)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Returns a :ref:`VersionQuerySet` for the given model instance. The results are ordered with the most recent :ref:`Version` first.
 
@@ -386,8 +386,8 @@ Throws :ref:`RegistrationError` if the model has not been registered with django
     The database to load the versions from.
 
 
-reversion.get_deleted(model, db=None, model_db=None)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reversion.revisions.get_deleted(model, db=None, model_db=None)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Returns a :ref:`VersionQuerySet` for the given model containing versions where the serialized model no longer exists in the database. The results are ordered with the most recent :ref:`Version` first.
 
@@ -550,13 +550,13 @@ To support multiple configurations of django-reversion in the same project, crea
 .. code:: python
 
     from django.db import models
-    import reversion
+    from reversion import revisions
 
     # Create a custom revision manager.
     my_revision_manager = RevisionManager("custom")
 
     # Register with the default revision manager.
-    @reversion.register()
+    @revisions.register()
     # Register with a custom revision manager.
     @my_revision_manager.register()
     class MyModel(models.Model):
