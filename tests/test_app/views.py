@@ -8,6 +8,11 @@ def save_obj_view(request):
     return HttpResponse(TestModel.objects.create().id)
 
 
+def save_obj_error_view(request):
+    TestModel.objects.create()
+    raise Exception("Boom!")
+
+
 @create_revision()
 def create_revision_view(request):
     return save_obj_view(request)

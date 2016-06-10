@@ -10,8 +10,7 @@ class RevisionMiddleware(object):
     def __init__(self, get_response=None):
         super(RevisionMiddleware, self).__init__()
         # Support Django 1.10 middleware.
-        if get_response is not None:
-            self.__call__ = create_revision()(get_response)
+        self.get_response = create_revision()(get_response)
 
     def process_request(self, request):
         if _request_creates_revision(request):
@@ -32,3 +31,6 @@ class RevisionMiddleware(object):
 
     def process_exception(self, request, exception):
         self._close_revision(request)
+
+    def __call__(self, request):
+        return self.get_response(request)
