@@ -14,7 +14,6 @@ from django.utils.encoding import force_text
 from django.utils import timezone
 from reversion.compat import remote_field
 from reversion.errors import RevisionManagementError, RegistrationError
-from reversion.signals import pre_revision_commit, post_revision_commit
 
 
 class VersionAdapter(object):
@@ -372,15 +371,6 @@ class RevisionContextManager(local):
                 for meta_model, meta_fields
                 in meta
             ]
-            # Send the pre_revision_commit signal.
-            pre_revision_commit.send(
-                sender=revision_manager,
-                instances=instances,
-                ignore_duplicates=ignore_duplicates,
-                meta=meta_instances,
-                revision=revision,
-                versions=versions,
-            )
             # Save the revision.
             revision.save(using=db)
             # Save version models.
@@ -391,15 +381,6 @@ class RevisionContextManager(local):
             for meta_instance in meta_instances:
                 meta_instance.revision = revision
                 meta_instance.save(using=db)
-            # Send the post_revision_commit signal.
-            post_revision_commit.send(
-                sender=revision_manager,
-                instances=instances,
-                ignore_duplicates=ignore_duplicates,
-                meta=meta,
-                revision=revision,
-                versions=versions,
-            )
             # Return the revision.
             return revision
 
@@ -527,7 +508,7 @@ class RevisionManager(object):
         """Returns an iterable of all registered models."""
         return (apps.get_model(*key) for key in self._registered_models.keys())
 
-    def register(self, model=None, adapter_cls=VersionAdapter, eager_signals=None, **field_overrides):
+    def register(self, model=None, adapter_cls=VersionAdapter, **field_overrides):
         """Registers a model with this revision manager."""
         # Return a class decorator if model is not given
         if model is None:

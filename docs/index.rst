@@ -70,4 +70,3 @@ Usage
    views
    middleware
    errors
-   signals
