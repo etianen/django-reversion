@@ -35,7 +35,7 @@ else:
         get_registered_models,
         get_adapter,
         # Manual revision saving.
-        save_revision,
+        add_to_revision,
         # Context management.
         create_revision,
         # Revision meta data.

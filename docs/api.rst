@@ -177,10 +177,10 @@ Throws :ref:`RegistrationError` if the model has already been registered.
     If ``True`` proxy models will be saved under the same content type as their concrete model. If ``False``, proxy models will be saved under their own content type, effectively giving proxy models their own distinct history.
 
 ``signals=(post_save,)``
-    A tuple of Django signals that will trigger adding the model instance to an active revision.
+    An iterable of Django signals that will trigger adding the model instance to an active revision.
 
 ``eager_signals=()``
-    A tuple of Django signals that will trigger adding the model instance to an active revision. Unlike ``signals``, model instances triggering this signal will be serialized immediately, rather than at the end of the revision block. This makes it suitable for usage with signals like ``pre_delete``.
+    An iterable of Django signals that will trigger adding the model instance to an active revision. Unlike ``signals``, model instances triggering this signal will be serialized immediately, rather than at the end of the revision block. This makes it suitable for usage with signals like ``pre_delete``.
 
 ``adapter_cls=reversion.VersionAdapter``
     A subclass of :ref:`VersionAdapter` to use to register the model.
@@ -599,16 +599,43 @@ VersionAdapter.exclude = ()
 An iterable of field names to exclude from the serialized data.
 
 
+VersionAdapter.get_fields_to_serialize(self, obj)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Returns an iterable of field names to serialize in the version data.
+
+``obj``
+    The model instance being saved in the revision.
+
+
 VersionAdapter.follow = ()
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 An iterable of model relationships to follow when saving a version of this model. ``ForeignKey``, ``ManyToManyField`` and reversion ``ForeignKey`` relationships are supported. Any property that returns a ``Model`` or ``QuerySet`` is also supported.
 
 
+VersionAdapter.get_followed_relations(self, obj)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Returns an iterable of related model instances that should be included in the revision data.
+
+``obj``
+    The model instance being saved in the revision.
+
+
 VersionAdapter.format = "json"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The name of a Django serialization format to use when saving the model instance.
+
+
+VersionAdapter.get_serialization_format(self, obj)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Returns the name of a Django serialization format to use when saving the model instance.
+
+``obj``
+    The model instance being saved in the revision.
 
 
 VersionAdapter.for_concrete_model = True
@@ -620,13 +647,58 @@ If ``True`` proxy models will be saved under the same content type as their conc
 VersionAdapter.signals = (post_save,)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A tuple of Django signals that will trigger adding the model instance to an active revision.
+An iterable of Django signals that will trigger adding the model instance to an active revision.
+
+
+VersionAdapter.get_signals(self)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Returns an iterable of all signals that trigger saving a version.
 
 
 VersionAdapter.eager_signals = ()
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A tuple of Django signals that will trigger adding the model instance to an active revision. Unlike ``signals``, model instances triggering this signal will be serialized immediately, rather than at the end of the revision block. This makes it suitable for usage with signals like ``pre_delete``.
+An iterable of Django signals that will trigger adding the model instance to an active revision. Unlike ``signals``, model instances triggering this signal will be serialized immediately, rather than at the end of the revision block. This makes it suitable for usage with signals like ``pre_delete``.
+
+
+VersionAdapter.get_serialized_data(self, obj)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Returns a string of serialized data for the given model instance.
+
+``obj``
+    The model instance being saved in the revision.
+
+
+VersionAdapter.get_content_type(self, db)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Returns an iterable of (app_label, model_name) for the registered model.
+
+``db``
+    The database where the revision data will be saved.
+
+
+VersionAdapter.get_object_id(self, obj)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Returns a string representation of the object's primary key.
+
+``obj``
+    The model instance being saved in the revision.
+
+
+VersionAdapter.get_version_data(self, obj, model_db)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Returns a dictionary of values to be set on the :ref:`Version` model.
+
+``obj``
+    The model instance being saved in the revision.
+
+``model_db``
+    The database where the model is saved.
 
 
 VersionAdapter.revert(self, version):

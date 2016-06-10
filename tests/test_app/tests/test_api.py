@@ -223,60 +223,6 @@ class AddMetaTest(TestBase):
         self.assertSingleRevision((obj,), meta_names=("meta v1",), db="postgres")
 
 
-class SaveRevisionTest(TestBase):
-
-    def testSaveRevision(self):
-        obj = TestModel.objects.create()
-        reversion.save_revision((obj,))
-        self.assertSingleRevision((obj,))
-
-    def testSaveRevisionEmpty(self):
-        reversion.save_revision(())
-        self.assertNoRevision()
-
-
-class SaveRevisionDbTest(TestBase):
-
-    def testSaveRevisionDb(self):
-        obj = TestModel.objects.create()
-        reversion.save_revision((obj,), db="postgres")
-        self.assertNoRevision()
-        self.assertSingleRevision((obj,), db="postgres")
-
-
-class SaveRevisionCommentTest(TestBase):
-
-    def testSaveRevisionComment(self):
-        obj = TestModel.objects.create()
-        reversion.save_revision((obj,), comment="comment v1")
-        self.assertSingleRevision((obj,), comment="comment v1")
-
-
-class SaveRevisionUserTest(UserTestBase):
-
-    def testSaveRevisionUser(self):
-        obj = TestModel.objects.create()
-        reversion.save_revision((obj,), user=self.user)
-        self.assertSingleRevision((obj,), user=self.user)
-
-
-class SaveRevisionMetaTest(TestBase):
-
-    def testSaveRevisionMeta(self):
-        obj = TestModel.objects.create()
-        reversion.save_revision((obj,), meta=(TestMeta(name="meta v1"),))
-        self.assertSingleRevision((obj,), meta_names=("meta v1",))
-
-
-class SaveRevisionIgnoreDuplicatesTest(TestBase):
-
-    def testSaveRevisionIgnoreDuplicates(self):
-        obj = TestModel.objects.create()
-        reversion.save_revision((obj,))
-        reversion.save_revision((obj,), ignore_duplicates=True)
-        self.assertSingleRevision((obj,))
-
-
 class GetForObjectTest(TestBase):
 
     def testGetForObject(self):
