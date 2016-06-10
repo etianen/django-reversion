@@ -49,6 +49,7 @@ else:
         get_ignore_duplicates,
         set_ignore_duplicates,
         # Low level API.
+        get_for_model,
         get_for_object_reference,
         get_for_object,
         get_deleted,

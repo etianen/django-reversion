@@ -366,6 +366,24 @@ Returns the :ref:`Revision` that was created, or ``None`` if no revision was sav
 Lookup API
 ----------
 
+reversion.get_for_model(model, db=None, model_db=None)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Returns a :ref:`VersionQuerySet` for the given model. The results are ordered with the most recent :ref:`Version` first.
+
+Throws :ref:`RegistrationError` if the model has not been registered with django-reversion.
+
+``model``
+    A registered model.
+
+``db``
+    The database to load the versions from.
+
+``model_db``
+    The database where the model is saved. Defaults to the default database for the model.
+
+
+
 reversion.get_for_object(obj, db=None, model_db=None)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

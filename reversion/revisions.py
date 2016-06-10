@@ -58,6 +58,9 @@ class VersionAdapter(object):
         """
         Returns an iterable of field names to serialize in the version data.
         """
+        assert obj is not None
+        assert db is not None
+        assert model_db is not None
         opts = self.model._meta.concrete_model._meta
         fields = (
             field.name
@@ -80,6 +83,9 @@ class VersionAdapter(object):
         """
         Returns the name of a Django serialization format to use when saving the version.
         """
+        assert obj is not None
+        assert db is not None
+        assert model_db is not None
         return self.format
 
     for_concrete_model = True
@@ -94,6 +100,9 @@ class VersionAdapter(object):
         """
         Returns a string of serialized data for the given model instance.
         """
+        assert obj is not None
+        assert db is not None
+        assert model_db is not None
         return serializers.serialize(
             self.get_format(obj, db, model_db),
             (obj,),
@@ -105,35 +114,38 @@ class VersionAdapter(object):
         Returns the content type for the registered model.
         """
         from django.contrib.contenttypes.models import ContentType
+        assert db is not None
+        assert model_db is not None
         return ContentType.objects.db_manager(db).get_for_model(self.model, for_concrete_model=self.for_concrete_model)
-
-    def get_object_id(self, obj, db, model_db):
-        """
-        Returns a string representation of the object's primary key.
-        """
-        return force_text(obj.pk)
 
     def get_object_repr(self, obj, db, model_db):
         """
         Returns a string representation of the model instance.
         """
+        assert obj is not None
+        assert db is not None
+        assert model_db is not None
         return force_text(obj)
 
-    def get_model_db(self, obj, db, model_db):
+    def get_model_db(self, obj, db):
         """
         Returns the database where the model should be saved.
         """
-        return router.db_for_write(self.model, instance=obj) if model_db is None else model_db
+        assert db is not None
+        return router.db_for_write(self.model, instance=obj)
 
     def get_version(self, obj, db, model_db):
         """
         Returns a Version to be saved to the revision.
         """
         from reversion.models import Version
+        assert obj is not None
+        assert db is not None
+        assert model_db is not None
         return Version(
             content_type=self.get_content_type(obj, db, model_db),
-            object_id=self.get_object_id(obj, db, model_db),
-            db=self.get_model_db(obj, db, model_db),
+            object_id=force_text(obj.pk),
+            db=model_db,
             format=self.get_format(obj, db, model_db),
             serialized_data=self.get_serialized_data(obj, db, model_db),
             object_repr=self.get_object_repr(obj, db, model_db),
@@ -302,6 +314,7 @@ class RevisionContextManager(local):
         """
         adapter = revision_manager.get_adapter(obj.__class__)
         for db in self._current_frame.db_set:
+            model_db = adapter.get_model_db(obj, db)
             objects = self._current_frame.db_manager_objects[db].setdefault(revision_manager, {})
             version = adapter.get_version(obj, db, model_db)
             version_key = (version.content_type, version.object_id)
@@ -568,18 +581,19 @@ class RevisionManager(object):
         for signal in adapter_obj.get_signals():
             signal.disconnect(self._signal_receiver, model)
 
-    def _get_versions(self, model, db, model_db):
-        from reversion.models import Version
+    # Revision management API.
+
+    def get_for_model(self, model, db=None, model_db=None):
+        from reversion.models import Revision, Version
         adapter = self.get_adapter(model)
+        db = router.db_for_read(Revision) if db is None else db
+        model_db = adapter.get_model_db(None, db) if model_db is None else model_db
         content_type = adapter.get_content_type(None, db, model_db)
-        model_db = adapter.get_model_db(None, db, model_db)
         return Version.objects.using(db).filter(
             revision__manager_slug=self._manager_slug,
             content_type=content_type,
             db=model_db,
         )
-
-    # Revision management API.
 
     def get_for_object_reference(self, model, object_id, db=None, model_db=None):
         """
@@ -587,7 +601,7 @@ class RevisionManager(object):
 
         The results are returned with the most recent versions first.
         """
-        return self._get_versions(model, db, model_db).filter(
+        return self.get_for_model(model, db=db, model_db=model_db).filter(
             object_id=object_id,
         ).order_by("-pk")
 
@@ -631,8 +645,8 @@ class RevisionManager(object):
 
         The results are returned with the most recent versions first.
         """
-        return self._get_versions(model, db, model_db).filter(
-            pk__reversion_in=(self._get_versions(model, db, model_db).exclude(
+        return self.get_for_model(model, db=db, model_db=model_db).filter(
+            pk__reversion_in=(self.get_for_model(model, db=db, model_db=model_db).exclude(
                 object_id__reversion_in=(model._default_manager.using(model_db), model._meta.pk.name),
             ).values_list("object_id").annotate(
                 id=Max("id"),
@@ -685,6 +699,7 @@ set_ignore_duplicates = revision_context_manager.set_ignore_duplicates
 
 
 # Low level API.
+get_for_model = default_revision_manager.get_for_model
 get_for_object_reference = default_revision_manager.get_for_object_reference
 get_for_object = default_revision_manager.get_for_object
 get_unique_for_object = default_revision_manager.get_unique_for_object

@@ -1,31 +1,15 @@
 from __future__ import unicode_literals
-from django.apps import apps
-from django.conf import settings
-from django.contrib import admin
-from django.core.management.base import BaseCommand
 from django.db import reset_queries, transaction
-from django.utils import translation
 from django.utils.encoding import force_text
-from reversion.revisions import RevisionManager
-from reversion.models import Version
-from reversion.management.commands import parse_app_labels
+from reversion.management.commands import BaseRevisionCommand
 
 
-def get_app(app_label):
-    return apps.get_app_config(app_label).models_module
-
-
-class Command(BaseCommand):
+class Command(BaseRevisionCommand):
 
     help = "Creates initial revisions for a given app [and model]."
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "args",
-            metavar="app_label",
-            nargs="*",
-            help="Optional apps or app.Model list.",
-        )
+        super(Command, self).add_arguments(parser)
         parser.add_argument(
             "--comment",
             action="store",
@@ -38,76 +22,60 @@ class Command(BaseCommand):
             default=500,
             help="For large sets of data, revisions will be populated in batches. Defaults to 500.",
         )
-        parser.add_argument(
-            "-m",
-            "--manager",
-            default="default",
-            help="Create revisions for the given revision manager. Defaults to the default revision manager.",
-        )
-        parser.add_argument(
-            "--database",
-            default=None,
-            help="Nominates a database to create revisions in.",
-        )
 
     def handle(self, *app_labels, **options):
-        # Activate project's default language
-        translation.activate(settings.LANGUAGE_CODE)
-        # Load admin classes.
-        admin.autodiscover()
         # Parse options.
         comment = options["comment"]
         batch_size = options["batch_size"]
-        revision_manager = RevisionManager.get_manager(options["manager"])
-        database = options["database"]
+        revision_manager = self.get_revision_manager(options)
+        db = options["db"]
+        model_db = options["model_db"]
         verbosity = int(options.get("verbosity", 1))
-        model_classes = parse_app_labels(revision_manager, app_labels)
+        model_classes = self.get_model_classes(options)
         # Create revisions.
-        with transaction.atomic(using=database):
+        with transaction.atomic(using=db):
             for model_class in model_classes:
-                self.create_initial_revisions(model_class, comment, batch_size, verbosity, revision_manager, database)
-        # Go back to default language
-        translation.deactivate()
-
-    def create_initial_revisions(self, model_class, comment, batch_size, verbosity, revision_manager, database):
-        # Check all models for empty revisions.
-        if verbosity >= 2:
-            self.stdout.write("Creating initial revision(s) for model %s ..." % (
-                force_text(model_class._meta.verbose_name)
-            ))
-        created_count = 0
-        content_type = revision_manager._get_content_type(model_class, db=database)
-        live_objs = model_class._default_manager.using(database).exclude(
-            pk__reversion_in=(Version.objects.using(database).filter(
-                content_type=content_type,
-            ), "object_id")
-        )
-        # Save all the versions.
-        ids = list(live_objs.values_list("pk", flat=True).order_by())
-        total = len(ids)
-        for i in range(0, total, batch_size):
-            chunked_ids = ids[i:i+batch_size]
-            objects = live_objs.in_bulk(chunked_ids)
-            for id, obj in objects.items():
-                try:
-                    revision_manager.save_revision(
-                        objects=(obj,),
-                        comment=comment,
-                        db=database,
-                    )
-                except:
-                    self.stdout.write("ERROR: Could not save initial version for %s %s." % (
-                        model_class.__name__,
-                        obj.pk,
+                # Check all models for empty revisions.
+                if verbosity >= 1:
+                    self.stdout.write("Creating initial revision(s) for model %s..." % (
+                        force_text(model_class._meta.verbose_name)
                     ))
-                    raise
-                created_count += 1
-            reset_queries()
-            if verbosity >= 2:
-                self.stdout.write("Created %s of %s." % (created_count, total))
-        # Print out a message, if feeling verbose.
-        if verbosity >= 2:
-            self.stdout.write("Created %s initial revision(s) for model %s." % (
-                created_count,
-                force_text(model_class._meta.verbose_name),
-            ))
+                created_count = 0
+                live_objs = model_class._default_manager.using(model_db).exclude(
+                    pk__reversion_in=(revision_manager.get_for_model(
+                        model_class,
+                        db=db,
+                        model_db=model_db,
+                    ), "object_id"),
+                )
+                # Save all the versions.
+                ids = list(live_objs.values_list("pk", flat=True).order_by())
+                total = len(ids)
+                for i in range(0, total, batch_size):
+                    chunked_ids = ids[i:i+batch_size]
+                    objects = live_objs.in_bulk(chunked_ids)
+                    for obj in objects.values():
+                        try:
+                            with revision_manager._revision_context_manager.create_revision(
+                                db=db,
+                                manage_manually=True,
+                            ):
+                                revision_manager._revision_context_manager.set_comment(comment)
+                                revision_manager.add_to_revision(obj, model_db=model_db)
+                        except:
+                            if verbosity >= 1:
+                                self.stderr.write("ERROR: Could not save initial version for %s %s" % (
+                                    model_class.__name__,
+                                    obj.pk,
+                                ))
+                            raise
+                        created_count += 1
+                    reset_queries()
+                    if verbosity >= 2:
+                        self.stdout.write("Created %s of %s" % (created_count, total))
+                # Print out a message, if feeling verbose.
+                if verbosity >= 1:
+                    self.stdout.write("Created %s initial revision(s) for model %s" % (
+                        created_count,
+                        force_text(model_class._meta.verbose_name),
+                    ))

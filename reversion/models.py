@@ -229,10 +229,10 @@ class Version(models.Model):
         result = self.local_field_dict
         # Add parent data.
         for parent_class, field in obj._meta.concrete_model._meta.parents.items():
-            content_type = self.revision.revision_manager._get_content_type(parent_class, self._state.db)
+            adapter = self.revision.revision_manager.get_adapter(parent_class)
+            content_type = adapter.get_content_type(None, self._state.db, self.db)
             parent_id = getattr(obj, field.attname)
-            parent_version = Version.objects.using(self._state.db).get(
-                revision=self.revision,
+            parent_version = self.revision.version_set.get(
                 content_type=content_type,
                 object_id=parent_id,
                 db=self.db,

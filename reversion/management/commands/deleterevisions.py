@@ -77,6 +77,7 @@ class Command(BaseCommand):
             help="Delete revisions from specified revision manager. Defaults to the default revision manager.",
         )
         parser.add_argument(
+            "-db"
             "--database",
             default=None,
             help="Nominates a database to delete revisions from.",
@@ -126,7 +127,7 @@ class Command(BaseCommand):
         if app_labels:
             model_classes = parse_app_labels(revision_manager, app_labels)
             content_types = [
-                revision_manager._get_content_type(model_class, db=database)
+                revision_manager.get_adapter(model_class).get_content_type(None, db, None)
                 for model_class
                 in model_classes
             ]
