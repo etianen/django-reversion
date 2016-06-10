@@ -15,15 +15,10 @@ from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _, ugettext
 from django.utils.encoding import force_text, python_2_unicode_compatible
 from reversion.errors import RevertError
+from reversion.revisions import _get_model_db, _get_content_type
 
 
-def safe_revert(versions):
-    """
-    Attempts to revert the given models contained in the give versions.
-
-    This method will attempt to resolve dependencies between the versions to revert
-    them in the correct order to avoid database integrity errors.
-    """
+def _safe_revert(versions):
     unreverted_versions = []
     for version in versions:
         try:
@@ -36,13 +31,13 @@ def safe_revert(versions):
             "object_repr": unreverted_versions[0],
         })
     if unreverted_versions:
-        safe_revert(unreverted_versions)
+        _safe_revert(unreverted_versions)
 
 
 @python_2_unicode_compatible
 class Revision(models.Model):
 
-    """A group of related object versions."""
+    """A group of related serialized versions."""
 
     date_created = models.DateTimeField(
         db_index=True,
@@ -66,7 +61,6 @@ class Revision(models.Model):
     )
 
     def revert(self, delete=False):
-        """Reverts all objects in this revision."""
         # Group the models by the database of the serialized model.
         versions_by_db = defaultdict(list)
         for version in self.version_set.iterator():
@@ -99,7 +93,7 @@ class Revision(models.Model):
                         if item not in old_revision:
                             item.delete(using=version.db)
                 # Attempt to revert all revisions.
-                safe_revert(versions)
+                _safe_revert(versions)
 
     def __str__(self):
         return ", ".join(force_text(version) for version in self.version_set.all())
@@ -110,13 +104,35 @@ class Revision(models.Model):
 
 class VersionQuerySet(models.QuerySet):
 
+    def get_for_model(self, model, model_db=None):
+        model_db = _get_model_db(None, model, model_db)
+        content_type = _get_content_type(model, using=self.db)
+        return self.filter(
+            content_type=content_type,
+            db=model_db,
+        ).order_by("-pk")
+
+    def get_for_object_reference(self, model, object_id, model_db=None):
+        return self.get_for_model(model, model_db=model_db).filter(
+            object_id=object_id,
+        )
+
+    def get_for_object(self, obj, model_db=None):
+        return self.get_for_object_reference(obj.__class__, obj.pk, model_db=model_db)
+
+    def get_deleted(self, model, model_db=None):
+        return self.get_for_model(model, model_db=model_db).filter(
+            pk__reversion_in=(self.get_for_model(model, model_db=model_db).exclude(
+                object_id__reversion_in=(model._default_manager.using(model_db), model._meta.pk.name),
+            ).values_list("object_id").annotate(
+                id=models.Max("id"),
+            ), "id")
+        )
+
     def get_unique(self):
-        """
-        Returns a generator of unique version data.
-        """
         last_key = None
         for version in self.iterator():
-            key = (version.object_id, version.content_type_id, version.db, version.local_field_dict)
+            key = (version.object_id, version.content_type_id, version.db, version._local_field_dict)
             if last_key != key:
                 yield version
             last_key = key
@@ -187,7 +203,7 @@ class Version(models.Model):
             })
 
     @cached_property
-    def local_field_dict(self):
+    def _local_field_dict(self):
         """
         A dictionary mapping field names to field values in this version
         of the model.
@@ -214,7 +230,7 @@ class Version(models.Model):
         """
         object_version = self.object_version
         obj = object_version.object
-        result = self.local_field_dict
+        result = self._local_field_dict
         # Add parent data.
         for parent_class, field in obj._meta.concrete_model._meta.parents.items():
             adapter = self.revision.revision_manager.get_adapter(parent_class)

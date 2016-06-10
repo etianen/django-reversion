@@ -7,7 +7,6 @@ from django.apps import apps
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction, router
-from django.db.models import Max
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
@@ -182,8 +181,8 @@ def _add_to_revision(obj, using, model_db, explicit):
     )
     # If the version is a duplicate, stop now.
     if version_options.ignore_duplicates and explicit:
-        previous_version = get_for_object(obj, model_db=model_db, using=using).first()
-        if previous_version and previous_version.local_field_dict == version.local_field_dict:
+        previous_version = Version.objects.using(using).get_for_object(obj, model_db=model_db).first()
+        if previous_version and previous_version._local_field_dict == version._local_field_dict:
             return
     # Store the version.
     db_versions = _copy_db_versions(db_versions)
@@ -248,7 +247,7 @@ def _create_revision_context(manage_manually, using):
 
 def create_revision(manage_manually=False, using=None):
     from reversion.models import Revision
-    using = router.db_for_write(Revision) if using is None else using
+    using = using or router.db_for_write(Revision)
     return _ContextWrapper(_create_revision_context, (manage_manually, using))
 
 
@@ -284,10 +283,6 @@ def _m2m_changed_receiver(instance, using, action, model, reverse, **kwargs):
     if action.startswith("post_") and not reverse:
         if is_registered(model) and is_active() and not is_manage_manually():
             add_to_revision(instance, model_db=using)
-
-
-def _get_model_db(obj, model, model_db):
-    return model_db or router.db_for_write(model, instance=obj)
 
 
 def _get_registration_key(model):
@@ -359,41 +354,14 @@ def unregister(model):
     del _registered_models[_get_registration_key(model)]
 
 
+def _get_model_db(obj, model, model_db):
+    return model_db or router.db_for_write(model, instance=obj)
+
+
 def _get_content_type(model, using):
     from django.contrib.contenttypes.models import ContentType
     version_options = _get_options(model)
     return ContentType.objects.db_manager(using).get_for_model(
         model,
         for_concrete_model=version_options.for_concrete_model,
-    )
-
-
-def get_for_model(model, using=None, model_db=None):
-    from reversion.models import Revision, Version
-    using = using or router.db_for_read(Revision)
-    model_db = _get_model_db(None, model, model_db)
-    content_type = _get_content_type(model, using)
-    return Version.objects.using(using).filter(
-        content_type=content_type,
-        db=model_db,
-    ).order_by("-pk")
-
-
-def get_for_object_reference(model, object_id, using=None, model_db=None):
-    return get_for_model(model, using=using, model_db=model_db).filter(
-        object_id=object_id,
-    )
-
-
-def get_for_object(obj, using=None, model_db=None):
-    return get_for_object_reference(obj.__class__, obj.pk, using=using, model_db=model_db)
-
-
-def get_deleted(model, using=None, model_db=None):
-    return get_for_model(model, using=using, model_db=model_db).filter(
-        pk__reversion_in=(get_for_model(model, using=using, model_db=model_db).exclude(
-            object_id__reversion_in=(model._default_manager.using(model_db), model._meta.pk.name),
-        ).values_list("object_id").annotate(
-            id=Max("id"),
-        ), "id")
     )

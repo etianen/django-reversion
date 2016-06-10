@@ -2,9 +2,8 @@ from __future__ import unicode_literals
 from datetime import timedelta
 from django.db import transaction, models, router
 from django.utils import timezone
-from reversion.models import Revision
+from reversion.models import Revision, Version
 from reversion.management.commands import BaseRevisionCommand
-from reversion.revisions import get_for_model, get_for_object_reference
 
 
 class Command(BaseRevisionCommand):
@@ -48,16 +47,14 @@ class Command(BaseRevisionCommand):
                 # If we have at least one model, then we can
                 can_delete = True
                 revision_query |= models.Q(
-                    pk__reversion_in=(get_for_model(
+                    pk__reversion_in=(Version.objects.using(using).get_for_model(
                         model,
-                        using=using,
                         model_db=model_db,
                     ), "revision_id"),
                 )
                 if keep:
-                    overflow_object_ids = get_for_model(
+                    overflow_object_ids = Version.objects.using(using).get_for_model(
                         model,
-                        using=using,
                         model_db=model_db,
                     ).order_by().values_list("object_id").annotate(
                         count=models.Count("object_id"),
@@ -70,10 +67,9 @@ class Command(BaseRevisionCommand):
                                 name=model._meta.verbose_name,
                                 object_id=object_id,
                             ))
-                        keep_revision_ids.update(get_for_object_reference(
+                        keep_revision_ids.update(Version.objects.using(using).get_for_object_reference(
                             model,
                             object_id,
-                            using=using,
                             model_db=model_db,
                         ).values_list("revision_id", flat=True)[:keep].iterator())
             if can_delete:

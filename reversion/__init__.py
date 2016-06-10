@@ -34,11 +34,6 @@ else:
         is_registered,
         unregister,
         get_registered_models,
-        get_for_model,
-        get_for_object_reference,
-        get_for_object,
-        get_deleted,
-
     )
 
 __version__ = VERSION = (1, 10, 3)

@@ -58,6 +58,12 @@ class CreateInitialRevisionsDbTest(TestBase):
         self.assertNoRevision()
         self.assertSingleRevision((obj,), comment="Initial version.", using="postgres")
 
+    def testCreateInitialRevisionsDbMySql(self):
+        obj = TestModel.objects.create()
+        self.callCommand("createinitialrevisions", using="mysql")
+        self.assertNoRevision()
+        self.assertSingleRevision((obj,), comment="Initial version.", using="mysql")
+
 
 class CreateInitialRevisionsModelDbTest(TestBase):
 
@@ -124,6 +130,12 @@ class DeleteRevisionsDbTest(TestBase):
             TestModel.objects.create()
         self.callCommand("deleterevisions", using="postgres")
         self.assertNoRevision(using="postgres")
+
+    def testDeleteRevisionsDbMySql(self):
+        with reversion.create_revision(using="mysql"):
+            TestModel.objects.create()
+        self.callCommand("deleterevisions", using="mysql")
+        self.assertNoRevision(using="mysql")
 
     def testDeleteRevisionsDbNoMatch(self):
         with reversion.create_revision():

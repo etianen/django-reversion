@@ -5,8 +5,7 @@ from django.core.management import call_command
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.utils import timezone
-import reversion
-from reversion.models import Revision
+from reversion.models import Revision, Version
 
 
 # Test helpers.
@@ -23,7 +22,7 @@ class TestBase(TestCase):
 
     def assertSingleRevision(self, objects, user=None, comment="", meta_names=(), date_created=None,
                              using=None, model_db=None):
-        revision = reversion.get_for_object(objects[0], using=using, model_db=model_db).get().revision
+        revision = Version.objects.using(using).get_for_object(objects[0], model_db=model_db).get().revision
         self.assertEqual(revision.user, user)
         self.assertEqual(revision.comment, comment)
         self.assertAlmostEqual(revision.date_created, date_created or timezone.now(), delta=timedelta(seconds=1))
@@ -34,9 +33,8 @@ class TestBase(TestCase):
         # Check objects.
         self.assertEqual(revision.version_set.count(), len(objects))
         for obj in objects:
-            self.assertTrue(reversion.get_for_object(
+            self.assertTrue(Version.objects.using(using).get_for_object(
                 obj,
-                using=using,
                 model_db=model_db,
             ).filter(
                 revision=revision,

@@ -1,8 +1,8 @@
 from __future__ import unicode_literals
 from django.db import reset_queries, transaction, router
-from reversion.models import Revision
+from reversion.models import Revision, Version
 from reversion.management.commands import BaseRevisionCommand
-from reversion.revisions import create_revision, set_comment, add_to_revision, get_for_model
+from reversion.revisions import create_revision, set_comment, add_to_revision
 
 
 class Command(BaseRevisionCommand):
@@ -41,9 +41,8 @@ class Command(BaseRevisionCommand):
                     ))
                 created_count = 0
                 live_objs = model._default_manager.using(model_db).exclude(
-                    pk__reversion_in=(get_for_model(
+                    pk__reversion_in=(Version.objects.using(using).get_for_model(
                         model,
-                        using=using,
                         model_db=model_db,
                     ), "object_id"),
                 )
