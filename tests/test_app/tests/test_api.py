@@ -264,7 +264,7 @@ class SaveRevisionMetaTest(TestBase):
 
     def testSaveRevisionMeta(self):
         obj = TestModel.objects.create()
-        reversion.save_revision((obj,), meta=(reversion.RevisionMeta(TestMeta, name="meta v1"),))
+        reversion.save_revision((obj,), meta=(TestMeta(name="meta v1"),))
         self.assertSingleRevision((obj,), meta_names=("meta v1",))
 
 

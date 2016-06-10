@@ -20,7 +20,6 @@ else:
     )
     from reversion.revisions import (  # noqa
         VersionAdapter,
-        RevisionMeta,
         RevisionManager,
         # Singletons.
         revision_context_manager,

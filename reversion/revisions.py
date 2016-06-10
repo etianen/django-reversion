@@ -188,18 +188,6 @@ class VersionAdapter(object):
         version.object_version.save(using=version.db)
 
 
-class RevisionMeta(object):
-
-    """Custom metadata assigned to a revision."""
-
-    def __init__(self, model, **values):
-        self.model = model
-        self.values = values
-
-    def save(self, revision, db):
-        return self.model._default_manager.db_manager(db).create(revision=revision, **self.values)
-
-
 class RevisionContextStackFrame(object):
 
     def __init__(self, manage_manually, db, user, comment, ignore_duplicates, manager_objects, meta):
@@ -309,7 +297,7 @@ class RevisionContextManager(local):
 
     def add_meta(self, model, **values):
         """Adds a model of meta information to the current revision."""
-        self._current_frame.meta.append(RevisionMeta(model, **values))
+        self._current_frame.meta.append((model, values))
 
     # High-level context management.
 
@@ -342,7 +330,11 @@ class RevisionContextManager(local):
                         objects=list(objects.values()),
                         user=stack_frame.user,
                         comment=stack_frame.comment,
-                        meta=stack_frame.meta,
+                        meta=[
+                            meta_model(**meta_values)
+                            for (meta_model, meta_values)
+                            in stack_frame.meta
+                        ],
                         ignore_duplicates=stack_frame.ignore_duplicates,
                         db=db,
                     )
@@ -643,7 +635,8 @@ class RevisionManager(object):
                     version.save(using=db)
                 # Save the meta information.
                 for meta_obj in meta:
-                    meta_obj.save(revision, db=db)
+                    meta_obj.revision = revision
+                    meta_obj.save(revision, using=db)
             # Send the post_revision_commit signal.
             post_revision_commit.send(
                 sender=self,

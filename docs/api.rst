@@ -333,7 +333,7 @@ Returns the :ref:`Revision` that was created, or ``None`` if no revision was sav
     A text comment to add to the revision metadata.
 
 ``meta``
-    An iterable of :ref:`RevisionMeta`.
+    An iterable of unsaved model instances, representing meta information for the revision. Each instance must have a ``ForeignKey`` or ``OneToOneField`` to :ref:`Revision` named ``revision``. On revision save, the ``revision`` relation will be populated and the meta model will be saved in the same transaction.
 
 ``date_created``
     The date to associate with the revision. Defaults to ``django.utils.timezone.now()``.
@@ -536,23 +536,6 @@ Throws :ref:`RevertError` if the model could not be reverted, e.g. the serialize
 
 ``delete``
     If ``True``, any model instances which have been created and are reachable by the ``follow`` clause of any model instances in this revision will be deleted. This effectively restores a group of related models to the state they were in when the revision was created.
-
-
-.. _RevisionMeta:
-
-reversion.RevisionMeta
-----------------------
-
-Custom metadata to be assigned to a revision.
-
-
-RevisionMeta.__init__(self, model, \*\*values)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Creates a new :ref:`RevisionMeta`.
-
-.. include:: /_include/meta-args.rst
-
 
 
 .. _RevisionManager:
