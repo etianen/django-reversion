@@ -623,6 +623,8 @@ class RevisionManager(object):
             pre_revision_commit.send(
                 sender=self,
                 instances=objects,
+                ignore_duplicates=ignore_duplicates,
+                meta=meta,
                 revision=revision,
                 versions=new_versions,
             )
@@ -641,6 +643,8 @@ class RevisionManager(object):
             post_revision_commit.send(
                 sender=self,
                 instances=objects,
+                ignore_duplicates=ignore_duplicates,
+                meta=meta,
                 revision=revision,
                 versions=new_versions,
             )

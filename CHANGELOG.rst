@@ -12,6 +12,7 @@ django-reversion changelog
 * Added ``reversion.views.RevisionMixin`` class-based view mixin (@etianen).
 * Revision blocks are now automatically wrapped in ``transaction.atomic()`` (@etianen).
 * Dramatically improved performance of version lookup for models with a non-integer primary key (@etianen, @mshannon1123).
+* Added ``ignore_duplicates`` and ``meta`` parameters to ``pre_revision_commit`` and ``post_revision_commit`` signals (@etianen).
 * Added support for using ``RevisionMiddleware`` with new-style Django 1.10 ``MIDDLEWARE`` (@etianen).
 * Deprecated ``reversion.helpers.patch_admin`` in favor of using ``VersionAdmin`` as a mixin (@etianen).
 * Deprecated ``reversion.helpers.generate_diffs``, ``reversion.helpers.generate_patch`` and ``reversion.helpers.generate_patch_html``. django-reversion does not concern itself with diffs directly, and there are probably much better ways of doing this than the outdated helpers. (@etianen).
