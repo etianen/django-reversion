@@ -6,26 +6,61 @@ django-reversion changelog
 1.11.0 - Pending
 ----------------
 
-* Restored all of the non-deprecated django-reversion API methods back to the top-level namespace, effectively undoing most of the breaking changes introduced with 1.10 (@etianen).
-* Added ``reversion.views.create_revision`` view decorator (@etianen).
-* Added ``reversion.views.RevisionMixin`` class-based view mixin (@etianen).
-* Revision blocks are now automatically wrapped in ``transaction.atomic()`` (@etianen).
+General
+^^^^^^^
+
 * Dramatically improved performance of version lookup for models with a non-integer primary key (@etianen, @mshannon1123).
-* Added ``get_for_model()`` function (@etianen).
-* Added support for using ``RevisionMiddleware`` with new-style Django 1.10 ``MIDDLEWARE`` (@etianen).
-* **Breaking:** Refactored arguments to ``createinitialrevisions``, check the command ``--help`` for details (@etianen).
-* **Breaking:** Refactored arguments to ``deleterevisions``, check the command ``--help`` for details (@etianen).
-* **Breaking:** Removed ``pre_revision_commit`` and ``post_revision_commit`` signals, use ``pre_save`` and ``post_save`` signals for ``Revision`` instead (@etianen).
-* **Breaking:** Removed ``get_for_date()`` function, use ``get_for_object().filter(revision__date_created__lte=date)`` (@etianen).
-* **Breaking:** Removed ``get_unique_for_object()`` function, use ``get_for_object().get_unique()`` instead (@etianen).
-* **Breaking:** Removed ``eager_signals`` argument to register(), it has been merged with the ``signals`` argument (@etianen).
-* **Breaking:** Removed ``patch_admin`` function, use VersionAdmin as a mixin to 3rd party ModelAdmins instead (@etianen).
-* **Breaking:** Removed ``generate_diffs``, ``generate_patch`` and ``generate_patch_html`` functions (@etianen).
-* **Breaking:** The default ``model_db`` for ``get_deleted()`` was changed to the default database for the model (@etianen).
-* **Breaking:** Major overhaul of methods on ``VersionAdapter``, see docs (@etianen).
+* **Breaking:** Refactored multi-db to support restoring models instances to their original database automatically, and to match the conventions used in the main Django codebase. Check the docs for details (@etianen).
 * Documentation refactor (@etianen).
 * Test refactor (@etianen).
 * Minor tweaks and bugfixes (@etianen, @bmarika, @ticosax).
+
+
+Management commands
+^^^^^^^^^^^^^^^^^^^
+
+* **Breaking:** Refactored arguments to ``createinitialrevisions``, check the command ``--help`` for details (@etianen).
+* **Breaking:** Refactored arguments to ``deleterevisions``, check the command ``--help`` for details (@etianen).
+
+
+Middleware
+^^^^^^^^^^
+
+* Added support for using ``RevisionMiddleware`` with new-style Django 1.10 ``MIDDLEWARE`` (@etianen).
+* Middlware wraps entire request in ``transaction.atomic()`` to preserve transactional integrity of revision and models (@etianen).
+
+
+View helpers
+^^^^^^^^^^^^
+
+* Added ``reversion.views.create_revision`` view decorator (@etianen).
+* Added ``reversion.views.RevisionMixin`` class-based view mixin (@etianen).
+
+
+Low-level API
+^^^^^^^^^^^^^
+
+* Restored all of the django-reversion API methods back to the top-level namespace, effectively undoing most of the breaking changes introduced with 1.10 (@etianen).
+* Revision blocks are now automatically wrapped in ``transaction.atomic()`` (@etianen).
+* Added ``get_for_model()`` function (@etianen).
+* **Breaking:** Removed ``get_for_date()`` function, use ``get_for_object().filter(revision__date_created__lte=date)`` (@etianen).
+* **Breaking:** Removed ``get_unique_for_object()`` function, use ``get_for_object().get_unique()`` instead (@etianen).
+* **Breaking:** Removed ``eager_signals`` argument to register(), it has been merged with the ``signals`` argument (@etianen).
+
+
+Signals
+^^^^^^^
+
+* **Breaking:** Removed ``pre_revision_commit`` signal, use ``pre_save`` for ``Revision`` instead (@etianen).
+* **Breaking:** Removed ``post_revision_commit`` signal, use ``post_save`` for ``Revision`` instead (@etianen).
+
+
+Helpers
+^^^^^^^
+* **Breaking:** Removed ``patch_admin`` function, use VersionAdmin as a mixin to 3rd party ModelAdmins instead (@etianen).
+* **Breaking:** Removed ``generate_diffs`` function (@etianen).
+* **Breaking:** Removed ``generate_patch`` function (@etianen).
+* **Breaking:** Removed ``generate_patch_html`` function (@etianen).
 
 
 1.10.2 - 18/04/2016
