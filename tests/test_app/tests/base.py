@@ -23,7 +23,7 @@ class TestBase(TestCase):
 
     def assertSingleRevision(self, objects, user=None, comment="", meta_names=(), date_created=None,
                              db=None, model_db=None):
-        revision = Revision.objects.using(db).get()
+        revision = reversion.get_for_object(objects[0], db=db, model_db=model_db).get().revision
         self.assertEqual(revision.user, user)
         self.assertEqual(revision.comment, comment)
         self.assertAlmostEqual(revision.date_created, date_created or timezone.now(), delta=timedelta(seconds=1))

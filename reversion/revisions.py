@@ -314,8 +314,8 @@ class RevisionContextManager(local):
         """
         adapter = revision_manager.get_adapter(obj.__class__)
         for db in self._current_frame.db_set:
-            model_db = adapter.get_model_db(obj, db)
             objects = self._current_frame.db_manager_objects[db].setdefault(revision_manager, {})
+            model_db = adapter.get_model_db(obj, db) if model_db is None else model_db
             version = adapter.get_version(obj, db, model_db)
             version_key = (version.content_type, version.object_id)
             if version_key not in objects or force:
@@ -385,16 +385,15 @@ class RevisionContextManager(local):
                 versions=versions,
             )
             # Save the revision.
-            with transaction.atomic(using=db):
-                revision.save(using=db)
-                # Save version models.
-                for version in versions:
-                    version.revision = revision
-                    version.save(using=db)
-                # Save the meta information.
-                for meta_instance in meta_instances:
-                    meta_instance.revision = revision
-                    meta_instance.save(using=db)
+            revision.save(using=db)
+            # Save version models.
+            for version in versions:
+                version.revision = revision
+                version.save(using=db)
+            # Save the meta information.
+            for meta_instance in meta_instances:
+                meta_instance.revision = revision
+                meta_instance.save(using=db)
             # Send the post_revision_commit signal.
             post_revision_commit.send(
                 sender=revision_manager,
