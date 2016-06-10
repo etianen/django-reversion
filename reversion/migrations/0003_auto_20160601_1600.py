@@ -26,6 +26,10 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RemoveField(
+            model_name='revision',
+            name='manager_slug',
+        ),
+        migrations.RemoveField(
             model_name='version',
             name='object_id_int',
         ),

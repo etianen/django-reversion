@@ -23,7 +23,6 @@ class Migration(migrations.Migration):
             name='Revision',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('manager_slug', models.CharField(db_index=True, default='default', max_length=191)),
                 ('date_created', models.DateTimeField(db_index=True, help_text='The date and time this revision was created.', verbose_name='date created')),
                 ('comment', models.TextField(blank=True, help_text='A text comment on this revision.', verbose_name='comment')),
                 ('user', models.ForeignKey(blank=True, help_text='The user who created this revision.', null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL, verbose_name='user')),

@@ -4,6 +4,7 @@ from django.db import transaction, models, router
 from django.utils import timezone
 from reversion.models import Revision
 from reversion.management.commands import BaseRevisionCommand
+from reversion.revisions import get_for_model, get_for_object_reference
 
 
 class Command(BaseRevisionCommand):
@@ -39,23 +40,22 @@ class Command(BaseRevisionCommand):
             # By default, delete nothing.
             can_delete = False
             # Get all revisions for the given revision manager and model.
-            for model, revision_manager in self.get_models_and_managers(options):
+            for model in self.get_models(options):
                 if verbosity >= 1:
-                    self.stdout.write("Finding stale revisions for {name} using {manager} manager".format(
+                    self.stdout.write("Finding stale revisions for {name}".format(
                         name=model._meta.verbose_name,
-                        manager=revision_manager._manager_slug
                     ))
                 # If we have at least one model, then we can
                 can_delete = True
                 revision_query |= models.Q(
-                    pk__reversion_in=(revision_manager.get_for_model(
+                    pk__reversion_in=(get_for_model(
                         model,
                         using=using,
                         model_db=model_db,
                     ), "revision_id"),
                 )
                 if keep:
-                    overflow_object_ids = revision_manager.get_for_model(
+                    overflow_object_ids = get_for_model(
                         model,
                         using=using,
                         model_db=model_db,
@@ -70,7 +70,7 @@ class Command(BaseRevisionCommand):
                                 name=model._meta.verbose_name,
                                 object_id=object_id,
                             ))
-                        keep_revision_ids.update(revision_manager.get_for_object_reference(
+                        keep_revision_ids.update(get_for_object_reference(
                             model,
                             object_id,
                             using=using,

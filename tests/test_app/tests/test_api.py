@@ -31,9 +31,11 @@ class GetRegisteredModelsTest(TestBase):
 class RegisterTest(TestBase):
 
     def testRegister(self):
-        revision_manager = reversion.RevisionManager("test")
-        revision_manager.register(TestModelUnregistered)
-        self.assertTrue(revision_manager.is_registered(TestModelUnregistered))
+        reversion.register(TestModelUnregistered)
+        try:
+            self.assertTrue(reversion.is_registered(TestModelUnregistered))
+        finally:
+            reversion.unregister(TestModelUnregistered)
 
     def testRegisterAlreadyRegistered(self):
         with self.assertRaises(reversion.RegistrationError):
@@ -43,9 +45,8 @@ class RegisterTest(TestBase):
 class UnregisterTest(TestBase):
 
     def testUnregister(self):
-        revision_manager = reversion.RevisionManager("test")
-        revision_manager.register(TestModelUnregistered)
-        revision_manager.unregister(TestModelUnregistered)
+        reversion.register(TestModelUnregistered)
+        reversion.unregister(TestModelUnregistered)
         self.assertFalse(reversion.is_registered(TestModelUnregistered))
 
     def testUnregisterNotRegistered(self):

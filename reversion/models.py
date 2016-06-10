@@ -15,7 +15,6 @@ from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _, ugettext
 from django.utils.encoding import force_text, python_2_unicode_compatible
 from reversion.errors import RevertError
-from reversion.revisions import RevisionManager
 
 
 def safe_revert(versions):
@@ -44,16 +43,6 @@ def safe_revert(versions):
 class Revision(models.Model):
 
     """A group of related object versions."""
-
-    manager_slug = models.CharField(
-        max_length=191,
-        db_index=True,
-        default="default",
-    )
-
-    @property
-    def revision_manager(self):
-        return RevisionManager.get_manager(self.manager_slug)
 
     date_created = models.DateTimeField(
         db_index=True,

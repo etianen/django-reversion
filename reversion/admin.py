@@ -20,7 +20,6 @@ from django.utils.formats import localize
 from reversion.compat import remote_field, remote_model
 from reversion.errors import RevertError
 from reversion.models import Version
-from reversion.revisions import default_revision_manager
 
 
 class RollBackRevisionView(Exception):
@@ -44,9 +43,6 @@ class VersionAdmin(admin.ModelAdmin):
 
     recover_form_template = None
     """The template to render the recover form."""
-
-    revision_manager = default_revision_manager
-    """The revision manager used to manage revisions."""
 
     reversion_format = "json"
     """The serialization format to use when registering models."""

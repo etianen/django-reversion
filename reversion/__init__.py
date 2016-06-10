@@ -19,7 +19,6 @@ else:
         RegistrationError,
     )
     from reversion.revisions import (  # noqa
-        # Revision context manager.
         is_active,
         is_manage_manually,
         get_user,
@@ -31,9 +30,6 @@ else:
         add_meta,
         add_to_revision,
         create_revision,
-        # Revision manager.
-        RevisionManager,
-        default_revision_manager,
         register,
         is_registered,
         unregister,

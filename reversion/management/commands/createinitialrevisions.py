@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 from django.db import reset_queries, transaction, router
 from reversion.models import Revision
 from reversion.management.commands import BaseRevisionCommand
-from reversion.revisions import create_revision, set_comment, _add_to_revision
+from reversion.revisions import create_revision, set_comment, add_to_revision, get_for_model
 
 
 class Command(BaseRevisionCommand):
@@ -33,16 +33,15 @@ class Command(BaseRevisionCommand):
         # Create revisions.
         using = using or router.db_for_write(Revision)
         with transaction.atomic(using=using):
-            for model, revision_manager in self.get_models_and_managers(options):
+            for model in self.get_models(options):
                 # Check all models for empty revisions.
                 if verbosity >= 1:
-                    self.stdout.write("Creating revisions for {name} using {manager} manager".format(
+                    self.stdout.write("Creating revisions for {name}".format(
                         name=model._meta.verbose_name,
-                        manager=revision_manager._manager_slug
                     ))
                 created_count = 0
                 live_objs = model._default_manager.using(model_db).exclude(
-                    pk__reversion_in=(revision_manager.get_for_model(
+                    pk__reversion_in=(get_for_model(
                         model,
                         using=using,
                         model_db=model_db,
@@ -57,7 +56,7 @@ class Command(BaseRevisionCommand):
                     for obj in objects.values():
                         with create_revision(using=using):
                             set_comment(comment)
-                            _add_to_revision(revision_manager, obj, using, model_db, True)
+                            add_to_revision(obj, model_db=model_db)
                         created_count += 1
                     reset_queries()
                     if verbosity >= 2:

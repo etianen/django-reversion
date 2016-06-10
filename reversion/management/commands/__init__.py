@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 from django.apps import apps
 from django.contrib import admin
 from django.core.management.base import BaseCommand, CommandError
-from reversion.revisions import _revision_managers
+from reversion.revisions import is_registered
 
 
 class BaseRevisionCommand(BaseCommand):
@@ -26,7 +26,7 @@ class BaseRevisionCommand(BaseCommand):
             help="The database to query for model data.",
         )
 
-    def get_models_and_managers(self, options):
+    def get_models(self, options):
         # Load admin classes.
         admin.autodiscover()
         # Get options.
@@ -58,6 +58,5 @@ class BaseRevisionCommand(BaseCommand):
                         raise CommandError("Unknown app: {}".format(app_label))
                     selected_models.update(app.get_models())
         for model in selected_models:
-            for revision_manager in _revision_managers.values():
-                if revision_manager.is_registered(model):
-                    yield model, revision_manager
+            if is_registered(model):
+                yield model
