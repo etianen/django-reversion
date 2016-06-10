@@ -494,7 +494,7 @@ class RevisionManager(object):
     @classmethod
     def get_created_managers(cls):
         """Returns all created revision managers."""
-        return iter(cls._created_managers.items())
+        return iter(cls._created_managers.values())
 
     @classmethod
     def get_manager(cls, manager_slug):
