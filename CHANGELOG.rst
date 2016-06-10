@@ -7,22 +7,22 @@ django-reversion changelog
 ----------------
 
 * Restored all of the non-deprecated django-reversion API methods back to the top-level namespace, effectively undoing most of the breaking changes introduced with 1.10 (@etianen).
-* Added a ``db`` field to ``Version``, representing the model that the serialized model should be written to when reverted. This ensures that a serialized model is written back to the correct database.
 * Added ``reversion.views.create_revision`` view decorator (@etianen).
 * Added ``reversion.views.RevisionMixin`` class-based view mixin (@etianen).
 * Revision blocks are now automatically wrapped in ``transaction.atomic()`` (@etianen).
 * Dramatically improved performance of version lookup for models with a non-integer primary key (@etianen, @mshannon1123).
 * Added ``ignore_duplicates`` and ``meta`` parameters to ``pre_revision_commit`` and ``post_revision_commit`` signals (@etianen).
+* Added ``get_for_model()`` function (@etianen).
 * Added support for using ``RevisionMiddleware`` with new-style Django 1.10 ``MIDDLEWARE`` (@etianen).
-* Deprecated ``reversion.helpers.patch_admin`` in favor of using ``VersionAdmin`` as a mixin (@etianen).
-* Deprecated ``reversion.helpers.generate_diffs``, ``reversion.helpers.generate_patch`` and ``reversion.helpers.generate_patch_html``. django-reversion does not concern itself with diffs directly, and there are probably much better ways of doing this than the outdated helpers. (@etianen).
-* Deprecated ``reversion.revision.get_for_date()`` in favor of ``get_for_object().filter(revision__date_created__lte=date)[:1].get()`` (@etianen).
-* Deprecated ``--no-confirmation`` argument to ``./manage.py deleterevisions`` in favour of the standard ``--no-input`` argument (@crccheck).
-* Deprecated ``eager_signals`` argument to ``reversion.register()``. It has been merged with ``signals`` (@etianen).
+* **Breaking:** Removed ``get_for_date()`` function, use ``get_for_object().filter(revision__date_created__lte=date)`` (@etianen).
+* **Breaking:** Removed ``get_unique_for_object()`` function, use ``get_for_object().get_unique()`` instead (@etianen).
+* **Breaking:** Removed ``eager_signals`` argument to register(), it has been merged with the ``signals`` argument (@etianen).
+* **Breaking:** Removed ``patch_admin`` function, use VersionAdmin as a mixin to 3rd party ModelAdmins instead (@etianen).
+* **Breaking:** Removed ``generate_diffs``, ``generate_patch`` and ``generate_patch_html`` functions (@etianen).
 * **Breaking:** The default ``model_db`` for ``get_deleted()`` was changed to the default database for the model (@etianen).
 * **Breaking:** Major overhaul of methods on ``VersionAdapter``, see docs (@etianen).
-* Major documentation overhaul (@etianen).
-* Major tests overhaul (@etianen).
+* Documentation refactor (@etianen).
+* Test refactor (@etianen).
 * Minor tweaks and bugfixes (@etianen, @bmarika, @ticosax).
 
 

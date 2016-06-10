@@ -1,7 +1,4 @@
-"""Revision management for django-reversion."""
-
 from __future__ import unicode_literals
-import warnings
 from contextlib import contextmanager
 from functools import wraps, partial
 from threading import local
@@ -540,17 +537,6 @@ class RevisionManager(object):
             raise RegistrationError("{model} has already been registered with django-reversion".format(
                 model=model,
             ))
-        # Deprecate eager_signals.
-        if eager_signals is not None:
-            warnings.warn(
-                (
-                    "`signals` and `eager_signals` have been merged into `signals`"
-                    "eager_signals will be ignored in django-reversion 1.12.0"
-                ),
-                DeprecationWarning
-            )
-            signals = tuple(field_overrides.get("signals", VersionAdapter.signals)) + tuple(eager_signals)
-            field_overrides["signals"] = signals
         # Perform any customization.
         adapter_cls = type(adapter_cls.__name__, (adapter_cls,), field_overrides)
         # Perform the registration.
@@ -611,32 +597,6 @@ class RevisionManager(object):
         The results are returned with the most recent versions first.
         """
         return self.get_for_object_reference(obj.__class__, obj.pk, db=db, model_db=model_db)
-
-    def get_unique_for_object(self, obj, db=None, model_db=None):
-        """
-        Returns unique versions associated with the object.
-
-        The results are returned with the most recent versions first.
-        """
-        warnings.warn(
-            (
-                "Use get_for_object().get_unique() instead of get_unique_for_object(). "
-                "get_unique_for_object() will be removed in django-reversion 1.12.0"
-            ),
-            DeprecationWarning
-        )
-        return list(self.get_for_object(obj, db=db, model_db=model_db).get_unique())
-
-    def get_for_date(self, obj, date, db=None, model_db=None):
-        """Returns the latest version of an object for the given date."""
-        warnings.warn(
-            (
-                "Use get_for_object().filter(revision__date_created__lte=date)[:1].get() instead "
-                "of get_for_date(). get_for_date() will be removed in django-reversion 1.12.0"
-            ),
-            DeprecationWarning
-        )
-        return self.get_for_object(obj, db=db, model_db=model_db).filter(revision__date_created__lte=date)[:1].get()
 
     def get_deleted(self, model, db=None, model_db=None):
         """
@@ -701,6 +661,4 @@ set_ignore_duplicates = revision_context_manager.set_ignore_duplicates
 get_for_model = default_revision_manager.get_for_model
 get_for_object_reference = default_revision_manager.get_for_object_reference
 get_for_object = default_revision_manager.get_for_object
-get_unique_for_object = default_revision_manager.get_unique_for_object
-get_for_date = default_revision_manager.get_for_date
 get_deleted = default_revision_manager.get_deleted
