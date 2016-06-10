@@ -18,6 +18,10 @@ else:
         RevisionManagementError,
         RegistrationError,
     )
+    from reversion.signals import (  # noqa
+        pre_revision_commit,
+        post_revision_commit,
+    )
     from reversion.revisions import (  # noqa
         VersionAdapter,
         RevisionManager,

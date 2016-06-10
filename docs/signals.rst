@@ -6,16 +6,16 @@ Signals
 django-reversion provides a number of custom signals.
 
 
-reversion.signals.pre_revision_commit
--------------------------------------
+reversion.pre_revision_commit
+-----------------------------
 
 Sent just before a revision is saved to the database.
 
 .. include:: /_include/signal-args.rst
 
 
-reversion.signals.post_revision_commit
---------------------------------------
+reversion.post_revision_commit
+------------------------------
 
 Sent just after a revision is saved to the database.
 
