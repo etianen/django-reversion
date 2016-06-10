@@ -22,8 +22,8 @@ class TestBase(TestCase):
         return call_command(command, *args, **kwargs)
 
     def assertSingleRevision(self, objects, user=None, comment="", meta_names=(), date_created=None,
-                             db=None, model_db=None):
-        revision = reversion.get_for_object(objects[0], db=db, model_db=model_db).get().revision
+                             using=None, model_db=None):
+        revision = reversion.get_for_object(objects[0], using=using, model_db=model_db).get().revision
         self.assertEqual(revision.user, user)
         self.assertEqual(revision.comment, comment)
         self.assertAlmostEqual(revision.date_created, date_created or timezone.now(), delta=timedelta(seconds=1))
@@ -34,10 +34,16 @@ class TestBase(TestCase):
         # Check objects.
         self.assertEqual(revision.version_set.count(), len(objects))
         for obj in objects:
-            self.assertTrue(reversion.get_for_object(obj, db=db, model_db=model_db).filter(revision=revision).exists())
+            self.assertTrue(reversion.get_for_object(
+                obj,
+                using=using,
+                model_db=model_db,
+            ).filter(
+                revision=revision,
+            ).exists())
 
-    def assertNoRevision(self, db=None):
-        self.assertEqual(Revision.objects.using(db).all().count(), 0)
+    def assertNoRevision(self, using=None):
+        self.assertEqual(Revision.objects.using(using).all().count(), 0)
 
 
 @override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])

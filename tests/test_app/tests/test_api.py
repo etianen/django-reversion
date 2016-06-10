@@ -28,16 +28,6 @@ class GetRegisteredModelsTest(TestBase):
         self.assertEqual(list(reversion.get_registered_models()), [TestModel])
 
 
-class GetAdapterTest(TestBase):
-
-    def testGetAdapter(self):
-        self.assertIsInstance(reversion.get_adapter(TestModel), reversion.VersionAdapter)
-
-    def testGetAdapterUnregistered(self):
-        with self.assertRaises(reversion.RegistrationError):
-            reversion.get_adapter(TestModelUnregistered)
-
-
 class RegisterTest(TestBase):
 
     def testRegister(self):
@@ -108,42 +98,11 @@ class CreateRevisionManageManuallyTest(TestBase):
 class CreateRevisionDbTest(TestBase):
 
     def testCreateRevisionMultiDb(self):
-        with reversion.create_revision(db="mysql"), reversion.create_revision(db="postgres"):
+        with reversion.create_revision(using="mysql"), reversion.create_revision(using="postgres"):
             obj = TestModel.objects.create()
         self.assertNoRevision()
-        self.assertSingleRevision((obj,), db="mysql")
-        self.assertSingleRevision((obj,), db="postgres")
-
-
-class SetIgnoreDuplicatesTest(TestBase):
-
-    def testSetIgnoreDuplicates(self):
-        with reversion.create_revision():
-            obj = TestModel.objects.create()
-        with reversion.create_revision():
-            obj.save()
-            reversion.set_ignore_duplicates(True)
-        self.assertSingleRevision((obj,))
-
-    def testSetIgnoreDuplicatesNoBlock(self):
-        with self.assertRaises(reversion.RevisionManagementError):
-            reversion.set_ignore_duplicates(True)
-
-
-class GetIgnoreDuplicatesTest(TestBase):
-
-    def testGetIgnoreDuplicates(self):
-        with reversion.create_revision():
-            reversion.set_ignore_duplicates(True)
-            self.assertEqual(reversion.get_ignore_duplicates(), True)
-
-    def testGetIgnoreDuplicatesDefault(self):
-        with reversion.create_revision():
-            self.assertEqual(reversion.get_ignore_duplicates(), False)
-
-    def testGetIgnoreDuplicatesNoBlock(self):
-        with self.assertRaises(reversion.RevisionManagementError):
-            reversion.get_ignore_duplicates()
+        self.assertSingleRevision((obj,), using="mysql")
+        self.assertSingleRevision((obj,), using="postgres")
 
 
 class SetCommentTest(TestBase):
@@ -248,12 +207,12 @@ class AddMetaTest(TestBase):
             reversion.add_meta(TestMeta, name="meta v1")
 
     def testAddMetaMultDb(self):
-        with reversion.create_revision(db="mysql"), reversion.create_revision(db="postgres"):
+        with reversion.create_revision(using="mysql"), reversion.create_revision(using="postgres"):
             obj = TestModel.objects.create()
             reversion.add_meta(TestMeta, name="meta v1")
         self.assertNoRevision()
-        self.assertSingleRevision((obj,), meta_names=("meta v1",), db="mysql")
-        self.assertSingleRevision((obj,), meta_names=("meta v1",), db="postgres")
+        self.assertSingleRevision((obj,), meta_names=("meta v1",), using="mysql")
+        self.assertSingleRevision((obj,), meta_names=("meta v1",), using="postgres")
 
 
 class GetForObjectTest(TestBase):
@@ -288,10 +247,10 @@ class GetForObjectTest(TestBase):
 class GetForObjectDbTest(TestBase):
 
     def testGetForObjectDb(self):
-        with reversion.create_revision(db="postgres"):
+        with reversion.create_revision(using="postgres"):
             obj = TestModel.objects.create()
         self.assertEqual(reversion.get_for_object(obj).count(), 0)
-        self.assertEqual(reversion.get_for_object(obj, db="postgres").count(), 1)
+        self.assertEqual(reversion.get_for_object(obj, using="postgres").count(), 1)
 
 
 class GetForObjectModelDbTest(TestBase):
@@ -335,10 +294,10 @@ class GetForObjectReferenceTest(TestBase):
 class GetForObjectReferenceDbTest(TestBase):
 
     def testGetForObjectReferenceModelDb(self):
-        with reversion.create_revision(db="postgres"):
+        with reversion.create_revision(using="postgres"):
             obj = TestModel.objects.create()
         self.assertEqual(reversion.get_for_object_reference(TestModel, obj.pk).count(), 0)
-        self.assertEqual(reversion.get_for_object_reference(TestModel, obj.pk, db="postgres").count(), 1)
+        self.assertEqual(reversion.get_for_object_reference(TestModel, obj.pk, using="postgres").count(), 1)
 
 
 class GetForObjectReferenceModelDbTest(TestBase):
@@ -379,11 +338,11 @@ class GetDeletedTest(TestBase):
 class GetDeletedDbTest(TestBase):
 
     def testGetDeletedDb(self):
-        with reversion.create_revision(db="postgres"):
+        with reversion.create_revision(using="postgres"):
             obj = TestModel.objects.create()
         obj.delete()
         self.assertEqual(reversion.get_deleted(TestModel).count(), 0)
-        self.assertEqual(reversion.get_deleted(TestModel, db="postgres").count(), 1)
+        self.assertEqual(reversion.get_deleted(TestModel, using="postgres").count(), 1)
 
 
 class GetDeletedModelDbTest(TestBase):

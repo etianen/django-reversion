@@ -183,7 +183,6 @@ class Version(models.Model):
 
     @cached_property
     def object_version(self):
-        """The stored version of the model."""
         data = self.serialized_data
         data = force_text(data.encode("utf8"))
         try:
@@ -241,12 +240,9 @@ class Version(models.Model):
         return result
 
     def revert(self):
-        """Recovers the model in this version."""
-        content_type = ContentType.objects.db_manager(self._state.db).get_for_id(self.content_type_id)
-        self.revision.revision_manager.get_adapter(content_type.model_class()).revert(self)
+        self.object_version.save(using=self.db)
 
     def __str__(self):
-        """Returns a unicode representation."""
         return self.object_repr
 
     class Meta:
@@ -272,7 +268,7 @@ class Str(models.Func):
 
 
 @models.Field.register_lookup
-class ReversionSubqueryLookup(models.Lookup):
+class _ReversionSubqueryLookup(models.Lookup):
 
     """
     Performs a subquery using an SQL `IN` clause, selecting the bast strategy
@@ -286,7 +282,7 @@ class ReversionSubqueryLookup(models.Lookup):
     def __init__(self, lhs, rhs):
         rhs, self.rhs_field_name = rhs
         rhs = rhs.values_list(self.rhs_field_name, flat=True)
-        super(ReversionSubqueryLookup, self).__init__(lhs, rhs)
+        super(_ReversionSubqueryLookup, self).__init__(lhs, rhs)
         # Introspect the lhs and rhs, so we can fail early if it's unexpected.
         self.lhs_field = self.lhs.output_field
         self.rhs_field = self.rhs.model._meta.get_field(self.rhs_field_name)
@@ -298,7 +294,7 @@ class ReversionSubqueryLookup(models.Lookup):
 
         This will work in all databases, but can use a lot of memory.
         """
-        return compiler.compile(In(self.lhs, list(self.rhs.iterator())))
+        return compiler.compile(In(self.lhs, list(self.rhs.order_by().iterator())))
 
     def _as_in_database_sql(self, compiler, connection):
         """
@@ -308,7 +304,7 @@ class ReversionSubqueryLookup(models.Lookup):
         This will only work if the `Str` function supports the database.
         """
         lhs = self.lhs
-        rhs = self.rhs
+        rhs = self.rhs.order_by()
         # If the connections don't match, run as in-memory query.
         if connection.alias != rhs.db:
             return self._as_in_memory_sql(compiler, connection)

@@ -1,11 +1,15 @@
 import sys
-from reversion.revisions import revision_context_manager
+from reversion.revisions import create_revision as create_revision_base
 from reversion.views import _request_creates_revision, _set_user_from_request, create_revision
 
 
 class RevisionMiddleware(object):
 
     """Wraps the entire request in a revision."""
+
+    manage_manually = False
+
+    using = None
 
     def __init__(self, get_response=None):
         super(RevisionMiddleware, self).__init__()
@@ -14,9 +18,9 @@ class RevisionMiddleware(object):
 
     def process_request(self, request):
         if _request_creates_revision(request):
-            context = revision_context_manager.create_revision()
+            context = create_revision_base(manage_manually=self.manage_manually, using=self.using)
             context.__enter__()
-            _set_user_from_request(request, revision_context_manager)
+            _set_user_from_request(request)
             if not hasattr(request, "_revision_middleware"):
                 setattr(request, "_revision_middleware", {})
             request._revision_middleware[self] = context

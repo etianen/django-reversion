@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 from django.db import reset_queries, transaction, router
 from reversion.models import Revision
 from reversion.management.commands import BaseRevisionCommand
+from reversion.revisions import create_revision, set_comment, _add_to_revision
 
 
 class Command(BaseRevisionCommand):
@@ -25,14 +26,14 @@ class Command(BaseRevisionCommand):
 
     def handle(self, *app_labels, **options):
         verbosity = options["verbosity"]
-        db = options["db"]
+        using = options["using"]
         model_db = options["model_db"]
         comment = options["comment"]
         batch_size = options["batch_size"]
         # Create revisions.
-        db = router.db_for_write(Revision) if db is None else db
-        with transaction.atomic(using=db):
-            for revision_manager, model in self.get_managers_and_models(options):
+        using = using or router.db_for_write(Revision)
+        with transaction.atomic(using=using):
+            for model, revision_manager in self.get_models_and_managers(options):
                 # Check all models for empty revisions.
                 if verbosity >= 1:
                     self.stdout.write("Creating revisions for {name} using {manager} manager".format(
@@ -43,7 +44,7 @@ class Command(BaseRevisionCommand):
                 live_objs = model._default_manager.using(model_db).exclude(
                     pk__reversion_in=(revision_manager.get_for_model(
                         model,
-                        db=db,
+                        using=using,
                         model_db=model_db,
                     ), "object_id"),
                 )
@@ -54,9 +55,9 @@ class Command(BaseRevisionCommand):
                     chunked_ids = ids[i:i+batch_size]
                     objects = live_objs.in_bulk(chunked_ids)
                     for obj in objects.values():
-                        with revision_manager._revision_context_manager.create_revision(db=db):
-                            revision_manager._revision_context_manager.set_comment(comment)
-                            revision_manager.add_to_revision(obj, model_db=model_db)
+                        with create_revision(using=using):
+                            set_comment(comment)
+                            _add_to_revision(revision_manager, obj, using, model_db, True)
                         created_count += 1
                     reset_queries()
                     if verbosity >= 2:

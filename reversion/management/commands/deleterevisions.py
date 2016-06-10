@@ -27,21 +27,21 @@ class Command(BaseRevisionCommand):
 
     def handle(self, *app_labels, **options):
         verbosity = options["verbosity"]
-        db = options["db"]
+        using = options["using"]
         model_db = options["model_db"]
         days = options["days"]
         keep = options["keep"]
         # Delete revisions.
-        db = router.db_for_write(Revision) if db is None else db
-        with transaction.atomic(using=db):
+        using = using or router.db_for_write(Revision)
+        with transaction.atomic(using=using):
             revision_query = models.Q()
             keep_revision_ids = set()
             # By default, delete nothing.
             can_delete = False
             # Get all revisions for the given revision manager and model.
-            for revision_manager, model in self.get_managers_and_models(options):
+            for model, revision_manager in self.get_models_and_managers(options):
                 if verbosity >= 1:
-                    self.stdout.write("Finding old revisions for {name} using {manager} manager".format(
+                    self.stdout.write("Finding stale revisions for {name} using {manager} manager".format(
                         name=model._meta.verbose_name,
                         manager=revision_manager._manager_slug
                     ))
@@ -50,41 +50,41 @@ class Command(BaseRevisionCommand):
                 revision_query |= models.Q(
                     pk__reversion_in=(revision_manager.get_for_model(
                         model,
-                        db=db,
+                        using=using,
                         model_db=model_db,
                     ), "revision_id"),
                 )
                 if keep:
                     overflow_object_ids = revision_manager.get_for_model(
                         model,
-                        db=db,
+                        using=using,
                         model_db=model_db,
-                    ).values_list("object_id").annotate(
+                    ).order_by().values_list("object_id").annotate(
                         count=models.Count("object_id"),
                     ).filter(
                         count__gt=keep,
                     ).values_list("object_id", flat=True)
                     for object_id in overflow_object_ids.iterator():
                         if verbosity >= 2:
-                            self.stdout.write("- Finding old revisions for {name} #{object_id}".format(
+                            self.stdout.write("- Finding stale revisions for {name} #{object_id}".format(
                                 name=model._meta.verbose_name,
                                 object_id=object_id,
                             ))
                         keep_revision_ids.update(revision_manager.get_for_object_reference(
                             model,
                             object_id,
-                            db=db,
+                            using=using,
                             model_db=model_db,
                         ).values_list("revision_id", flat=True)[:keep].iterator())
             if can_delete:
-                revisions_to_delete = Revision.objects.using(db).filter(
+                revisions_to_delete = Revision.objects.using(using).filter(
                     revision_query,
                     date_created__lt=timezone.now() - timedelta(days=days),
                 ).exclude(
                     pk__in=keep_revision_ids
                 )
             else:
-                revisions_to_delete = Revision.objects.using(db).none()
+                revisions_to_delete = Revision.objects.using(using).none()
             # Print out a message, if feeling verbose.
             if verbosity >= 1:
                 self.stdout.write("Deleting {total} revisions...".format(

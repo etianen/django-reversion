@@ -54,9 +54,9 @@ class CreateInitialRevisionsDbTest(TestBase):
 
     def testCreateInitialRevisionsDb(self):
         obj = TestModel.objects.create()
-        self.callCommand("createinitialrevisions", db="postgres")
+        self.callCommand("createinitialrevisions", using="postgres")
         self.assertNoRevision()
-        self.assertSingleRevision((obj,), comment="Initial version.", db="postgres")
+        self.assertSingleRevision((obj,), comment="Initial version.", using="postgres")
 
 
 class CreateInitialRevisionsModelDbTest(TestBase):
@@ -120,15 +120,15 @@ class DeleteRevisionsAppLabelTest(TestBase):
 class DeleteRevisionsDbTest(TestBase):
 
     def testDeleteRevisionsDb(self):
-        with reversion.create_revision(db="postgres"):
+        with reversion.create_revision(using="postgres"):
             TestModel.objects.create()
-        self.callCommand("deleterevisions", db="postgres")
-        self.assertNoRevision(db="postgres")
+        self.callCommand("deleterevisions", using="postgres")
+        self.assertNoRevision(using="postgres")
 
     def testDeleteRevisionsDbNoMatch(self):
         with reversion.create_revision():
             obj = TestModel.objects.create()
-        self.callCommand("deleterevisions", db="postgres")
+        self.callCommand("deleterevisions", using="postgres")
         self.assertSingleRevision((obj,))
 
 
@@ -138,7 +138,7 @@ class DeleteRevisionsModelDbTest(TestBase):
         with reversion.create_revision():
             TestModel.objects.db_manager("postgres").create()
         self.callCommand("deleterevisions", model_db="postgres")
-        self.assertNoRevision(db="postgres")
+        self.assertNoRevision(using="postgres")
 
 
 class DeleteRevisionsDaysTest(TestBase):

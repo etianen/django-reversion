@@ -43,6 +43,7 @@ Low-level API
 * Restored all of the django-reversion API methods back to the top-level namespace, effectively undoing most of the breaking changes introduced with 1.10 (@etianen).
 * Revision blocks are now automatically wrapped in ``transaction.atomic()`` (@etianen).
 * Added ``get_for_model()`` function (@etianen).
+* **Breaking:** Removed ``get_ignore_duplicates`` and ``set_ignore_duplicates``, ``ignore_duplicates`` is now set on ``register()`` (@etianen).
 * **Breaking:** Removed ``get_for_date()`` function, use ``get_for_object().filter(revision__date_created__lte=date)`` (@etianen).
 * **Breaking:** Removed ``get_unique_for_object()`` function, use ``get_for_object().get_unique()`` instead (@etianen).
 * **Breaking:** Removed ``eager_signals`` argument to register(), it has been merged with the ``signals`` argument (@etianen).

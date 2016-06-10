@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 from django.apps import apps
 from django.contrib import admin
 from django.core.management.base import BaseCommand, CommandError
-from reversion.revisions import RevisionManager
+from reversion.revisions import _revision_managers
 
 
 class BaseRevisionCommand(BaseCommand):
@@ -16,7 +16,7 @@ class BaseRevisionCommand(BaseCommand):
             help="Optional app_label or app_label.model_name list.",
         )
         parser.add_argument(
-            "--db",
+            "--using",
             default=None,
             help="The database to query for revision data.",
         )
@@ -26,7 +26,7 @@ class BaseRevisionCommand(BaseCommand):
             help="The database to query for model data.",
         )
 
-    def get_managers_and_models(self, options):
+    def get_models_and_managers(self, options):
         # Load admin classes.
         admin.autodiscover()
         # Get options.
@@ -43,11 +43,11 @@ class BaseRevisionCommand(BaseCommand):
                     try:
                         app = apps.get_app_config(app_label)
                     except LookupError:
-                        raise CommandError("Unknown app: %s" % app_label)
+                        raise CommandError("Unknown app: {}".format(app_label))
                     try:
                         model = app.get_model(model_label)
                     except LookupError:
-                        raise CommandError("Unknown model: %s.%s" % (app_label, model_label))
+                        raise CommandError("Unknown model: {}.{}".format(app_label, model_label))
                     selected_models.add(model)
                 else:
                     # This is just an app - no model qualifier.
@@ -55,9 +55,9 @@ class BaseRevisionCommand(BaseCommand):
                     try:
                         app = apps.get_app_config(app_label)
                     except LookupError:
-                        raise CommandError("Unknown app: %s" % app_label)
+                        raise CommandError("Unknown app: {}".format(app_label))
                     selected_models.update(app.get_models())
-        for selected_model in selected_models:
-            for revision_manager in RevisionManager.get_created_managers():
-                if revision_manager.is_registered(selected_model):
-                    yield revision_manager, selected_model
+        for model in selected_models:
+            for revision_manager in _revision_managers.values():
+                if revision_manager.is_registered(model):
+                    yield model, revision_manager

@@ -19,22 +19,9 @@ else:
         RegistrationError,
     )
     from reversion.revisions import (  # noqa
-        VersionAdapter,
-        RevisionManager,
-        # Singletons.
-        revision_context_manager,
-        default_revision_manager,
-        # Easy registration methods.
-        register,
-        is_registered,
-        unregister,
-        get_registered_models,
-        get_adapter,
-        # Manual revision saving.
-        add_to_revision,
-        # Context management.
-        create_revision,
-        # Revision meta data.
+        # Revision context manager.
+        is_active,
+        is_manage_manually,
         get_user,
         set_user,
         get_comment,
@@ -42,13 +29,20 @@ else:
         get_date_created,
         set_date_created,
         add_meta,
-        get_ignore_duplicates,
-        set_ignore_duplicates,
-        # Low level API.
+        add_to_revision,
+        create_revision,
+        # Revision manager.
+        RevisionManager,
+        default_revision_manager,
+        register,
+        is_registered,
+        unregister,
+        get_registered_models,
         get_for_model,
         get_for_object_reference,
         get_for_object,
         get_deleted,
+
     )
 
 __version__ = VERSION = (1, 10, 3)
