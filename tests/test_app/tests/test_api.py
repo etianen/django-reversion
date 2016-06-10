@@ -1,3 +1,5 @@
+from datetime import timedelta
+from django.utils import timezone
 from django.utils.encoding import force_text
 import reversion
 from test_app.models import TestModel, TestModelUnregistered, TestMeta
@@ -200,6 +202,37 @@ class GetUserTest(UserTestBase):
     def testGetUserNoBlock(self):
         with self.assertRaises(reversion.RevisionManagementError):
             reversion.get_user()
+
+
+class SetDateCreatedTest(TestBase):
+
+    def testSetDateCreated(self):
+        date_created = timezone.now() - timedelta(days=20)
+        with reversion.create_revision():
+            reversion.set_date_created(date_created)
+            obj = TestModel.objects.create()
+        self.assertSingleRevision((obj,), date_created=date_created)
+
+    def testDateCreatedNoBlock(self):
+        with self.assertRaises(reversion.RevisionManagementError):
+            reversion.set_date_created(timezone.now())
+
+
+class GetDateCreatedTest(TestBase):
+
+    def testGetDateCreated(self):
+        date_created = timezone.now() - timedelta(days=20)
+        with reversion.create_revision():
+            reversion.set_date_created(date_created)
+            self.assertEqual(reversion.get_date_created(), date_created)
+
+    def testGetDateCreatedDefault(self):
+        with reversion.create_revision():
+            self.assertAlmostEqual(reversion.get_date_created(), timezone.now(), delta=timedelta(seconds=1))
+
+    def testGetDateCreatedNoBlock(self):
+        with self.assertRaises(reversion.RevisionManagementError):
+            reversion.get_date_created()
 
 
 class AddMetaTest(TestBase):

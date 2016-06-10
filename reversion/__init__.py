@@ -43,6 +43,8 @@ else:
         set_user,
         get_comment,
         set_comment,
+        get_date_created,
+        set_date_created,
         add_meta,
         get_ignore_duplicates,
         set_ignore_duplicates,
