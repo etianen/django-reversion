@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 from django.db import reset_queries, transaction
-from django.utils.encoding import force_text
 from reversion.revisions import RevisionManager
 from reversion.management.commands import BaseRevisionCommand
 
@@ -40,7 +39,7 @@ class Command(BaseRevisionCommand):
                         continue
                     # Check all models for empty revisions.
                     if verbosity >= 1:
-                        self.stdout.write("Creating initial revision(s) for model {name} in {manager}...".format(
+                        self.stdout.write("Creating revisions for model {name} in {manager}...".format(
                             name=model_class._meta.verbose_name,
                             manager=revision_manager._manager_slug
                         ))
@@ -65,10 +64,12 @@ class Command(BaseRevisionCommand):
                             created_count += 1
                         reset_queries()
                         if verbosity >= 2:
-                            self.stdout.write("Created %s of %s" % (created_count, total))
+                            self.stdout.write("- Created {created_count} of {total} revisions".format(
+                                created_count=created_count,
+                                total=total,
+                            ))
                     # Print out a message, if feeling verbose.
                     if verbosity >= 1:
-                        self.stdout.write("Created %s initial revision(s) for model %s" % (
-                            created_count,
-                            force_text(model_class._meta.verbose_name),
+                        self.stdout.write("- Created {total} revision".format(
+                            total=total,
                         ))
