@@ -15,7 +15,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _, ugettext
 from django.utils.encoding import force_text, python_2_unicode_compatible
 from reversion.errors import RevertError
-from reversion.revisions import _get_model_db, _get_content_type
+from reversion.revisions import _get_options, _get_model_db, _get_content_type
 
 
 def _safe_revert(versions):
@@ -73,11 +73,7 @@ class Revision(models.Model):
                     # Get a set of all objects in this revision.
                     old_revision = set()
                     for version in versions:
-                        # Load the content type from the same DB as the Version, since it logically has to be in the
-                        # same DB for the foreign key to work.
-                        content_type = (ContentType.objects.db_manager(version._state.db)
-                                        .get_for_id(version.content_type_id))
-                        model_cls = content_type.model_class()
+                        model_cls = version._model
                         try:
                             # Load the model instance from the same DB as it was saved under.
                             old_revision.add(model_cls._default_manager.using(version.db).get(pk=version.object_id))
@@ -162,6 +158,14 @@ class Version(models.Model):
         help_text="Content type of the model under version control.",
     )
 
+    @property
+    def _content_type(self):
+        return ContentType.objects.db_manager(self._state.db).get_for_id(self.content_type_id)
+
+    @property
+    def _model(self):
+        return self._content_type.model_class()
+
     # A link to the current instance, not the version stored in this Version!
     object = GenericForeignKey(
         ct_field="content_type",
@@ -187,7 +191,7 @@ class Version(models.Model):
     )
 
     @cached_property
-    def object_version(self):
+    def _object_version(self):
         data = self.serialized_data
         data = force_text(data.encode("utf8"))
         try:
@@ -210,15 +214,13 @@ class Version(models.Model):
 
         Parent links of inherited multi-table models will not be followed.
         """
-        object_version = self.object_version
+        version_options = _get_options(self._model)
+        object_version = self._object_version
         obj = object_version.object
-        result = {}
-        for field in obj._meta.get_fields():
-            if not field.concrete:
-                continue
-            result[field.name] = field.value_from_object(obj)
-        result.update(object_version.m2m_data)
-        return result
+        field_dict = {}
+        for field_name in version_options.fields:
+            field_dict[field_name] = object_version.m2m_data.get(field_name, getattr(obj, field_name))
+        return field_dict
 
     @cached_property
     def field_dict(self):
@@ -228,9 +230,9 @@ class Version(models.Model):
 
         This method will follow parent links, if present.
         """
-        object_version = self.object_version
+        object_version = self._object_version
         obj = object_version.object
-        result = self._local_field_dict
+        field_dict = self._local_field_dict
         # Add parent data.
         for parent_class, field in obj._meta.concrete_model._meta.parents.items():
             adapter = self.revision.revision_manager.get_adapter(parent_class)
@@ -241,11 +243,11 @@ class Version(models.Model):
                 object_id=parent_id,
                 db=self.db,
             )
-            result.update(parent_version.field_dict)
-        return result
+            field_dict.update(parent_version.field_dict)
+        return field_dict
 
     def revert(self):
-        self.object_version.save(using=self.db)
+        self._object_version.save(using=self.db)
 
     def __str__(self):
         return self.object_repr
