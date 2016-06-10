@@ -59,17 +59,9 @@ class Command(BaseRevisionCommand):
                         chunked_ids = ids[i:i+batch_size]
                         objects = live_objs.in_bulk(chunked_ids)
                         for obj in objects.values():
-                            try:
-                                with revision_manager._revision_context_manager.create_revision(db=db):
-                                    revision_manager._revision_context_manager.set_comment(comment)
-                                    revision_manager.add_to_revision(obj, model_db=model_db)
-                            except:
-                                if verbosity >= 1:
-                                    self.stderr.write("ERROR: Could not save initial version for %s %s" % (
-                                        model_class.__name__,
-                                        obj.pk,
-                                    ))
-                                raise
+                            with revision_manager._revision_context_manager.create_revision(db=db):
+                                revision_manager._revision_context_manager.set_comment(comment)
+                                revision_manager.add_to_revision(obj, model_db=model_db)
                             created_count += 1
                         reset_queries()
                         if verbosity >= 2:

@@ -1,5 +1,7 @@
 from datetime import timedelta
+from io import StringIO
 from django.contrib.auth.models import User
+from django.core.management import call_command
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.utils import timezone
@@ -13,7 +15,14 @@ class TestBase(TestCase):
 
     multi_db = True
 
-    def assertSingleRevision(self, objects, user=None, comment="", meta_names=(), date_created=None, db=None):
+    def callCommand(self, command, *args, **kwargs):
+        kwargs.setdefault("stdout", StringIO())
+        kwargs.setdefault("stderr", StringIO())
+        kwargs.setdefault("verbosity", 2)
+        return call_command(command, *args, **kwargs)
+
+    def assertSingleRevision(self, objects, user=None, comment="", meta_names=(), date_created=None,
+                             db=None, model_db=None):
         revision = Revision.objects.using(db).get()
         self.assertEqual(revision.user, user)
         self.assertEqual(revision.comment, comment)
@@ -25,7 +34,7 @@ class TestBase(TestCase):
         # Check objects.
         self.assertEqual(revision.version_set.count(), len(objects))
         for obj in objects:
-            self.assertTrue(reversion.get_for_object(obj, db=db).filter(revision=revision).exists())
+            self.assertTrue(reversion.get_for_object(obj, db=db, model_db=model_db).filter(revision=revision).exists())
 
     def assertNoRevision(self, db=None):
         self.assertEqual(Revision.objects.using(db).all().count(), 0)
