@@ -299,6 +299,25 @@ Returns the comment for the current revision.
 Throws :ref:`RevisionManagementError` if there is no active revision block.
 
 
+reversion.set_date_created(date_created)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sets the creation date for the current revision.
+
+Throws :ref:`RevisionManagementError` if there is no active revision block.
+
+``date_created``
+    The creation date for the revision.
+
+
+reversion.get_date_created()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Returns the creation date for the current revision.
+
+Throws :ref:`RevisionManagementError` if there is no active revision block.
+
+
 reversion.add_meta(model, \*\*values)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
