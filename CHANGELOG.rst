@@ -13,6 +13,8 @@ django-reversion changelog
 * Dramatically improved performance of version lookup for models with a non-integer primary key (@etianen, @mshannon1123).
 * Added ``get_for_model()`` function (@etianen).
 * Added support for using ``RevisionMiddleware`` with new-style Django 1.10 ``MIDDLEWARE`` (@etianen).
+* **Breaking:** Refactored arguments to ``createinitialrevisions``, check the command ``--help`` for details (@etianen).
+* **Breaking:** Refactored arguments to ``deleterevisions``, check the command ``--help`` for details (@etianen).
 * **Breaking:** Removed ``pre_revision_commit`` and ``post_revision_commit`` signals, use ``pre_save`` and ``post_save`` signals for ``Revision`` instead (@etianen).
 * **Breaking:** Removed ``get_for_date()`` function, use ``get_for_object().filter(revision__date_created__lte=date)`` (@etianen).
 * **Breaking:** Removed ``get_unique_for_object()`` function, use ``get_for_object().get_unique()`` instead (@etianen).
