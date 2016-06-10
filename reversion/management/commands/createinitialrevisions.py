@@ -56,10 +56,7 @@ class Command(BaseRevisionCommand):
                     objects = live_objs.in_bulk(chunked_ids)
                     for obj in objects.values():
                         try:
-                            with revision_manager._revision_context_manager.create_revision(
-                                db=db,
-                                manage_manually=True,
-                            ):
+                            with revision_manager._revision_context_manager.create_revision(db=db):
                                 revision_manager._revision_context_manager.set_comment(comment)
                                 revision_manager.add_to_revision(obj, model_db=model_db)
                         except:
