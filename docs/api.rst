@@ -440,11 +440,6 @@ Contains metadata about a revision, and groups together all :ref:`Version` insta
     The database primary key of the :ref:`Revision`.
 
 
-``Revision.revision_manager``
-
-    The :ref:`RevisionManager` used to save the revision.
-
-
 ``Revision.date_created``
 
     A ``datetime`` when the revision was created.

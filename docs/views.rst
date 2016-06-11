@@ -9,14 +9,11 @@ Shortcuts when using django-reversion in views.
 Decorators
 ----------
 
-``reversion.views.create_revision(revision_manager=reversion.default_revision_manager)``
+``reversion.views.create_revision(manage_manually=False, using=None)``
 
     Decorates a view to wrap the every request that isn't ``GET``, ``HEAD`` or ``OPTIONS`` in a revision block.
 
     The request user will also be added to the revision metadata.
-
-    ``revision_manager``
-        The :ref:`RevisionManager` used to manage revisions.
 
     .. include:: /_include/create-revision-args.rst
 
