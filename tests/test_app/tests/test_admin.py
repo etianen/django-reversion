@@ -53,9 +53,10 @@ class AdminUpdateViewTest(AdminTestBase):
 
 class AdminChangelistView(AdminTestBase):
 
-    def testChangeView(self):
-        # Simply test that the view renders without error.
-        self.client.get(resolve_url("admin:test_app_testmodelparent_changelist"))
+    def testChangelistView(self):
+        obj = TestModelParent.objects.create()
+        response = self.client.get(resolve_url("admin:test_app_testmodelparent_changelist"))
+        self.assertContains(response, resolve_url("admin:test_app_testmodelparent_change", obj.pk))
 
 
 class AdminRevisionViewTest(AdminTestBase):
@@ -87,6 +88,15 @@ class AdminRevisionViewTest(AdminTestBase):
         self.assertContains(response, 'value="v2"')
         self.assertContains(response, 'value="parent v2"')
 
+    def testRevisionViewRevertError(self):
+        Version.objects.get_for_object(self.obj).update(format="boom")
+        response = self.client.get(resolve_url(
+            "admin:test_app_testmodelparent_revision",
+            self.obj.pk,
+            Version.objects.get_for_object(self.obj)[1].pk,
+        ))
+        self.assertEqual(response["Location"], resolve_url("admin:test_app_testmodelparent_changelist"))
+
     def testRevisionViewRevert(self):
         self.client.post(resolve_url(
             "admin:test_app_testmodelparent_revision",
@@ -107,7 +117,6 @@ class AdminRecoverViewTest(AdminTestBase):
         super(AdminRecoverViewTest, self).setUp()
         with reversion.create_revision():
             obj = TestModelParent.objects.create()
-        self.obj_pk = obj.pk
         obj.delete()
 
     def testRecoverView(self):
@@ -126,6 +135,32 @@ class AdminRecoverViewTest(AdminTestBase):
             "name": "v1",
             "parent_name": "parent v1",
         })
-        obj = TestModelParent.objects.get(pk=self.obj_pk)
+        obj = TestModelParent.objects.get()
         self.assertEqual(obj.name, "v1")
         self.assertEqual(obj.parent_name, "parent v1")
+
+
+class AdminRecoverlistViewTest(AdminTestBase):
+
+    def testRecoverlistView(self):
+        with reversion.create_revision():
+            obj = TestModelParent.objects.create()
+        obj.delete()
+        response = self.client.get(resolve_url("admin:test_app_testmodelparent_recoverlist"))
+        self.assertContains(response, resolve_url(
+            "admin:test_app_testmodelparent_recover",
+            Version.objects.get_for_model(TestModelParent).get().pk,
+        ))
+
+
+class AdminHistoryViewTest(AdminTestBase):
+
+    def testHistorylistView(self):
+        with reversion.create_revision():
+            obj = TestModelParent.objects.create()
+        response = self.client.get(resolve_url("admin:test_app_testmodelparent_history", obj.pk))
+        self.assertContains(response, resolve_url(
+            "admin:test_app_testmodelparent_revision",
+            obj.pk,
+            Version.objects.get_for_model(TestModelParent).get().pk,
+        ))

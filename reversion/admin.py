@@ -239,17 +239,12 @@ class VersionAdmin(admin.ModelAdmin):
             raise PermissionDenied
         model = self.model
         opts = model._meta
-        deleted = self._reversion_order_version_queryset(self.revision_manager.get_deleted(self.model))
-        # Get the site context.
-        try:
-            each_context = self.admin_site.each_context(request)
-        except TypeError:  # Django <= 1.7
-            each_context = self.admin_site.each_context()
+        deleted = self._reversion_order_version_queryset(Version.objects.get_deleted(self.model))
         # Set the app name.
         request.current_app = self.admin_site.name
         # Get the rest of the context.
         context = dict(
-            each_context,
+            self.admin_site.each_context(request),
             opts=opts,
             app_label=opts.app_label,
             module_name=capfirst(opts.verbose_name),
@@ -279,7 +274,7 @@ class VersionAdmin(admin.ModelAdmin):
                 ),
             }
             for version
-            in self._reversion_order_version_queryset(self.revision_manager.get_for_object_reference(
+            in self._reversion_order_version_queryset(Version.objects.get_for_object_reference(
                 self.model,
                 object_id,
             ).select_related("revision__user"))
