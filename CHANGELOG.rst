@@ -10,7 +10,7 @@ django-reversion was first released in May 2008, and has been in active developm
 
 This release substantially cleans and refactors the codebase. Much of the top-level functionality remains unchanged or is very similar. The release notes are divided into subsections to make it easier to find out where you need to update your code.
 
-Where functionality has been removed, it was either broken or
+This release includes a migration for the ``Version`` model that may take some time to complete.
 
 
 General improvements
