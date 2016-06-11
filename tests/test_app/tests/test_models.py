@@ -267,6 +267,20 @@ class RevertTest(TestBase):
         obj.refresh_from_db()
         self.assertEqual(obj.name, "v1")
 
+    def testRevertBadSerializedData(self):
+        with reversion.create_revision():
+            obj = TestModel.objects.create()
+        Version.objects.get_for_object(obj).update(serialized_data="boom")
+        with self.assertRaises(reversion.RevertError):
+            Version.objects.get_for_object(obj).get().revert()
+
+    def testRevertBadFormat(self):
+        with reversion.create_revision():
+            obj = TestModel.objects.create()
+        Version.objects.get_for_object(obj).update(format="boom")
+        with self.assertRaises(reversion.RevertError):
+            Version.objects.get_for_object(obj).get().revert()
+
 
 class RevisionRevertTest(TestBase):
 
@@ -288,15 +302,6 @@ class RevisionRevertTest(TestBase):
         self.assertEqual(obj_1.name, "obj_1 v1")
         obj_2.refresh_from_db()
         self.assertEqual(obj_2.name, "obj_2 v1")
-
-    def testRevertIntegrityError(self):
-        reversion.unregister(TestModelParent)
-        reversion.register(TestModelParent)
-        with reversion.create_revision():
-            obj = TestModelParent.objects.create()
-        obj.delete()
-        with self.assertRaises(reversion.RevertError):
-            Version.objects.get_for_object(obj).revision.revert()
 
 
 class RevisionRevertDeleteTest(TestBase):

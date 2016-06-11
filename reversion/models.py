@@ -8,6 +8,7 @@ except ImportError:  # Django < 1.9 pragma: no cover
     from django.contrib.contenttypes.generic import GenericForeignKey
 from django.conf import settings
 from django.core import serializers
+from django.core.serializers.base import DeserializationError
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, IntegrityError, transaction, router, connections
 from django.utils.functional import cached_property
@@ -201,7 +202,7 @@ class Version(models.Model):
         data = force_text(data.encode("utf8"))
         try:
             return list(serializers.deserialize(self.format, data, ignorenonexistent=True))[0]
-        except serializers.DeserializationError:
+        except DeserializationError:
             raise RevertError(ugettext("Could not load %(object_repr)s version - incompatible version data.") % {
                 "object_repr": self.object_repr,
             })
