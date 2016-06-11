@@ -266,3 +266,25 @@ class RevertTest(TestBase):
         Version.objects.get_for_object(obj)[1].revert()
         obj.refresh_from_db()
         self.assertEqual(obj.name, "v1")
+
+
+class RevisionRevertTest(TestBase):
+
+    def testRevert(self):
+        with reversion.create_revision():
+            obj_1 = TestModel.objects.create(
+                name="obj_1 v1"
+            )
+            obj_2 = TestModel.objects.create(
+                name="obj_2 v1"
+            )
+        with reversion.create_revision():
+            obj_1.name = "obj_1 v2"
+            obj_1.save()
+            obj_2.name = "obj_2 v2"
+            obj_2.save()
+        Version.objects.get_for_object(obj_1)[1].revision.revert()
+        obj_1.refresh_from_db()
+        self.assertEqual(obj_1.name, "obj_1 v1")
+        obj_2.refresh_from_db()
+        self.assertEqual(obj_2.name, "obj_2 v1")
