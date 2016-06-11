@@ -29,8 +29,7 @@ Upgrading
 ---------
 
 If you're upgrading your existing installation of django-reversion, please check
-the `Changelog <https://github.com/etianen/django-reversion/blob/master/CHANGELOG.rst>`_
-documentation for information.
+the `Changelog <https://github.com/etianen/django-reversion/blob/master/CHANGELOG.rst>`_.
 
 
 Contributing
