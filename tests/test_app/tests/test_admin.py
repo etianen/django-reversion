@@ -51,6 +51,13 @@ class AdminUpdateViewTest(AdminTestBase):
         self.assertSingleRevision((obj, obj.testmodel_ptr), user=self.user, comment="Changed name and parent_name.")
 
 
+class AdminChangelistView(AdminTestBase):
+
+    def testChangeView(self):
+        # Simply test that the view renders without error.
+        self.client.get(resolve_url("admin:test_app_testmodelparent_changelist"))
+
+
 class AdminRevisionViewTest(AdminTestBase):
 
     def setUp(self):
@@ -92,3 +99,33 @@ class AdminRevisionViewTest(AdminTestBase):
         self.obj.refresh_from_db()
         self.assertEqual(self.obj.name, "v1")
         self.assertEqual(self.obj.parent_name, "parent v1")
+
+
+class AdminRecoverViewTest(AdminTestBase):
+
+    def setUp(self):
+        super(AdminRecoverViewTest, self).setUp()
+        with reversion.create_revision():
+            obj = TestModelParent.objects.create()
+        self.obj_pk = obj.pk
+        obj.delete()
+
+    def testRecoverView(self):
+        response = self.client.get(resolve_url(
+            "admin:test_app_testmodelparent_recover",
+            Version.objects.get_for_model(TestModelParent).get().pk,
+        ))
+        self.assertContains(response, 'value="v1"')
+        self.assertContains(response, 'value="parent v1"')
+
+    def testRecoverViewRecover(self):
+        self.client.post(resolve_url(
+            "admin:test_app_testmodelparent_recover",
+            Version.objects.get_for_model(TestModelParent).get().pk,
+        ), {
+            "name": "v1",
+            "parent_name": "parent v1",
+        })
+        obj = TestModelParent.objects.get(pk=self.obj_pk)
+        self.assertEqual(obj.name, "v1")
+        self.assertEqual(obj.parent_name, "parent v1")
