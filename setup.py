@@ -18,7 +18,7 @@ setup(
     name="django-reversion",
     version='.'.join(str(x) for x in __version__),
     license="BSD",
-    description="An extension to the Django web framework that provides comprehensive version control facilities",
+    description="An extension to the Django web framework that provides version control for model instances.",
     author="Dave Hall",
     author_email="dave@etianen.com",
     url="http://github.com/etianen/django-reversion",
