@@ -13,8 +13,8 @@ def set_version_db(apps, schema_editor):
     Version = apps.get_model("reversion", "Version")
     content_types = Version.objects.values_list("content_type", flat=True).distinct()
     for content_type in content_types:
-        model_class = content_type.model_class()
-        db = router.db_for_write(model_class)
+        model = content_type.model_class()
+        db = router.db_for_write(model)
         Version.objects.filter(content_type=content_type).update(db=db)
 
 

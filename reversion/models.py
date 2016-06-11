@@ -73,11 +73,11 @@ class Revision(models.Model):
                     # Get a set of all objects in this revision.
                     old_revision = set()
                     for version in versions:
-                        model_cls = version._model
+                        model = version._model
                         try:
                             # Load the model instance from the same DB as it was saved under.
-                            old_revision.add(model_cls._default_manager.using(version.db).get(pk=version.object_id))
-                        except model_cls.DoesNotExist:
+                            old_revision.add(model._default_manager.using(version.db).get(pk=version.object_id))
+                        except model.DoesNotExist:
                             pass
                     # Calculate the set of all objects that are in the revision now.
                     current_revision = chain.from_iterable(
