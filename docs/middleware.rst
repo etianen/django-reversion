@@ -19,13 +19,11 @@ To enable ``RevisionMiddleware``, add ``'reversion.middleware.RevisionMiddleware
     This will wrap every request that isn't ``GET``, ``HEAD`` or ``OPTIONS`` in a database transaction. For best performance, consider marking individual views instead.
 
 
-RevisionMiddleware.manage_manually = False
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``RevisionMiddleware.manage_manually = False``
 
-.. include:: /_include/create-revision-manage-manually.rst
+    .. include:: /_include/create-revision-manage-manually.rst
 
 
-RevisionMiddleware.using = None
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``RevisionMiddleware.using = None``
 
-.. include:: /_include/create-revision-using.rst
+    .. include:: /_include/create-revision-using.rst

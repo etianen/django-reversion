@@ -16,7 +16,7 @@ Registering models
 
 .. Note::
 
-    If you've registered your models using :ref:`register`, the admin class will use the configuration you specify there. Otherwise, the admin class will auto-register your model, following all inline model relations and parent superclasses.
+    If you've registered your models using :ref:`reversion.register() <register>`, the admin class will use the configuration you specify there. Otherwise, the admin class will auto-register your model, following all inline model relations and parent superclasses.
 
 
 Integration with 3rd party apps
@@ -45,78 +45,71 @@ If the 3rd party model is already registered with the Django admin, you may have
 
 .. _VersionAdmin:
 
-
 reversion.admin.VersionAdmin
 ----------------------------
 
 A subclass of ``django.contrib.ModelAdmin`` providing rollback and recovery.
 
 
-revision_form_template = None
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``revision_form_template = None``
 
-A custom template to render the revision form.
+    A custom template to render the revision form.
 
-Alternatively, create specially named templates to override the default templates on a per-model or per-app basis.
+    Alternatively, create specially named templates to override the default templates on a per-model or per-app basis.
 
-*   ``'reversion/app_label/model_name/revision_form.html'``
-*   ``'reversion/app_label/revision_form.html'``
-*   ``'reversion/revision_form.html'``
-
-
-revision_form_template = None
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-A custom template to render the revision form.
-
-Alternatively, create specially named templates to override the default templates on a per-model or per-app basis.
-
-*   ``'reversion/app_label/model_name/revision_form.html'``
-*   ``'reversion/app_label/revision_form.html'``
-*   ``'reversion/revision_form.html'``
+    *   ``'reversion/app_label/model_name/revision_form.html'``
+    *   ``'reversion/app_label/revision_form.html'``
+    *   ``'reversion/revision_form.html'``
 
 
-recover_list_template = None
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``revision_form_template = None``
 
-A custom template to render the recover list.
+    A custom template to render the revision form.
 
-Alternatively, create specially named templates to override the default templates on a per-model or per-app basis.
+    Alternatively, create specially named templates to override the default templates on a per-model or per-app basis.
 
-*   ``'reversion/app_label/model_name/recover_list.html'``
-*   ``'reversion/app_label/recover_list.html'``
-*   ``'reversion/recover_list.html'``
-
-
-recover_form_template = None
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-A custom template to render the recover form.
-
-*   ``'reversion/app_label/model_name/recover_form.html'``
-*   ``'reversion/app_label/recover_form.html'``
-*   ``'reversion/recover_form.html'``
+    *   ``'reversion/app_label/model_name/revision_form.html'``
+    *   ``'reversion/app_label/revision_form.html'``
+    *   ``'reversion/revision_form.html'``
 
 
-history_latest_first = False
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``recover_list_template = None``
 
-If ``True``, revisions will be displayed with the most recent revision first.
+    A custom template to render the recover list.
+
+    Alternatively, create specially named templates to override the default templates on a per-model or per-app basis.
+
+    *   ``'reversion/app_label/model_name/recover_list.html'``
+    *   ``'reversion/app_label/recover_list.html'``
+    *   ``'reversion/recover_list.html'``
 
 
-reversion_register(self, model, \*\*options)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``recover_form_template = None``
 
-Callback used by the auto-registration machinery to register the model with django-reversion. Override this to customize how models are registered.
+    A custom template to render the recover form.
 
-.. code:: python
+    *   ``'reversion/app_label/model_name/recover_form.html'``
+    *   ``'reversion/app_label/recover_form.html'``
+    *   ``'reversion/recover_form.html'``
 
-    def reversion_register(self, model, **options):
-        options["exclude"] = ("some_field",)
-        super(YourModelAdmin, self).reversion_register(model, **options)
 
-``model``
-    The model that will be registered with django-reversion.
+``history_latest_first = False``
 
-``options``
-    Registeration options, see :ref:`register`.
+    If ``True``, revisions will be displayed with the most recent revision first.
+
+
+``reversion_register(model, \*\*options)``
+
+    Callback used by the auto-registration machinery to register the model with django-reversion. Override this to customize how models are registered.
+
+    .. code:: python
+
+        def reversion_register(self, model, **options):
+            options["exclude"] = ("some_field",)
+            super(YourModelAdmin, self).reversion_register(model, **options)
+
+    ``model``
+        The model that will be registered with django-reversion.
+
+    ``options``
+        Registeration options, see :ref:`reversion.register() <register>`.

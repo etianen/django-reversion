@@ -9,17 +9,16 @@ Shortcuts when using django-reversion in views.
 Decorators
 ----------
 
-reversion.views.create_revision(revision_manager=reversion.default_revision_manager)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``reversion.views.create_revision(revision_manager=reversion.default_revision_manager)``
 
-Decorates a view to wrap the every request that isn't ``GET``, ``HEAD`` or ``OPTIONS`` in a revision block.
+    Decorates a view to wrap the every request that isn't ``GET``, ``HEAD`` or ``OPTIONS`` in a revision block.
 
-The request user will also be added to the revision metadata.
+    The request user will also be added to the revision metadata.
 
-``revision_manager``
-    The :ref:`RevisionManager` used to manage revisions.
+    ``revision_manager``
+        The :ref:`RevisionManager` used to manage revisions.
 
-.. include:: /_include/create-revision-args.rst
+    .. include:: /_include/create-revision-args.rst
 
 
 reversion.views.RevisionMixin
@@ -39,13 +38,11 @@ The request user will also be added to the revision metadata.
         pass
 
 
-RevisionMixin.revision_manage_manually = False
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``RevisionMixin.revision_manage_manually = False``
 
-.. include:: /_include/create-revision-manage-manually.rst
+    .. include:: /_include/create-revision-manage-manually.rst
 
 
-RevisionMixin.revision_using = None
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``RevisionMixin.revision_using = None``
 
-.. include:: /_include/create-revision-using.rst
+    .. include:: /_include/create-revision-using.rst
