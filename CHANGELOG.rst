@@ -15,6 +15,38 @@ General
 * Minor tweaks and bugfixes (@etianen, @bmarika, @ticosax).
 
 
+Admin
+^^^^^
+
+* Fixed issue with empty revisions being created in combination with ``RevisionMiddleware`` (@etianen).
+
+* **Breaking:** Removed ``reversion_format`` property from ``VersionAdmin`` (@etianen).
+
+    Use ``VersionAdmin.reversion_register`` instead.
+
+    .. code::
+
+        class YourVersionAdmin(VersionAdmin):
+
+            def reversion_register(self, model, **options):
+                options["format"] = "yaml"
+                super(YourVersionAdmin, self).reversion_register(model, **options)
+
+* **Breaking:** Removed ``ignore_duplicate_revisions`` property from ``VersionAdmin`` (@etianen).
+
+    Use ``VersionAdmin.reversion_register`` instead.
+
+    .. code::
+
+        class YourVersionAdmin(VersionAdmin):
+
+            def reversion_register(self, model, **options):
+                options["format"] = "yaml"
+                super(YourVersionAdmin, self).reversion_register(model, **options)
+
+
+
+
 Management commands
 ^^^^^^^^^^^^^^^^^^^
 
@@ -78,7 +110,7 @@ Low-level API
 
     Use ``get_for_object().get_unique()`` instead.
 
-* **Breaking:** Removed ``signal`` and ``eager_signals`` argument to ``reversion.register()`` (@etianen).
+* **Breaking:** Removed ``signal`` and ``eager_signals`` argument from ``reversion.register()`` (@etianen).
 
     To create revisions on signals other than ``post_save`` and ``m2m_changed``, call ``reversion.add_to_revision()`` in a signal handler for the appropriate signal.
 
@@ -92,6 +124,10 @@ Low-level API
         def your_custom_signal_handler(instance, **kwargs):
             if reversion.is_active():
                 reversion.add_to_revision(instance)
+
+    This approach will work for both eager and non-eager signals.
+
+* **Breaking:** Removed ``adapter_cls`` argument from ``reversion.register()`` (@etianen).
 
 * **Breaking:** Removed ``reversion.save_revision()`` (@etianen).
 

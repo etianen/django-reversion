@@ -98,28 +98,10 @@ A custom template to render the recover form.
 *   ``'reversion/recover_form.html'``
 
 
-reversion_format = "json"
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The serialization format to use when registering models.
-
-
-ignore_duplicate_revisions = False
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-    .. include:: /_include/ignore-duplicates.rst
-
-
 history_latest_first = False
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If ``True``, revisions will be displayed with the most recent revision first.
-
-
-revision_manager = reversion.default_revision_manager
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The :ref:`RevisionManager` used to manage revisions.
 
 
 reversion_register(self, model, \*\*options)

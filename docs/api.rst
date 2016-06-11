@@ -25,7 +25,7 @@ Models must be registered with django-reversion before they can be used with the
         pass
 
 .. Hint::
-    If you're using the :ref:`admin`, model registration is automatic. If you’re using django-reversion in a management command, make sure you call ``django.contrib.admin.autodiscover`` to load the admin modules before using the django-reversion API.
+    If you're using the :ref:`admin`, model registration is automatic. If you’re using django-reversion in a management command, make sure you call ``django.contrib.admin.autodiscover()`` to load the admin modules before using the django-reversion API.
 
 .. include:: /_include/post-register.rst
 
@@ -70,12 +70,14 @@ Loading revisions
 
 Each model instance saved in a revision block is serialized as a :ref:`Version`. All versions in a revision block are associated with a single :ref:`Revision`.
 
-You can load a ``Queryset`` of versions from the database. Versions are loaded with the most recent version first.
+You can load a :ref:`VersionQuerySet` of versions from the database. Versions are loaded with the most recent version first.
 
 .. code:: python
 
+    from reversion.models import Version
+
     # Load a queryset of versions for a specific model instance.
-    versions = reversion.get_for_object(instance)
+    versions = Version.objects.get_for_object(instance)
     assert len(versions) == 2
 
     # Check the serialized data for the first version.
@@ -176,14 +178,10 @@ Throws :ref:`RegistrationError` if the model has already been registered.
 ``for_concrete_model=True``
     If ``True`` proxy models will be saved under the same content type as their concrete model. If ``False``, proxy models will be saved under their own content type, effectively giving proxy models their own distinct history.
 
-``signals=(post_save,)``
-    An iterable of Django signals that will trigger adding the model instance to an active revision.
+``ignore_duplicates=False``
+    If ``True``, then an additional check is performed to avoid saving duplicate versions for this model.
 
-``eager_signals=()``
-    An iterable of Django signals that will trigger adding the model instance to an active revision. Unlike ``signals``, model instances triggering this signal will be serialized immediately, rather than at the end of the revision block. This makes it suitable for usage with signals like ``pre_delete``.
-
-``adapter_cls=reversion.VersionAdapter``
-    A subclass of :ref:`VersionAdapter` to use to register the model.
+    Checking for duplicate revisions adds significant overhead to the process of creating a revision. Don't enable it unless you really need it!
 
 .. Hint::
     By default, django-reversion will not register any parent classes of a model that uses multi-table inheritance. If you wish to also add parent models to your revision, you must explicitly add their ``parent_ptr`` fields to the ``follow`` parameter when you register the model.
@@ -217,45 +215,17 @@ reversion.get_registered_models()
 Returns an iterable of all registered models.
 
 
-reversion.get_adapter(model)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Returns the :ref:`VersionAdapter` for the given model.
-
-``model``
-    The Django model look up.
-
-
 .. _revision-api:
 
 Revision API
 ------------
 
-reversion.create_revision(manage_manually=False, db=None)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reversion.create_revision(manage_manually=False, using=None)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Marks a block of code as a *revision block*. Can also be used as a decorator. The revision block will be wrapped in a ``transaction.atomic()``.
 
 .. include:: /_include/create-revision-args.rst
-
-
-reversion.set_ignore_duplicates(ignore_duplicates)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. include:: /_include/ignore-duplicates.rst
-
-Throws :ref:`RevisionManagementError` if there is no active revision block.
-
-``ignore_duplicates``
-    A ``bool`` indicating whether duplicate revisions should be saved.
-
-
-reversion.get_ignore_duplicates()
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Returns whether duplicate revisions will be saved.
-
-Throws :ref:`RevisionManagementError` if there is no active revision block.
 
 
 Metadata API

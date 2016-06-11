@@ -1,5 +1,5 @@
 ``manage_manually``
     .. include:: /_include/create-revision-manage-manually.rst
 
-``db``
-    .. include:: /_include/create-revision-db.rst
+``using``
+    .. include:: /_include/create-revision-using.rst
