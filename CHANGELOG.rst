@@ -6,8 +6,15 @@ django-reversion changelog
 2.0.0 - Pending
 ---------------
 
-General
-^^^^^^^
+django-reversion was first released in May 2008, and has been in active development ever since. Over this time it's developed a certain amount of cruft from legacy and unused features, resulting in needless complexity and multiple ways of acheiving the same task.
+
+This release substantially cleans and refactors the codebase. Much of the top-level functionality remains unchanged or is very similar. The release notes are divided into subsections to make it easier to find out where you need to update your code.
+
+Where functionality has been removed, it was either broken or
+
+
+General improvements
+^^^^^^^^^^^^^^^^^^^^
 
 * Dramatically improved performance of version lookup for models with a non-integer primary key (@etianen, @mshannon1123).
 * Documentation refactor (@etianen).
@@ -169,13 +176,19 @@ Helpers
 
 * **Breaking:** Removed ``generate_diffs`` function (@etianen).
 
+    django-reversion no supports an official diff helper. There are much better ways of achieving this now, such as `django-reversion-compare <https://github.com/jedie/django-reversion-compare>`_.
+
     The old implementation is available for reference from the `previous release <https://github.com/etianen/django-reversion/blob/release-1.10.2/src/reversion/helpers.py>`_.
 
 * **Breaking:** Removed ``generate_patch`` function (@etianen).
 
+    django-reversion no supports an official diff helper. There are much better ways of achieving this now, such as `django-reversion-compare <https://github.com/jedie/django-reversion-compare>`_.
+
     The old implementation is available for reference from the `previous release <https://github.com/etianen/django-reversion/blob/release-1.10.2/src/reversion/helpers.py>`_.
 
 * **Breaking:** Removed ``generate_patch_html`` function (@etianen).
+
+    django-reversion no supports an official diff helper. There are much better ways of achieving this now, such as `django-reversion-compare <https://github.com/jedie/django-reversion-compare>`_.
 
     The old implementation is available for reference from the `previous release <https://github.com/etianen/django-reversion/blob/release-1.10.2/src/reversion/helpers.py>`_.
 
