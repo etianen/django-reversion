@@ -1,7 +1,8 @@
 from datetime import timedelta
+from django.contrib.auth.models import User
 from django.utils import timezone
 import reversion
-from test_app.models import TestModel, TestModelUnregistered, TestMeta
+from test_app.models import TestModel, TestMeta
 from test_app.tests.base import TestBase, UserTestBase
 
 
@@ -18,7 +19,7 @@ class IsRegisteredTest(TestBase):
         self.assertTrue(reversion.is_registered(TestModel))
 
     def testIsRegisteredFalse(self):
-        self.assertFalse(reversion.is_registered(TestModelUnregistered))
+        self.assertFalse(reversion.is_registered(User))
 
 
 class GetRegisteredModelsTest(TestBase):
@@ -29,13 +30,6 @@ class GetRegisteredModelsTest(TestBase):
 
 class RegisterTest(TestBase):
 
-    def testRegister(self):
-        reversion.register(TestModelUnregistered)
-        try:
-            self.assertTrue(reversion.is_registered(TestModelUnregistered))
-        finally:
-            reversion.unregister(TestModelUnregistered)
-
     def testRegisterAlreadyRegistered(self):
         with self.assertRaises(reversion.RegistrationError):
             reversion.register(TestModel)
@@ -44,13 +38,12 @@ class RegisterTest(TestBase):
 class UnregisterTest(TestBase):
 
     def testUnregister(self):
-        reversion.register(TestModelUnregistered)
-        reversion.unregister(TestModelUnregistered)
-        self.assertFalse(reversion.is_registered(TestModelUnregistered))
+        reversion.unregister(TestModel)
+        self.assertFalse(reversion.is_registered(TestModel))
 
     def testUnregisterNotRegistered(self):
         with self.assertRaises(reversion.RegistrationError):
-            reversion.unregister(TestModelUnregistered)
+            reversion.unregister(User)
 
 
 class CreateRevisionTest(TestBase):

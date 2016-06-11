@@ -30,11 +30,4 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(default='v1', max_length=191)),
             ],
         ),
-        migrations.CreateModel(
-            name='TestModelUnregistered',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(default='v1', max_length=191)),
-            ],
-        ),
     ]

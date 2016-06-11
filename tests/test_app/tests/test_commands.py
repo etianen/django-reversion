@@ -46,7 +46,7 @@ class CreateInitialRevisionsAppLabelTest(TestBase):
 
     def testCreateInitialRevisionsModelNotRegistered(self):
         TestModel.objects.create()
-        self.callCommand("createinitialrevisions", "test_app.TestModelUnregistered")
+        self.callCommand("createinitialrevisions", "auth.User")
         self.assertNoRevision()
 
 
@@ -119,7 +119,7 @@ class DeleteRevisionsAppLabelTest(TestBase):
     def testDeleteRevisionsModelNotRegistered(self):
         with reversion.create_revision():
             obj = TestModel.objects.create()
-        self.callCommand("deleterevisions", "test_app.TestModelUnregistered")
+        self.callCommand("deleterevisions", "auth.User")
         self.assertSingleRevision((obj,))
 
 
