@@ -3,14 +3,13 @@
 django-reversion changelog
 ==========================
 
-1.11.0 - Pending
-----------------
+2.0.0 - Pending
+---------------
 
 General
 ^^^^^^^
 
 * Dramatically improved performance of version lookup for models with a non-integer primary key (@etianen, @mshannon1123).
-* **Breaking:** Refactored multi-db to support restoring models instances to their original database automatically, and to match the conventions used in the main Django codebase. Check the docs for details (@etianen).
 * Documentation refactor (@etianen).
 * Test refactor (@etianen).
 * Minor tweaks and bugfixes (@etianen, @bmarika, @ticosax).
@@ -19,15 +18,20 @@ General
 Management commands
 ^^^^^^^^^^^^^^^^^^^
 
-* **Breaking:** Refactored arguments to ``createinitialrevisions``, check the command ``--help`` for details (@etianen).
-* **Breaking:** Refactored arguments to ``deleterevisions``, check the command ``--help`` for details (@etianen).
+* **Breaking:** Refactored arguments to ``createinitialrevisions`` (@etianen).
+
+    All existing functionality should still be supported, but several parameter names have been updated to match Django coding conventions. Check the command ``--help`` for details.
+
+* **Breaking:** Refactored arguments to ``deleterevisions`` (@etianen).
+
+    All existing functionality should still be supported, but several parameter names have been updated to match Django coding conventions, and some duplicate parameters have been removed. The confirmation prompt has been removed entirely, and the command now always runs in the ``--force`` mode from the previous version. Check the command ``--help`` for details.
 
 
 Middleware
 ^^^^^^^^^^
 
 * Added support for using ``RevisionMiddleware`` with new-style Django 1.10 ``MIDDLEWARE`` (@etianen).
-* Middlware wraps entire request in ``transaction.atomic()`` to preserve transactional integrity of revision and models (@etianen).
+* Middleware wraps entire request in ``transaction.atomic()`` to preserve transactional integrity of revision and models (@etianen).
 
 
 View helpers
@@ -40,28 +44,84 @@ View helpers
 Low-level API
 ^^^^^^^^^^^^^
 
-* Restored all of the django-reversion API methods back to the top-level namespace, effectively undoing most of the breaking changes introduced with 1.10 (@etianen).
+* Restored many of the django-reversion API methods back to the top-level namespace (@etianen).
 * Revision blocks are now automatically wrapped in ``transaction.atomic()`` (@etianen).
-* Added ``get_for_model()`` function (@etianen).
-* **Breaking:** Removed ``get_ignore_duplicates`` and ``set_ignore_duplicates``, ``ignore_duplicates`` is now set on ``register()`` (@etianen).
-* **Breaking:** Removed ``get_for_date()`` function, use ``get_for_object().filter(revision__date_created__lte=date)`` (@etianen).
-* **Breaking:** Removed ``get_unique_for_object()`` function, use ``get_for_object().get_unique()`` instead (@etianen).
-* **Breaking:** Removed ``eager_signals`` argument to register(), it has been merged with the ``signals`` argument (@etianen).
+* Added ``for_concrete_model`` argument to ``reversion.register()`` (@etianen).
+* Added ``get_for_model()`` version lookup function (@etianen).
+* Added ``reversion.add_to_revision()`` for manually adding model instances to an active revision (@etianen).
+
+* **Breaking:** ``reversion.get_for_object_reference()`` has been moved to ``Version.objects.get_for_object_reference()`` (@etianen).
+
+* **Breaking:** ``reversion.get_for_object()`` has been moved to ``Version.objects.get_for_object()`` (@etianen).
+
+* **Breaking:** ``reversion.get_deleted()`` has been moved to ``Version.objects.get_deleted()`` (@etianen).
+
+* **Breaking:** Refactored multi-db support (@etianen).
+
+    django-reversion now supports restoring model instances to their original database automatically. Several parameter names have also be updated to match Django coding conventions.
+
+    If you made use of the previous multi-db functionality, check the latest docs for details. Otherwise, everything should *just work*.
+
+* **Breaking:** Removed ``get_ignore_duplicates`` and ``set_ignore_duplicates`` (@etianen).
+
+    ``ignore_duplicates`` is now set in reversion.register() on a per-model basis.
+
+* **Breaking:** Removed ``get_for_date()`` function (@etianen).
+
+    Use ``get_for_object().filter(revision__date_created__lte=date)`` instead.
+
+* **Breaking:** Removed ``get_unique_for_object()`` function (@etianen).
+
+    Use ``get_for_object().get_unique()`` instead.
+
+* **Breaking:** Removed ``signal`` and ``eager_signals`` argument to ``reversion.register() (@etianen).
+
+    To create revisions on signals other than ``post_save`` and ``m2m_changed``, call ``reversion.add_to_revision()`` in a signal handler for the appropriate signal.
+
+    .. code:: python
+
+        from django.dispatch import receiver
+        import reversion
+        from your_app import your_custom_signal
+
+        @reciever(your_custom_signal)
+        def your_custom_signal_handler(instance, **kwargs):
+            if reversion.is_active():
+                reversion.add_to_revision(instance)
 
 
 Signals
 ^^^^^^^
 
-* **Breaking:** Removed ``pre_revision_commit`` signal, use ``pre_save`` for ``Revision`` instead (@etianen).
-* **Breaking:** Removed ``post_revision_commit`` signal, use ``post_save`` for ``Revision`` instead (@etianen).
+* **Breaking:** Removed ``pre_revision_commit`` signal (@etianen).
+
+    Use Django standard ``pre_save`` signal for ``Revision`` instead.
+
+* **Breaking:** Removed ``post_revision_commit`` signal (@etianen).
+
+    Use Django standard ``post_save`` signal for ``Revision`` instead.
 
 
 Helpers
 ^^^^^^^
-* **Breaking:** Removed ``patch_admin`` function, use VersionAdmin as a mixin to 3rd party ModelAdmins instead (@etianen).
+
+* **Breaking:** Removed ``patch_admin`` function (@etianen).
+
+    Use ``VersionAdmin`` as a mixin to 3rd party ModelAdmins instead.
+
+    https://django-reversion.readthedocs.io/en/2.0.0/admin.html#integration-with-3rd-party-apps
+
 * **Breaking:** Removed ``generate_diffs`` function (@etianen).
+
+    The old implementation is available for reference from the `previous release <https://github.com/etianen/django-reversion/blob/release-1.10.2/src/reversion/helpers.py>`_.
+
 * **Breaking:** Removed ``generate_patch`` function (@etianen).
+
+    The old implementation is available for reference from the `previous release <https://github.com/etianen/django-reversion/blob/release-1.10.2/src/reversion/helpers.py>`_.
+
 * **Breaking:** Removed ``generate_patch_html`` function (@etianen).
+
+    The old implementation is available for reference from the `previous release <https://github.com/etianen/django-reversion/blob/release-1.10.2/src/reversion/helpers.py>`_.
 
 
 1.10.2 - 18/04/2016
