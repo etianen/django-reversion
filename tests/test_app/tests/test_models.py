@@ -193,6 +193,18 @@ class FieldDictTest(TestBase):
         self.assertEqual(Version.objects.get_for_object(obj).get().field_dict, {
             "id": obj.pk,
             "name": "v1",
+            "related_instances": [],
+        })
+
+    def testFieldDictM2M(self):
+        with reversion.create_revision():
+            obj_1 = TestModel.objects.create()
+            obj_2 = TestModel.objects.create()
+            obj_1.related_instances.add(obj_2)
+        self.assertEqual(Version.objects.get_for_object(obj_1).get().field_dict, {
+            "id": obj_1.pk,
+            "name": "v1",
+            "related_instances": [obj_2.pk],
         })
 
 
@@ -204,6 +216,7 @@ class FieldDictInheritanceTest(TestBase):
         self.assertEqual(Version.objects.get_for_object(obj).get().field_dict, {
             "id": obj.pk,
             "name": "v1",
+            "related_instances": [],
             "parent_name": "parent v1",
             "testmodel_ptr_id": obj.pk,
         })
@@ -218,5 +231,6 @@ class FieldDictInheritanceTest(TestBase):
             "id": obj.pk,
             "name": "v2",
             "parent_name": "parent v2",
+            "related_instances": [],
             "testmodel_ptr_id": obj.pk,
         })

@@ -103,6 +103,18 @@ class CreateRevisionDbTest(TestBase):
         self.assertSingleRevision((obj,), using="postgres")
 
 
+class CreateRevisionFollowTest(TestBase):
+
+    def testCreateRevisionFollow(self):
+        reversion.unregister(TestModel)
+        reversion.register(TestModel, follow=("related_instances",))
+        obj_2 = TestModel.objects.create()
+        with reversion.create_revision():
+            obj_1 = TestModel.objects.create()
+            obj_1.related_instances.add(obj_2)
+        self.assertSingleRevision((obj_1, obj_2))
+
+
 class CreateRevisionInheritanceTest(TestBase):
 
     def testCreateRevisionInheritance(self):

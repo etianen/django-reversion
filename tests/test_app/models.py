@@ -9,6 +9,11 @@ class TestModel(models.Model):
         default="v1",
     )
 
+    related_instances = models.ManyToManyField(
+        "self",
+        blank=True,
+    )
+
 
 class TestModelParent(TestModel):
 
