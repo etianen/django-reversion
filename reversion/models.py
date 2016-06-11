@@ -281,29 +281,32 @@ class _Str(models.Func):
 
 def _safe_subquery(method, left_query, left_field_name, right_subquery, right_field_name):
     right_subquery = right_subquery.order_by().values_list(right_field_name, flat=True)
+    left_field = left_query.model._meta.get_field(left_field_name)
+    right_field = right_subquery.model._meta.get_field(right_field_name)
     # If the databases don't match, we have to do it in-memory.
     # If it's not a supported database, we also have to do it in-memory.
-    if left_query.db != right_subquery.db or connections[left_query.db].vendor not in ("sqlite", "postgres"):
+    if (
+        left_query.db != right_subquery.db or not
+        (
+            left_field.get_internal_type() != right_field.get_internal_type() and
+            connections[left_query.db].vendor in ("sqlite", "postgres")
+        )
+    ):
         right_subquery = list(right_subquery.iterator())
     else:
-        # We shall do it in-database.
-        left_field = left_query.model._meta.get_field(left_field_name)
-        right_field = right_subquery.model._meta.get_field(right_field_name)
-        # If fields are not the same internal type, we have to cast both to string.
-        if left_field.get_internal_type() != right_field.get_internal_type():
-            # If the left hand side is not a text field, we need to cast it.
-            if not isinstance(left_field, (models.CharField, models.TextField)):
-                left_field_name_str = "{}_str".format(left_field_name)
-                left_query = left_query.annotate(**{
-                    left_field_name_str: _Str(left_field_name),
-                })
-                left_field_name = left_field_name_str
-            # If the right hand side is not a text field, we need to cast it.
-            if not isinstance(right_field, (models.CharField, models.TextField)):
-                right_field_name_str = "{}_str".format(right_field_name)
-                right_subquery = right_subquery.annotate(**{
-                    right_field_name_str: _Str(right_field_name),
-                }).values_list(right_field_name_str, flat=True)
+        # If the left hand side is not a text field, we need to cast it.
+        if not isinstance(left_field, (models.CharField, models.TextField)):
+            left_field_name_str = "{}_str".format(left_field_name)
+            left_query = left_query.annotate(**{
+                left_field_name_str: _Str(left_field_name),
+            })
+            left_field_name = left_field_name_str
+        # If the right hand side is not a text field, we need to cast it.
+        if not isinstance(right_field, (models.CharField, models.TextField)):
+            right_field_name_str = "{}_str".format(right_field_name)
+            right_subquery = right_subquery.annotate(**{
+                right_field_name_str: _Str(right_field_name),
+            }).values_list(right_field_name_str, flat=True)
     # All done!
     return getattr(left_query, method)(**{
         "{}__in".format(left_field_name): right_subquery,
