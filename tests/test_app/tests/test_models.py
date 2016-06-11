@@ -5,6 +5,27 @@ from test_app.models import TestModel
 from test_app.tests.base import TestBase
 
 
+class GetForModelTest(TestBase):
+
+    def testGetForModel(self):
+        with reversion.create_revision():
+            obj = TestModel.objects.create()
+        self.assertEqual(Version.objects.get_for_model(obj.__class__).count(), 1)
+
+
+class GetForModelDbTest(TestBase):
+
+    def testGetForModelDb(self):
+        with reversion.create_revision(using="postgres"):
+            obj = TestModel.objects.create()
+        self.assertEqual(Version.objects.using("postgres").get_for_model(obj.__class__).count(), 1)
+
+    def testGetForModelDbMySql(self):
+        with reversion.create_revision(using="mysql"):
+            obj = TestModel.objects.create()
+        self.assertEqual(Version.objects.using("mysql").get_for_model(obj.__class__).count(), 1)
+
+
 class GetForObjectTest(TestBase):
 
     def testGetForObject(self):
