@@ -9,13 +9,13 @@ except ImportError:  # Django < 1.9
 from django.conf import settings
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import models, IntegrityError, transaction
+from django.db import models, IntegrityError, transaction, router
 from django.db.models.lookups import In
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _, ugettext
 from django.utils.encoding import force_text, python_2_unicode_compatible
 from reversion.errors import RevertError
-from reversion.revisions import _get_options, _get_model_db, _get_content_type
+from reversion.revisions import _get_options, _get_content_type
 
 
 def _safe_revert(versions):
@@ -101,7 +101,7 @@ class Revision(models.Model):
 class VersionQuerySet(models.QuerySet):
 
     def get_for_model(self, model, model_db=None):
-        model_db = _get_model_db(None, model, model_db)
+        model_db = model_db or router.db_for_write(model)
         content_type = _get_content_type(model, using=self.db)
         return self.filter(
             content_type=content_type,

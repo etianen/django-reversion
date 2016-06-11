@@ -194,7 +194,7 @@ def _add_to_revision(obj, using, model_db, explicit):
 
 
 def add_to_revision(obj, model_db=None):
-    model_db = _get_model_db(obj, obj.__class__, model_db)
+    model_db = model_db or router.db_for_write(obj.__class__, instance=obj)
     for db in _current_frame().db_versions.keys():
         _add_to_revision(obj, db, model_db, True)
 
@@ -352,10 +352,6 @@ def _get_options(model):
 def unregister(model):
     _assert_registered(model)
     del _registered_models[_get_registration_key(model)]
-
-
-def _get_model_db(obj, model, model_db):
-    return model_db or router.db_for_write(model, instance=obj)
 
 
 def _get_content_type(model, using):
