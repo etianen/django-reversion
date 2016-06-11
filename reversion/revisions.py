@@ -311,7 +311,7 @@ def register(model=None, fields=None, exclude=(), follow=(), format="json",
         # Parse fields.
         opts = model._meta
         version_options = _VersionOptions(
-            fields=[
+            fields=tuple(
                 field_name
                 for field_name
                 in ([
@@ -320,8 +320,8 @@ def register(model=None, fields=None, exclude=(), follow=(), format="json",
                     in opts.local_fields + opts.local_many_to_many
                 ] if fields is None else fields)
                 if field_name not in exclude
-            ],
-            follow=follow,
+            ),
+            follow=tuple(follow),
             format=format,
             for_concrete_model=for_concrete_model,
             ignore_duplicates=ignore_duplicates,

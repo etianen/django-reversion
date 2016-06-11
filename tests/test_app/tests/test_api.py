@@ -2,7 +2,7 @@ from datetime import timedelta
 from django.contrib.auth.models import User
 from django.utils import timezone
 import reversion
-from test_app.models import TestModel, TestMeta
+from test_app.models import TestModel, TestModelParent, TestMeta
 from test_app.tests.base import TestBase, UserTestBase
 
 
@@ -25,7 +25,7 @@ class IsRegisteredTest(TestBase):
 class GetRegisteredModelsTest(TestBase):
 
     def testGetRegisteredModels(self):
-        self.assertEqual(list(reversion.get_registered_models()), [TestModel])
+        self.assertEqual(set(reversion.get_registered_models()), set((TestModel, TestModelParent,)))
 
 
 class RegisterTest(TestBase):
@@ -101,6 +101,14 @@ class CreateRevisionDbTest(TestBase):
         self.assertNoRevision()
         self.assertSingleRevision((obj,), using="mysql")
         self.assertSingleRevision((obj,), using="postgres")
+
+
+class CreateRevisionInheritanceTest(TestBase):
+
+    def testCreateRevisionInheritance(self):
+        with reversion.create_revision():
+            obj = TestModelParent.objects.create()
+        self.assertSingleRevision((obj, obj.testmodel_ptr))
 
 
 class SetCommentTest(TestBase):

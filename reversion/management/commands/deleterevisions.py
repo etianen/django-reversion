@@ -47,10 +47,10 @@ class Command(BaseRevisionCommand):
                 # If we have at least one model, then we can
                 can_delete = True
                 revision_query |= models.Q(
-                    pk__reversion_in=(Version.objects.using(using).get_for_model(
+                    pk__in=Version.objects.using(using).get_for_model(
                         model,
                         model_db=model_db,
-                    ), "revision_id"),
+                    ).values_list("revision_id", flat=True)
                 )
                 if keep:
                     overflow_object_ids = Version.objects.using(using).get_for_model(

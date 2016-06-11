@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.utils.six import StringIO
 import reversion
 from reversion.models import Revision, Version
-from test_app.models import TestModel
+from test_app.models import TestModel, TestModelParent
 
 
 # Test helpers.
@@ -19,11 +19,14 @@ class TestBase(TestCase):
     def setUp(self):
         super(TestBase, self).setUp()
         reversion.register(TestModel)
+        reversion.register(TestModelParent, follow=("testmodel_ptr",))
 
     def tearDown(self):
         super(TestBase, self).tearDown()
         if reversion.is_registered(TestModel):
             reversion.unregister(TestModel)
+        if reversion.is_registered(TestModelParent):
+            reversion.unregister(TestModelParent)
 
     def callCommand(self, command, *args, **kwargs):
         kwargs.setdefault("stdout", StringIO())

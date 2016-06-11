@@ -9,8 +9,7 @@ except ImportError:  # Django < 1.9
 from django.conf import settings
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import models, IntegrityError, transaction, router
-from django.db.models.lookups import In
+from django.db import models, IntegrityError, transaction, router, connections
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _, ugettext
 from django.utils.encoding import force_text, python_2_unicode_compatible
@@ -117,12 +116,18 @@ class VersionQuerySet(models.QuerySet):
         return self.get_for_object_reference(obj.__class__, obj.pk, model_db=model_db)
 
     def get_deleted(self, model, model_db=None):
-        return self.get_for_model(model, model_db=model_db).filter(
-            pk__reversion_in=(self.get_for_model(model, model_db=model_db).exclude(
-                object_id__reversion_in=(model._default_manager.using(model_db), model._meta.pk.name),
-            ).values_list("object_id").annotate(
-                id=models.Max("id"),
-            ), "id")
+        return _safe_subquery(
+            "filter",
+            self.get_for_model(model, model_db=model_db),
+            "id",
+            _safe_subquery(
+                "exclude",
+                self.get_for_model(model, model_db=model_db),
+                "object_id",
+                model._default_manager.using(model_db),
+                model._meta.pk.name,
+            ),
+            "id"
         )
 
     def get_unique(self):
@@ -259,7 +264,7 @@ class Version(models.Model):
         )
 
 
-class Str(models.Func):
+class _Str(models.Func):
 
     """Casts a value to the database's text type."""
 
@@ -267,81 +272,39 @@ class Str(models.Func):
     template = "%(function)s(%(expressions)s as %(db_type)s)"
 
     def __init__(self, expression):
-        super(Str, self).__init__(expression, output_field=models.TextField())
+        super(_Str, self).__init__(expression, output_field=models.TextField())
 
     def as_sql(self, compiler, connection):
         self.extra["db_type"] = self.output_field.db_type(connection)
-        return super(Str, self).as_sql(compiler, connection)
+        return super(_Str, self).as_sql(compiler, connection)
 
 
-@models.Field.register_lookup
-class _ReversionSubqueryLookup(models.Lookup):
-
-    """
-    Performs a subquery using an SQL `IN` clause, selecting the bast strategy
-    for the database.
-    """
-
-    lookup_name = "reversion_in"
-
-    # Strategies.
-
-    def __init__(self, lhs, rhs):
-        rhs, self.rhs_field_name = rhs
-        rhs = rhs.values_list(self.rhs_field_name, flat=True)
-        super(_ReversionSubqueryLookup, self).__init__(lhs, rhs)
-        # Introspect the lhs and rhs, so we can fail early if it's unexpected.
-        self.lhs_field = self.lhs.output_field
-        self.rhs_field = self.rhs.model._meta.get_field(self.rhs_field_name)
-
-    def _as_in_memory_sql(self, compiler, connection):
-        """
-        The most reliable strategy. The subquery is performed as two separate queries,
-        buffering the subquery in application memory.
-
-        This will work in all databases, but can use a lot of memory.
-        """
-        return compiler.compile(In(self.lhs, list(self.rhs.order_by().iterator())))
-
-    def _as_in_database_sql(self, compiler, connection):
-        """
-        Theoretically the best strategy. The subquery is performed as a single database
-        query, using nested SELECT.
-
-        This will only work if the `Str` function supports the database.
-        """
-        lhs = self.lhs
-        rhs = self.rhs.order_by()
-        # If the connections don't match, run as in-memory query.
-        if connection.alias != rhs.db:
-            return self._as_in_memory_sql(compiler, connection)
+def _safe_subquery(method, left_query, left_field_name, right_subquery, right_field_name):
+    right_subquery = right_subquery.order_by().values_list(right_field_name, flat=True)
+    # If the databases don't match, we have to do it in-memory.
+    # If it's not a supported database, we also have to do it in-memory.
+    if left_query.db != right_subquery.db or connections[left_query.db].vendor not in ("sqlite", "postgres"):
+        right_subquery = list(right_subquery.iterator())
+    else:
+        # We shall do it in-database.
+        left_field = left_query.model._meta.get_field(left_field_name)
+        right_field = right_subquery.model._meta.get_field(right_field_name)
         # If fields are not the same internal type, we have to cast both to string.
-        if self.lhs_field.get_internal_type() != self.rhs_field.get_internal_type():
+        if left_field.get_internal_type() != right_field.get_internal_type():
             # If the left hand side is not a text field, we need to cast it.
-            if not isinstance(self.lhs_field, (models.CharField, models.TextField)):
-                lhs = Str(lhs)
+            if not isinstance(left_field, (models.CharField, models.TextField)):
+                left_field_name_str = "{}_str".format(left_field_name)
+                left_query = left_query.annotate(**{
+                    left_field_name_str: _Str(left_field_name),
+                })
+                left_field_name = left_field_name_str
             # If the right hand side is not a text field, we need to cast it.
-            if not isinstance(self.rhs_field, (models.CharField, models.TextField)):
-                rhs_str_name = "%s_str" % self.rhs_field.name
-                rhs = rhs.annotate(**{
-                    rhs_str_name: Str(self.rhs_field.name),
-                }).values_list(rhs_str_name, flat=True)
-        # All done!
-        return compiler.compile(In(lhs, rhs))
-
-    def as_sql(self, compiler, connection):
-        """The fallback strategy for all databases is a safe in-memory subquery."""
-        return self._as_in_memory_sql(compiler, connection)
-
-    def as_sqlite(self, compiler, connection):
-        """SQLite supports the `Str` function, so can use the efficient in-database subquery."""
-        return self._as_in_database_sql(compiler, connection)
-
-    def as_mysql(self, compiler, connection):
-        """MySQL can choke on complex subqueries, so uses the safe in-memory subquery."""
-        # TODO: Add a version selector to use the in-database subquery if a safe version is known.
-        return self._as_in_memory_sql(compiler, connection)
-
-    def as_postgresql(self, compiler, connection):
-        """Postgres supports the `Str` function, so can use the efficient in-database subquery."""
-        return self._as_in_database_sql(compiler, connection)
+            if not isinstance(right_field, (models.CharField, models.TextField)):
+                right_field_name_str = "{}_str".format(right_field_name)
+                right_subquery = right_subquery.annotate(**{
+                    right_field_name_str: _Str(right_field_name),
+                }).values_list(right_field_name_str, flat=True)
+    # All done!
+    return getattr(left_query, method)(**{
+        "{}__in".format(left_field_name): right_subquery,
+    })

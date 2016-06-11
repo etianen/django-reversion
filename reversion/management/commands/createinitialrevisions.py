@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 from django.db import reset_queries, transaction, router
-from reversion.models import Revision, Version
+from reversion.models import Revision, Version, _safe_subquery
 from reversion.management.commands import BaseRevisionCommand
 from reversion.revisions import create_revision, set_comment, add_to_revision
 
@@ -40,11 +40,15 @@ class Command(BaseRevisionCommand):
                         name=model._meta.verbose_name,
                     ))
                 created_count = 0
-                live_objs = model._default_manager.using(model_db).exclude(
-                    pk__reversion_in=(Version.objects.using(using).get_for_model(
+                live_objs = _safe_subquery(
+                    "exclude",
+                    model._default_manager.using(model_db),
+                    model._meta.pk.name,
+                    Version.objects.using(using).get_for_model(
                         model,
                         model_db=model_db,
-                    ), "object_id"),
+                    ),
+                    "object_id",
                 )
                 # Save all the versions.
                 ids = list(live_objs.values_list("pk", flat=True).order_by())
