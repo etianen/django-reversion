@@ -34,7 +34,7 @@ class Migration(migrations.Migration):
             name='TestModelParent',
             fields=[
                 ('testmodel_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, serialize=False, to='test_app.TestModel')),
-                ('parent_name', models.CharField(default='v1', max_length=191)),
+                ('parent_name', models.CharField(default='parent v1', max_length=191)),
             ],
             bases=('test_app.testmodel',),
         ),

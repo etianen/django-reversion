@@ -1,7 +1,7 @@
 from django.utils.encoding import force_text
 import reversion
 from reversion.models import Version
-from test_app.models import TestModel
+from test_app.models import TestModel, TestModelParent
 from test_app.tests.base import TestBase
 
 
@@ -183,3 +183,40 @@ class GetDeletedModelDbTest(TestBase):
         obj.delete()
         self.assertEqual(Version.objects.get_deleted(TestModel).count(), 0)
         self.assertEqual(Version.objects.get_deleted(TestModel, model_db="postgres").count(), 1)
+
+
+class FieldDictTest(TestBase):
+
+    def testFieldDict(self):
+        with reversion.create_revision():
+            obj = TestModel.objects.create()
+        self.assertEqual(Version.objects.get_for_object(obj).get().field_dict, {
+            "id": obj.pk,
+            "name": "v1",
+        })
+
+
+class FieldDictInheritanceTest(TestBase):
+
+    def testFieldDictInheritance(self):
+        with reversion.create_revision():
+            obj = TestModelParent.objects.create()
+        self.assertEqual(Version.objects.get_for_object(obj).get().field_dict, {
+            "id": obj.pk,
+            "name": "v1",
+            "parent_name": "parent v1",
+            "testmodel_ptr_id": obj.pk,
+        })
+
+    def testFieldDictInheritanceUpdate(self):
+        obj = TestModelParent.objects.create()
+        with reversion.create_revision():
+            obj.name = "v2"
+            obj.parent_name = "parent v2"
+            obj.save()
+        self.assertEqual(Version.objects.get_for_object(obj).get().field_dict, {
+            "id": obj.pk,
+            "name": "v2",
+            "parent_name": "parent v2",
+            "testmodel_ptr_id": obj.pk,
+        })

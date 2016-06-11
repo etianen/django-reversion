@@ -101,7 +101,7 @@ class VersionQuerySet(models.QuerySet):
 
     def get_for_model(self, model, model_db=None):
         model_db = model_db or router.db_for_write(model)
-        content_type = _get_content_type(model, using=self.db)
+        content_type = _get_content_type(model, self.db)
         return self.filter(
             content_type=content_type,
             db=model_db,
@@ -222,9 +222,11 @@ class Version(models.Model):
         version_options = _get_options(self._model)
         object_version = self._object_version
         obj = object_version.object
+        model = self._model
         field_dict = {}
         for field_name in version_options.fields:
-            field_dict[field_name] = object_version.m2m_data.get(field_name, getattr(obj, field_name))
+            field = model._meta.get_field(field_name)
+            field_dict[field.attname] = object_version.m2m_data.get(field.attname, getattr(obj, field.attname))
         return field_dict
 
     @cached_property
@@ -235,14 +237,11 @@ class Version(models.Model):
 
         This method will follow parent links, if present.
         """
-        object_version = self._object_version
-        obj = object_version.object
         field_dict = self._local_field_dict
         # Add parent data.
-        for parent_class, field in obj._meta.concrete_model._meta.parents.items():
-            adapter = self.revision.revision_manager.get_adapter(parent_class)
-            content_type = adapter.get_content_type(None, self._state.db, self.db)
-            parent_id = getattr(obj, field.attname)
+        for parent_model, field in self._model._meta.concrete_model._meta.parents.items():
+            content_type = _get_content_type(parent_model, self._state.db)
+            parent_id = field_dict[field.attname]
             parent_version = self.revision.version_set.get(
                 content_type=content_type,
                 object_id=parent_id,

@@ -14,7 +14,7 @@ class TestModelParent(TestModel):
 
     parent_name = models.CharField(
         max_length=191,
-        default="v1",
+        default="parent v1",
     )
 
 
