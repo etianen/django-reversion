@@ -207,6 +207,25 @@ class FieldDictTest(TestBase):
             "related_instances": [obj_2.pk],
         })
 
+    def testFieldDictFieldFields(self):
+        reversion.unregister(TestModel)
+        reversion.register(TestModel, fields=("name",))
+        with reversion.create_revision():
+            obj = TestModel.objects.create()
+        self.assertEqual(Version.objects.get_for_object(obj).get().field_dict, {
+            "name": "v1",
+        })
+
+    def testFieldDictFieldExclude(self):
+        reversion.unregister(TestModel)
+        reversion.register(TestModel, exclude=("name",))
+        with reversion.create_revision():
+            obj = TestModel.objects.create()
+        self.assertEqual(Version.objects.get_for_object(obj).get().field_dict, {
+            "id": obj.pk,
+            "related_instances": [],
+        })
+
 
 class FieldDictInheritanceTest(TestBase):
 
