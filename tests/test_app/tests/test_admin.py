@@ -120,6 +120,10 @@ class AdminRevisionViewTest(AdminTestBase):
         ))
         self.assertContains(response, 'value="v1"')
         self.assertContains(response, 'value="parent v1"')
+        # Test that the changes were rolled back.
+        self.obj.refresh_from_db()
+        self.assertEqual(self.obj.name, "v2")
+        self.assertEqual(self.obj.parent_name, "parent v2")
 
     def testRevisionViewOldRevision(self):
         response = self.client.get(resolve_url(
