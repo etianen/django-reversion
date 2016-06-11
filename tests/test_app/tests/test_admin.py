@@ -1,10 +1,14 @@
 from django.contrib import admin
+try:
+    from django.contrib.contenttypes.admin import GenericTabularInline
+except ImportError:  # Django < 1.9 pragma: no cover
+    from django.contrib.contenttypes.generic import GenericTabularInline
 from django.shortcuts import resolve_url
 import reversion
 from reversion.admin import VersionAdmin
 from reversion.models import Version
-from test_app.models import TestModel, TestModelParent
-from test_app.tests.base import LoginTestBase
+from test_app.models import TestModel, TestModelParent, TestModelInline, TestModelGenericInline
+from test_app.tests.base import TestBase, LoginTestBase
 
 
 class AdminTestBase(LoginTestBase):
@@ -27,6 +31,44 @@ class AdminRegisterTest(AdminTestBase):
 
     def setAutoRegisterFollowsParent(self):
         self.assertTrue(reversion.is_registered(TestModel))
+
+
+class TestModelInlineAdmin(admin.TabularInline):
+
+    model = TestModelInline
+
+
+class TestModelGenericInlineAdmin(GenericTabularInline):
+
+    model = TestModelGenericInline
+
+
+class TestModelParentAdmin(VersionAdmin):
+
+    inlines = (TestModelInlineAdmin, TestModelGenericInlineAdmin)
+
+
+class AdminRegisterInlineTest(TestBase):
+
+    def setUp(self):
+        super(AdminRegisterInlineTest, self).setUp()
+        reversion.unregister(TestModel)
+        reversion.unregister(TestModelParent)
+        admin.site.register(TestModelParent, TestModelParentAdmin)
+
+    def tearDown(self):
+        super(AdminRegisterInlineTest, self).tearDown()
+        if reversion.is_registered(TestModelInline):
+            reversion.unregister(TestModelInline)
+        if reversion.is_registered(TestModelGenericInline):
+            reversion.unregister(TestModelGenericInline)
+        admin.site.unregister(TestModelParent)
+
+    def testAutoRegisterInline(self):
+        self.assertTrue(reversion.is_registered(TestModelInline))
+
+    def testAutoRegisterGenericInline(self):
+        self.assertTrue(reversion.is_registered(TestModelGenericInline))
 
 
 class AdminAddViewTest(AdminTestBase):
