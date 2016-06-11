@@ -28,9 +28,9 @@ class AdminRegisterTest(AdminTestBase):
         self.assertTrue(reversion.is_registered(TestModel))
 
 
-class AdminCreateTest(AdminTestBase):
+class AdminAddViewTest(AdminTestBase):
 
-    def testCreate(self):
+    def testAddView(self):
         self.client.post(resolve_url("admin:test_app_testmodelparent_add"), {
             "name": "v1",
             "parent_name": "parent_v1",
@@ -39,12 +39,36 @@ class AdminCreateTest(AdminTestBase):
         self.assertSingleRevision((obj, obj.testmodel_ptr), user=self.user, comment="Added.")
 
 
-class AdminUpdateTest(AdminTestBase):
+class AdminUpdateViewTest(AdminTestBase):
 
-    def testUpdate(self):
+    def testUpdateView(self):
         obj = TestModelParent.objects.create()
         self.client.post(resolve_url("admin:test_app_testmodelparent_change", obj.pk), {
             "name": "v2",
             "parent_name": "parent_v2",
         })
         self.assertSingleRevision((obj, obj.testmodel_ptr), user=self.user, comment="Changed name and parent_name.")
+
+
+class AdminRevisionViewTest(AdminTestBase):
+
+    def testRevisionView(self):
+        with reversion.create_revision():
+            obj = TestModelParent.objects.create()
+        with reversion.create_revision():
+            obj.name = "v2"
+            obj.parent_name = "parent v2"
+        response = self.client.get(resolve_url(
+            "admin:test_app_testmodelparent_revision",
+            obj.pk,
+            reversion.get_for_object(obj)[1].pk,
+        ))
+        self.assertContains(response, 'value="v1"')
+        self.assertContains(response, 'value="parent v1"')
+        response = self.client.get(resolve_url(
+            "admin:test_app_testmodelparent_revision",
+            obj.pk,
+            reversion.get_for_object(obj)[-].pk,
+        ))
+        self.assertContains(response, 'value="v2"')
+        self.assertContains(response, 'value="parent v2"')
