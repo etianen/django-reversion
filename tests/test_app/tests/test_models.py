@@ -79,6 +79,24 @@ class GetForObjectModelDbTest(TestBase):
         self.assertEqual(Version.objects.get_for_object(obj, model_db="postgres").count(), 1)
 
 
+class GetForObjectUniqueTest(TestBase):
+
+    def testGetForObjectUnique(self):
+        with reversion.create_revision():
+            obj = TestModel.objects.create()
+        with reversion.create_revision():
+            obj.save()
+        self.assertEqual(len(list(Version.objects.get_for_object(obj).get_unique())), 1)
+
+    def testGetForObjectUniqueMiss(self):
+        with reversion.create_revision():
+            obj = TestModel.objects.create()
+        with reversion.create_revision():
+            obj.name = "v2"
+            obj.save()
+        self.assertEqual(len(list(Version.objects.get_for_object(obj).get_unique())), 2)
+
+
 class GetForObjectReferenceTest(TestBase):
 
     def testGetForObjectReference(self):
