@@ -38,7 +38,8 @@ class TestBase(TestCase):
                              using=None, model_db=None):
         revision = Version.objects.using(using).get_for_object(objects[0], model_db=model_db).get().revision
         self.assertEqual(revision.user, user)
-        self.assertEqual(revision.comment, comment)
+        if comment is not None:  # Allow a wildcard comment.
+            self.assertEqual(revision.comment, comment)
         self.assertAlmostEqual(revision.date_created, date_created or timezone.now(), delta=timedelta(seconds=1))
         # Check meta.
         self.assertEqual(revision.testmeta_set.count(), len(meta_names))

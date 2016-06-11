@@ -79,7 +79,7 @@ class AdminAddViewTest(AdminTestBase):
             "parent_name": "parent_v1",
         })
         obj = TestModelParent.objects.get()
-        self.assertSingleRevision((obj, obj.testmodel_ptr), user=self.user, comment="Added.")
+        self.assertSingleRevision((obj, obj.testmodel_ptr), user=self.user, comment=None)
 
 
 class AdminUpdateViewTest(AdminTestBase):
@@ -137,7 +137,10 @@ class AdminRevisionViewTest(AdminTestBase):
             self.obj.pk,
             Version.objects.get_for_object(self.obj)[1].pk,
         ))
-        self.assertEqual(response["Location"], resolve_url("admin:test_app_testmodelparent_changelist"))
+        self.assertEqual(
+            response["Location"].replace("http://testserver", ""),
+            resolve_url("admin:test_app_testmodelparent_changelist"),
+        )
 
     def testRevisionViewRevert(self):
         self.client.post(resolve_url(
