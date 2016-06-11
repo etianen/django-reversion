@@ -253,3 +253,16 @@ class FieldDictInheritanceTest(TestBase):
             "related_instances": [],
             "testmodel_ptr_id": obj.pk,
         })
+
+
+class RevertTest(TestBase):
+
+    def testRevert(self):
+        with reversion.create_revision():
+            obj = TestModel.objects.create()
+        with reversion.create_revision():
+            obj.name = "v2"
+            obj.save()
+        Version.objects.get_for_object(obj)[1].revert()
+        obj.refresh_from_db()
+        self.assertEqual(obj.name, "v1")
