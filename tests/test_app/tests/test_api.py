@@ -30,6 +30,11 @@ class GetRegisteredModelsTest(TestBase):
 
 class RegisterTest(TestBase):
 
+    def testRegisterDecorator(self):
+        reversion.unregister(TestModel)
+        reversion.register()(TestModel)
+        self.assertTrue(reversion.is_registered(TestModel))
+
     def testRegisterAlreadyRegistered(self):
         with self.assertRaises(reversion.RegistrationError):
             reversion.register(TestModel)
