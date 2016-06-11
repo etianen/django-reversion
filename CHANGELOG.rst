@@ -3,8 +3,8 @@
 django-reversion changelog
 ==========================
 
-2.0.0 - Pending
----------------
+2.0.0 - 11/06/2016
+------------------
 
 django-reversion was first released in May 2008, and has been in active development ever since. Over this time it's developed a certain amount of cruft from legacy and unused features, resulting in needless complexity and multiple ways of achieving the same task.
 
