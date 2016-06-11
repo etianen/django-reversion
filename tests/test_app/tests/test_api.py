@@ -114,6 +114,13 @@ class CreateRevisionFollowTest(TestBase):
             obj_1.related_instances.add(obj_2)
         self.assertSingleRevision((obj_1, obj_2))
 
+    def testCreateRevisionFollowInvalid(self):
+        reversion.unregister(TestModel)
+        reversion.register(TestModel, follow=("name",))
+        with reversion.create_revision():
+            with self.assertRaises(reversion.RegistrationError):
+                TestModel.objects.create()
+
 
 class CreateRevisionInheritanceTest(TestBase):
 

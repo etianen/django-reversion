@@ -149,7 +149,7 @@ def _follow_relations(obj, follow):
             for follow_obj_instance in follow_obj.all():
                 yield follow_obj_instance
         elif follow_obj is not None:
-            raise TypeError("{name}.{follow_name} should be a Model or QuerySet".format(
+            raise RegistrationError("{name}.{follow_name} should be a Model or QuerySet".format(
                 name=obj.__class__.__name__,
                 follow_name=follow_name,
             ))
