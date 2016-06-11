@@ -78,6 +78,10 @@ class CreateRevisionTest(TestBase):
             pass
         self.assertNoRevision()
 
+    def testCreateRevisionDecorator(self):
+        obj = reversion.create_revision()(TestModel.objects.create)()
+        self.assertSingleRevision((obj,))
+
 
 class CreateRevisionManageManuallyTest(TestBase):
 
@@ -120,6 +124,18 @@ class CreateRevisionFollowTest(TestBase):
         with reversion.create_revision():
             with self.assertRaises(reversion.RegistrationError):
                 TestModel.objects.create()
+
+
+class CreateRevisionIgnoreDuplicatesTest(TestBase):
+
+    def testCreateRevisionIgnoreDuplicates(self):
+        reversion.unregister(TestModel)
+        reversion.register(TestModel, ignore_duplicates=True)
+        with reversion.create_revision():
+            obj = TestModel.objects.create()
+        with reversion.create_revision():
+            obj.save()
+        self.assertSingleRevision((obj,))
 
 
 class CreateRevisionInheritanceTest(TestBase):
