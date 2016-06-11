@@ -23,7 +23,7 @@ from reversion.models import Version
 from reversion.revisions import is_active, register, is_registered, set_comment, create_revision, set_user
 
 
-class RollBackRevisionView(Exception):
+class _RollBackRevisionView(Exception):
 
     pass
 
@@ -165,7 +165,7 @@ class VersionAdmin(admin.ModelAdmin):
         with self.create_revision(request):
             return super(VersionAdmin, self).change_view(request, object_id, form_url, extra_context)
 
-    def revisionform_view(self, request, version, template_name, extra_context=None):
+    def _reversion_revisionform_view(self, request, version, template_name, extra_context=None):
         try:
             with transaction.atomic(using=version.db):
                 # Revert the revision.
@@ -181,12 +181,12 @@ class VersionAdmin(admin.ModelAdmin):
                     else:
                         response.template_name = template_name  # Set the template name to the correct template.
                         response.render()  # Eagerly render the response, so it's using the latest version.
-                        raise RollBackRevisionView  # Raise an exception to undo the transaction and the revision.
+                        raise _RollBackRevisionView  # Raise an exception to undo the transaction and the revision.
         except RevertError as ex:
             opts = self.model._meta
             messages.error(request, force_text(ex))
             return redirect("{}:{}_{}_changelist".format(self.admin_site.name, opts.app_label, opts.model_name))
-        except RollBackRevisionView:
+        except _RollBackRevisionView:
             pass
         return response
 
@@ -202,7 +202,7 @@ class VersionAdmin(admin.ModelAdmin):
             "title": _("Recover %(name)s") % {"name": version.object_repr},
         }
         context.update(extra_context or {})
-        return self.revisionform_view(
+        return self._reversion_revisionform_view(
             request,
             version,
             self.recover_form_template or self._reversion_get_template_list("recover_form.html"),
@@ -217,7 +217,7 @@ class VersionAdmin(admin.ModelAdmin):
             "title": _("Revert %(name)s") % {"name": version.object_repr},
         }
         context.update(extra_context or {})
-        return self.revisionform_view(
+        return self._reversion_revisionform_view(
             request,
             version,
             self.revision_form_template or self._reversion_get_template_list("revision_form.html"),
