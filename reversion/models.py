@@ -4,7 +4,7 @@ from itertools import chain
 from django.contrib.contenttypes.models import ContentType
 try:
     from django.contrib.contenttypes.fields import GenericForeignKey
-except ImportError:  # Django < 1.9
+except ImportError:  # Django < 1.9 pragma: no cover
     from django.contrib.contenttypes.generic import GenericForeignKey
 from django.conf import settings
 from django.core import serializers
@@ -14,7 +14,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _, ugettext
 from django.utils.encoding import force_text, python_2_unicode_compatible
 from reversion.errors import RevertError
-from reversion.revisions import _get_options, _get_content_type
+from reversion.revisions import _get_options, _get_content_type, _follow_relations_recursive
 
 
 def _safe_revert(versions):
@@ -80,7 +80,7 @@ class Revision(models.Model):
                             pass
                     # Calculate the set of all objects that are in the revision now.
                     current_revision = chain.from_iterable(
-                        self.revision_manager._follow_relationships(obj)
+                        _follow_relations_recursive(obj)
                         for obj in old_revision
                     )
                     # Delete objects that are no longer in the current revision.

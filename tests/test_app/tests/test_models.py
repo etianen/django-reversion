@@ -288,3 +288,18 @@ class RevisionRevertTest(TestBase):
         self.assertEqual(obj_1.name, "obj_1 v1")
         obj_2.refresh_from_db()
         self.assertEqual(obj_2.name, "obj_2 v1")
+
+    def testRevertDelete(self):
+        reversion.unregister(TestModel)
+        reversion.register(TestModel, follow=("related_instances",))
+        with reversion.create_revision():
+            obj_1 = TestModel.objects.create()
+        obj_2 = TestModel.objects.create()
+        with reversion.create_revision():
+            obj_1.related_instances.add(obj_2)
+            obj_1.name = "v2"
+            obj_1.save()
+        Version.objects.get_for_object(obj_1)[1].revision.revert(delete=True)
+        obj_1.refresh_from_db()
+        self.assertEqual(obj_1.name, "v1")
+        self.assertFalse(TestModel.objects.filter(pk=obj_2.pk).exists())

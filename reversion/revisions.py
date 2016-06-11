@@ -137,8 +137,9 @@ def add_meta(model, **values):
     _update_frame(meta=_current_frame().meta + ((model, values),))
 
 
-def _follow_relations(obj, follow):
-    for follow_name in follow:
+def _follow_relations(obj):
+    version_options = _get_options(obj.__class__)
+    for follow_name in version_options.follow:
         try:
             follow_obj = getattr(obj, follow_name)
         except ObjectDoesNotExist:
@@ -153,6 +154,17 @@ def _follow_relations(obj, follow):
                 name=obj.__class__.__name__,
                 follow_name=follow_name,
             ))
+
+
+def _follow_relations_recursive(obj):
+    def do_follow(obj):
+        if obj not in relations:
+            relations.add(obj)
+            for related in _follow_relations(obj):
+                do_follow(related)
+    relations = set()
+    do_follow(obj)
+    return relations
 
 
 def _add_to_revision(obj, using, model_db, explicit):
@@ -189,7 +201,7 @@ def _add_to_revision(obj, using, model_db, explicit):
     db_versions[using][version_key] = version
     _update_frame(db_versions=db_versions)
     # Follow relations.
-    for follow_obj in _follow_relations(obj, version_options.follow):
+    for follow_obj in _follow_relations(obj):
         _add_to_revision(follow_obj, using, model_db, False)
 
 
