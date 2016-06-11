@@ -90,7 +90,7 @@ class AdminUpdateViewTest(AdminTestBase):
             "name": "v2",
             "parent_name": "parent v2",
         })
-        self.assertSingleRevision((obj, obj.testmodel_ptr), user=self.user, comment="Changed name and parent_name.")
+        self.assertSingleRevision((obj, obj.testmodel_ptr), user=self.user, comment=None)
 
 
 class AdminChangelistView(AdminTestBase):
