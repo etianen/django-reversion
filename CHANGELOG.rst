@@ -41,7 +41,7 @@ Admin
         class YourVersionAdmin(VersionAdmin):
 
             def reversion_register(self, model, **options):
-                options["format"] = "yaml"
+                options["ignore_duplicate_revisions"] = True
                 super(YourVersionAdmin, self).reversion_register(model, **options)
 
 

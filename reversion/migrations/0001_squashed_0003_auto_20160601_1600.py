@@ -27,6 +27,9 @@ class Migration(migrations.Migration):
                 ('comment', models.TextField(blank=True, help_text='A text comment on this revision.', verbose_name='comment')),
                 ('user', models.ForeignKey(blank=True, help_text='The user who created this revision.', null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL, verbose_name='user')),
             ],
+            options={
+                "ordering": ("-pk",)
+            },
         ),
         migrations.CreateModel(
             name='Version',
@@ -40,6 +43,9 @@ class Migration(migrations.Migration):
                 ('revision', models.ForeignKey(help_text='The revision that contains this version.', on_delete=django.db.models.deletion.CASCADE, to='reversion.Revision')),
                 ('db', models.CharField(help_text='The database the model under version control is stored in.', max_length=191)),
             ],
+            options={
+                "ordering": ("-pk",)
+            },
         ),
         migrations.AlterUniqueTogether(
             name='version',

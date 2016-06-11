@@ -96,6 +96,7 @@ class Revision(models.Model):
 
     class Meta:
         app_label = "reversion"
+        ordering = ("-pk",)
 
 
 class VersionQuerySet(models.QuerySet):
@@ -106,7 +107,7 @@ class VersionQuerySet(models.QuerySet):
         return self.filter(
             content_type=content_type,
             db=model_db,
-        ).order_by("-pk")
+        )
 
     def get_for_object_reference(self, model, object_id, model_db=None):
         return self.get_for_model(model, model_db=model_db).filter(
@@ -262,6 +263,7 @@ class Version(models.Model):
         unique_together = (
             ("db", "content_type", "object_id", "revision"),
         )
+        ordering = ("-pk",)
 
 
 class _Str(models.Func):

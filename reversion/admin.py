@@ -64,9 +64,9 @@ class VersionAdmin(admin.ModelAdmin):
 
     def _reversion_order_version_queryset(self, queryset):
         """Applies the correct ordering to the given version queryset."""
-        if self.history_latest_first:
-            return queryset.order_by("-pk")
-        return queryset.order_by("pk")
+        if not self.history_latest_first:
+            queryset = queryset.order_by("pk")
+        return queryset
 
     # Messages.
 

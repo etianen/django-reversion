@@ -78,7 +78,7 @@ class Command(BaseRevisionCommand):
                     date_created__lt=timezone.now() - timedelta(days=days),
                 ).exclude(
                     pk__in=keep_revision_ids
-                )
+                ).order_by()
             else:
                 revisions_to_delete = Revision.objects.using(using).none()
             # Print out a message, if feeling verbose.

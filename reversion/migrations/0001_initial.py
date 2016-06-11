@@ -24,6 +24,7 @@ class Migration(migrations.Migration):
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.SET_NULL, blank=True, to=settings.AUTH_USER_MODEL, help_text='The user who created this revision.', null=True, verbose_name='user')),
             ],
             options={
+                "ordering": ("-pk",)
             },
             bases=(models.Model,),
         ),
@@ -40,6 +41,7 @@ class Migration(migrations.Migration):
                 ('revision', models.ForeignKey(help_text='The revision that contains this version.', on_delete=django.db.models.deletion.CASCADE, to='reversion.Revision')),
             ],
             options={
+                "ordering": ("-pk",)
             },
             bases=(models.Model,),
         ),
