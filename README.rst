@@ -29,7 +29,7 @@ Upgrading
 ---------
 
 If you're upgrading your existing installation of django-reversion, please check
-the `Schema Migrations <http://django-reversion.readthedocs.org/en/latest/migrations.html>`_
+the `Changelog <https://github.com/etianen/django-reversion/blob/master/CHANGELOG.rst>`_
 documentation for information on any database changes and how to upgrade.
 
 It's always worth checking the `CHANGELOG <https://github.com/etianen/django-reversion/blob/master/CHANGELOG.rst>`_
