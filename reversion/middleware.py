@@ -15,7 +15,7 @@ class RevisionMiddleware(object):
         super(RevisionMiddleware, self).__init__()
         # Support Django 1.10 middleware.
         if get_response is not None:
-            self.get_response = create_revision()(get_response)
+            self.get_response = create_revision(manage_manually=self.manage_manually, using=self.using)(get_response)
 
     def process_request(self, request):
         if _request_creates_revision(request):
