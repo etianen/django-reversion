@@ -289,6 +289,18 @@ class RevisionRevertTest(TestBase):
         obj_2.refresh_from_db()
         self.assertEqual(obj_2.name, "obj_2 v1")
 
+    def testRevertIntegrityError(self):
+        reversion.unregister(TestModelParent)
+        reversion.register(TestModelParent)
+        with reversion.create_revision():
+            obj = TestModelParent.objects.create()
+        obj.delete()
+        with self.assertRaises(reversion.RevertError):
+            Version.objects.get_for_object(obj).revision.revert()
+
+
+class RevisionRevertDeleteTest(TestBase):
+
     def testRevertDelete(self):
         reversion.unregister(TestModel)
         reversion.register(TestModel, follow=("related_instances",))
