@@ -20,11 +20,15 @@ Management commands
 
 * **Breaking:** Refactored arguments to ``createinitialrevisions`` (@etianen).
 
-    All existing functionality should still be supported, but several parameter names have been updated to match Django coding conventions. Check the command ``--help`` for details.
+    All existing functionality should still be supported, but several parameter names have been updated to match Django coding conventions.
+
+    Check the command ``--help`` for details.
 
 * **Breaking:** Refactored arguments to ``deleterevisions`` (@etianen).
 
-    All existing functionality should still be supported, but several parameter names have been updated to match Django coding conventions, and some duplicate parameters have been removed. The confirmation prompt has been removed entirely, and the command now always runs in the ``--force`` mode from the previous version. Check the command ``--help`` for details.
+    All existing functionality should still be supported, but several parameter names have been updated to match Django coding conventions, and some duplicate parameters have been removed. The confirmation prompt has been removed entirely, and the command now always runs in the ``--force`` mode from the previous version.
+
+    Check the command ``--help`` for details.
 
 
 Middleware
@@ -47,7 +51,7 @@ Low-level API
 * Restored many of the django-reversion API methods back to the top-level namespace (@etianen).
 * Revision blocks are now automatically wrapped in ``transaction.atomic()`` (@etianen).
 * Added ``for_concrete_model`` argument to ``reversion.register()`` (@etianen).
-* Added ``get_for_model()`` version lookup function (@etianen).
+* Added ``Version.objects.get_for_model()`` lookup function (@etianen).
 * Added ``reversion.add_to_revision()`` for manually adding model instances to an active revision (@etianen).
 
 * **Breaking:** ``reversion.get_for_object_reference()`` has been moved to ``Version.objects.get_for_object_reference()`` (@etianen).
@@ -74,7 +78,7 @@ Low-level API
 
     Use ``get_for_object().get_unique()`` instead.
 
-* **Breaking:** Removed ``signal`` and ``eager_signals`` argument to ``reversion.register() (@etianen).
+* **Breaking:** Removed ``signal`` and ``eager_signals`` argument to ``reversion.register()`` (@etianen).
 
     To create revisions on signals other than ``post_save`` and ``m2m_changed``, call ``reversion.add_to_revision()`` in a signal handler for the appropriate signal.
 
@@ -89,17 +93,28 @@ Low-level API
             if reversion.is_active():
                 reversion.add_to_revision(instance)
 
+* **Breaking:** Removed ``reversion.save_revision()`` (@etianen).
+
+    Use reversion.add_to_revision() instead.
+
+    .. code:: python
+
+        import reversion
+
+        with reversion.create_revision():
+            reversion.add_to_revision(your_obj)
+
 
 Signals
 ^^^^^^^
 
 * **Breaking:** Removed ``pre_revision_commit`` signal (@etianen).
 
-    Use Django standard ``pre_save`` signal for ``Revision`` instead.
+    Use the Django standard ``pre_save`` signal for ``Revision`` instead.
 
 * **Breaking:** Removed ``post_revision_commit`` signal (@etianen).
 
-    Use Django standard ``post_save`` signal for ``Revision`` instead.
+    Use the Django standard ``post_save`` signal for ``Revision`` instead.
 
 
 Helpers
@@ -109,7 +124,12 @@ Helpers
 
     Use ``VersionAdmin`` as a mixin to 3rd party ModelAdmins instead.
 
-    https://django-reversion.readthedocs.io/en/2.0.0/admin.html#integration-with-3rd-party-apps
+    .. code::
+
+        @admin.register(SomeModel)
+        class YourModelAdmin(VersionAdmin, SomeModelAdmin):
+
+            pass
 
 * **Breaking:** Removed ``generate_diffs`` function (@etianen).
 

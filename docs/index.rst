@@ -18,7 +18,7 @@ Features
 Installation
 ------------
 
-To install django-reversion, follow these steps:
+To install django-reversion:
 
 1.  Install with pip: ``pip install django-reversion``.
 2.  Add ``'reversion'`` to ``INSTALLED_APPS``.
