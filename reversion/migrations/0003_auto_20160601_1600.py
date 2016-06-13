@@ -6,6 +6,27 @@ from collections import defaultdict
 from django.db import migrations, models, router
 
 
+def de_dupe_version_table(apps, schema_editor):
+    """
+    Removes some duplicate Version models that may have crept into the database and will prevent the
+    unique index being added by migration 0004.
+    """
+    Version = apps.get_model("reversion", "Version")
+    keep_version_ids = Version.objects.order_by().values_list(
+        # Group by the unique constraint we intend to enforce.
+        "revision_id",
+        "content_type_id",
+        "object_id",
+    ).annotate(
+        # Add in the most recent id for each duplicate row.
+        max_pk=models.Max("pk"),
+    ).values_list("max_pk", flat=True)
+    # Delete all duplicate versions.
+    Version.objects.exclude(
+        pk__in=keep_version_ids,
+    ).delete()
+
+
 def set_version_db(apps, schema_editor):
     """
     Updates the db field in all Version models to point to the correct write
@@ -57,5 +78,6 @@ class Migration(migrations.Migration):
             name='db',
             field=models.CharField(null=True, help_text='The database the model under version control is stored in.', max_length=191),
         ),
+        migrations.RunPython(de_dupe_version_table),
         migrations.RunPython(set_version_db),
     ]
