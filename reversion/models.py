@@ -119,13 +119,13 @@ class VersionQuerySet(models.QuerySet):
 
     def get_deleted(self, model, model_db=None):
         return self.get_for_model(model, model_db=model_db).filter(
-            id__in=_safe_subquery(
+            pk__in=_safe_subquery(
                 "exclude",
                 self.get_for_model(model, model_db=model_db),
                 "object_id",
                 model._default_manager.using(model_db),
                 model._meta.pk.name,
-            ),
+            ).order_by().values_list("pk", flat=True),
         )
 
     def get_unique(self):
