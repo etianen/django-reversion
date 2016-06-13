@@ -50,7 +50,7 @@ class Command(BaseRevisionCommand):
                     pk__in=Version.objects.using(using).get_for_model(
                         model,
                         model_db=model_db,
-                    ).values_list("revision_id", flat=True)
+                    ).order_by().values_list("revision_id", flat=True)
                 )
                 if keep:
                     overflow_object_ids = Version.objects.using(using).get_for_model(
