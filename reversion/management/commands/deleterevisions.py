@@ -20,7 +20,7 @@ class Command(BaseRevisionCommand):
         )
         parser.add_argument(
             "--keep",
-            default=None,
+            default=0,
             type=int,
             help="Keep the specified number of revisions (most recent) for each object.",
         )
