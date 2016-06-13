@@ -28,7 +28,7 @@ You can keep up to date with the latest announcements by joining the
 Upgrading
 ---------
 
-Please check the `Changelog <https://github.com/etianen/django-reversion/blob/master/CHANGELOG.rst>`_. before upgrading
+Please check the `Changelog <https://github.com/etianen/django-reversion/blob/master/CHANGELOG.rst>`_ before upgrading
 your installation of django-reversion.
 
 
