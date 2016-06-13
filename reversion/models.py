@@ -118,18 +118,14 @@ class VersionQuerySet(models.QuerySet):
         return self.get_for_object_reference(obj.__class__, obj.pk, model_db=model_db)
 
     def get_deleted(self, model, model_db=None):
-        return _safe_subquery(
-            "filter",
-            self.get_for_model(model, model_db=model_db),
-            "id",
-            _safe_subquery(
+        return self.get_for_model(model, model_db=model_db).filter(
+            id__in=_safe_subquery(
                 "exclude",
                 self.get_for_model(model, model_db=model_db),
                 "object_id",
                 model._default_manager.using(model_db),
                 model._meta.pk.name,
             ),
-            "id"
         )
 
     def get_unique(self):
