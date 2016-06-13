@@ -3,6 +3,14 @@
 django-reversion changelog
 ==========================
 
+
+2.0.1 - Pending
+---------------
+
+- Improved performance of migration 0003 (@BertrandBordage).
+- De-duplicating ``Version`` table before applying migration 0004 (@BertrandBordage, @etianen).
+
+
 2.0.0 - 11/06/2016
 ------------------
 
