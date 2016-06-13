@@ -12,7 +12,7 @@ def set_version_db(apps, schema_editor):
     db for the model.
     """
     Version = apps.get_model("reversion", "Version")
-    content_types = Version.objects.values_list("content_type__app_label", "content_type__model").distinct()
+    content_types = Version.objects.order_by().values_list("content_type__app_label", "content_type__model").distinct()
     model_dbs = defaultdict(list)
     for app_label, model_name in content_types:
         model = apps.get_model(app_label, model_name)
