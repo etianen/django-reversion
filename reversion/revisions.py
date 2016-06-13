@@ -9,9 +9,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction, router
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, m2m_changed
-from django.dispatch import receiver
 from django.utils.encoding import force_text
 from django.utils import timezone
+from reversion.compat import remote_field
 from reversion.errors import RevisionManagementError, RegistrationError
 
 
@@ -284,13 +284,11 @@ class _ContextWrapper(object):
         return do_revision_context
 
 
-@receiver(post_save)
 def _post_save_receiver(sender, instance, using, **kwargs):
     if is_registered(sender) and is_active() and not is_manage_manually():
         add_to_revision(instance, model_db=using)
 
 
-@receiver(m2m_changed)
 def _m2m_changed_receiver(instance, using, action, model, reverse, **kwargs):
     if action.startswith("post_") and not reverse:
         if is_registered(model) and is_active() and not is_manage_manually():
@@ -321,7 +319,7 @@ def register(model=None, fields=None, exclude=(), follow=(), format="json",
                 model=model,
             ))
         # Parse fields.
-        opts = model._meta
+        opts = model._meta.concrete_model._meta
         version_options = _VersionOptions(
             fields=tuple(
                 field_name
@@ -340,6 +338,10 @@ def register(model=None, fields=None, exclude=(), follow=(), format="json",
         )
         # Register the model.
         _registered_models[_get_registration_key(model)] = version_options
+        # Connect signals.
+        post_save.connect(_post_save_receiver, sender=model)
+        for field in opts.local_many_to_many:
+            m2m_changed.connect(_m2m_changed_receiver, sender=remote_field(field).through)
         # All done!
         return model
     # Return a class decorator if model is not given
@@ -364,6 +366,11 @@ def _get_options(model):
 def unregister(model):
     _assert_registered(model)
     del _registered_models[_get_registration_key(model)]
+    opts = model._meta.concrete_model._meta
+    # Disconnect signals.
+    post_save.disconnect(_post_save_receiver, sender=model)
+    for field in opts.local_many_to_many:
+        m2m_changed.disconnect(_m2m_changed_receiver, sender=remote_field(field).through)
 
 
 def _get_content_type(model, using):
