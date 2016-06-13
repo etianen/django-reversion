@@ -21,9 +21,13 @@ def de_dupe_version_table(apps, schema_editor):
         # Add in the most recent id for each duplicate row.
         max_pk=models.Max("pk"),
     ).values_list("max_pk", flat=True)
-    # Delete all duplicate versions.
-    Version.objects.exclude(
+    # Delete all duplicate versions. Can't do this as a delete with subquery because MySQL doesn't like running a
+    # subquery on the table being updated/deleted.
+    delete_version_ids = list(Version.objects.exclude(
         pk__in=keep_version_ids,
+    ).values_list("pk", flat=True))
+    Version.objects.filter(
+        pk__in=delete_version_ids,
     ).delete()
 
 
