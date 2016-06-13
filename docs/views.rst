@@ -28,7 +28,7 @@ The request user will also be added to the revision metadata.
 .. code:: python
 
     from django.contrib.auth.views import FormView
-    from reverion.views import RevisionMixin
+    from reversion.views import RevisionMixin
 
     class RevisionFormView(RevisionMixin, FormView):
 
