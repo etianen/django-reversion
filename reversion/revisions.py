@@ -10,7 +10,7 @@ from django.db import models, transaction, router
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, m2m_changed
 from django.utils.encoding import force_text
-from django.utils import timezone
+from django.utils import timezone, six
 from reversion.compat import remote_field
 from reversion.errors import RevisionManagementError, RegistrationError
 
@@ -310,6 +310,21 @@ def get_registered_models():
     return (apps.get_model(*key) for key in _registered_models.keys())
 
 
+def _get_senders_and_signals(model):
+    yield model, post_save, _post_save_receiver
+    opts = model._meta.concrete_model._meta
+    for field in opts.local_many_to_many:
+        m2m_model = remote_field(field).through
+        if isinstance(m2m_model, six.string_types):
+            if "." not in m2m_model:
+                m2m_model = "{app_label}.{m2m_model}".format(
+                    app_label=opts.app_label,
+                    m2m_model=m2m_model
+                )
+            m2m_model = apps.get_model(m2m_model)
+        yield m2m_model, m2m_changed, _m2m_changed_receiver
+
+
 def register(model=None, fields=None, exclude=(), follow=(), format="json",
              for_concrete_model=True, ignore_duplicates=False):
     def register(model):
@@ -339,9 +354,8 @@ def register(model=None, fields=None, exclude=(), follow=(), format="json",
         # Register the model.
         _registered_models[_get_registration_key(model)] = version_options
         # Connect signals.
-        post_save.connect(_post_save_receiver, sender=model)
-        for field in opts.local_many_to_many:
-            m2m_changed.connect(_m2m_changed_receiver, sender=remote_field(field).through)
+        for sender, signal, signal_receiver in _get_senders_and_signals(model):
+            signal.connect(signal_receiver, sender=sender)
         # All done!
         return model
     # Return a class decorator if model is not given
@@ -366,11 +380,9 @@ def _get_options(model):
 def unregister(model):
     _assert_registered(model)
     del _registered_models[_get_registration_key(model)]
-    opts = model._meta.concrete_model._meta
     # Disconnect signals.
-    post_save.disconnect(_post_save_receiver, sender=model)
-    for field in opts.local_many_to_many:
-        m2m_changed.disconnect(_m2m_changed_receiver, sender=remote_field(field).through)
+    for sender, signal, signal_receiver in _get_senders_and_signals(model):
+        signal.disconnect(signal_receiver, sender=sender)
 
 
 def _get_content_type(model, using):

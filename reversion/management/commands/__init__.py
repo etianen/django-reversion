@@ -39,15 +39,10 @@ class BaseRevisionCommand(BaseCommand):
             for label in app_labels:
                 if "." in label:
                     # This is an app.Model specifier.
-                    app_label, model_label = label.split(".")
                     try:
-                        app = apps.get_app_config(app_label)
+                        model = apps.get_model(label)
                     except LookupError:
-                        raise CommandError("Unknown app: {}".format(app_label))
-                    try:
-                        model = app.get_model(model_label)
-                    except LookupError:
-                        raise CommandError("Unknown model: {}.{}".format(app_label, model_label))
+                        raise CommandError("Unknown model: {}".format(label))
                     selected_models.add(model)
                 else:
                     # This is just an app - no model qualifier.
