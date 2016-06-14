@@ -16,17 +16,10 @@ class TestBase(TestCase):
 
     multi_db = True
 
-    def setUp(self):
-        super(TestBase, self).setUp()
-        reversion.register(TestModel)
-        reversion.register(TestModelParent, follow=("testmodel_ptr",))
-
     def tearDown(self):
         super(TestBase, self).tearDown()
-        if reversion.is_registered(TestModel):
-            reversion.unregister(TestModel)
-        if reversion.is_registered(TestModelParent):
-            reversion.unregister(TestModelParent)
+        for model in list(reversion.get_registered_models()):
+            reversion.unregister(model)
 
     def callCommand(self, command, *args, **kwargs):
         kwargs.setdefault("stdout", StringIO())
@@ -59,18 +52,32 @@ class TestBase(TestCase):
         self.assertEqual(Revision.objects.using(using).all().count(), 0)
 
 
-@override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
-class UserTestBase(TestBase):
+class TestModelMixin(object):
 
     def setUp(self):
-        super(UserTestBase, self).setUp()
+        super(TestModelMixin, self).setUp()
+        reversion.register(TestModel)
+
+
+class TestModelParentMixin(TestModelMixin):
+
+    def setUp(self):
+        super(TestModelParentMixin, self).setUp()
+        reversion.register(TestModelParent, follow=("testmodel_ptr",))
+
+
+@override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
+class UserMixin(TestBase):
+
+    def setUp(self):
+        super(UserMixin, self).setUp()
         self.user = User(username="test", is_staff=True, is_superuser=True)
         self.user.set_password("password")
         self.user.save()
 
 
-class LoginTestBase(UserTestBase):
+class LoginMixin(UserMixin):
 
     def setUp(self):
-        super(LoginTestBase, self).setUp()
+        super(LoginMixin, self).setUp()
         self.client.login(username="test", password="password")

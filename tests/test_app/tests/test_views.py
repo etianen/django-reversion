@@ -1,8 +1,8 @@
 from test_app.models import TestModel
-from test_app.tests.base import TestBase, LoginTestBase
+from test_app.tests.base import TestBase, TestModelMixin, LoginMixin
 
 
-class CreateRevisionTest(TestBase):
+class CreateRevisionTest(TestModelMixin, TestBase):
 
     def testCreateRevision(self):
         response = self.client.post("/test-app/create-revision/")
@@ -14,7 +14,7 @@ class CreateRevisionTest(TestBase):
         self.assertNoRevision()
 
 
-class CreateRevisionUserTest(LoginTestBase):
+class CreateRevisionUserTest(LoginMixin, TestModelMixin, TestBase):
 
     def testCreateRevisionUser(self):
         response = self.client.post("/test-app/create-revision/")
@@ -22,7 +22,7 @@ class CreateRevisionUserTest(LoginTestBase):
         self.assertSingleRevision((obj,), user=self.user)
 
 
-class RevisionMixinTest(TestBase):
+class RevisionMixinTest(TestModelMixin, TestBase):
 
     def testRevisionMixin(self):
         response = self.client.post("/test-app/revision-mixin/")
@@ -34,7 +34,7 @@ class RevisionMixinTest(TestBase):
         self.assertNoRevision()
 
 
-class RevisionMixinUserTest(LoginTestBase):
+class RevisionMixinUserTest(LoginMixin, TestModelMixin, TestBase):
 
     def testCreateRevisionUser(self):
         response = self.client.post("/test-app/revision-mixin/")

@@ -3,55 +3,61 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 import reversion
 from test_app.models import TestModel, TestModelParent, TestMeta
-from test_app.tests.base import TestBase, UserTestBase
+from test_app.tests.base import TestBase, TestModelMixin, UserMixin
 
 
-class DefaultTest(TestBase):
+class SaveTest(TestModelMixin, TestBase):
 
     def testModelSave(self):
         TestModel.objects.create()
         self.assertNoRevision()
 
 
-class IsRegisteredTest(TestBase):
+class IsRegisteredTest(TestModelMixin, TestBase):
 
     def testIsRegistered(self):
         self.assertTrue(reversion.is_registered(TestModel))
 
     def testIsRegisteredFalse(self):
-        self.assertFalse(reversion.is_registered(User))
+        reversion.unregister(TestModel)
+        self.assertFalse(reversion.is_registered(TestModel))
 
 
-class GetRegisteredModelsTest(TestBase):
+class GetRegisteredModelsTest(TestModelMixin, TestBase):
 
     def testGetRegisteredModels(self):
-        self.assertEqual(set(reversion.get_registered_models()), set((TestModel, TestModelParent,)))
+        self.assertEqual(set(reversion.get_registered_models()), set((TestModel,)))
 
 
 class RegisterTest(TestBase):
 
+    def testRegister(self):
+        reversion.register(TestModel)
+        self.assertTrue(reversion.is_registered(TestModel))
+
     def testRegisterDecorator(self):
-        reversion.unregister(TestModel)
         reversion.register()(TestModel)
         self.assertTrue(reversion.is_registered(TestModel))
 
     def testRegisterAlreadyRegistered(self):
+        reversion.register(TestModel)
         with self.assertRaises(reversion.RegistrationError):
             reversion.register(TestModel)
 
 
-class UnregisterTest(TestBase):
+class UnregisterTest(TestModelMixin, TestBase):
 
     def testUnregister(self):
         reversion.unregister(TestModel)
         self.assertFalse(reversion.is_registered(TestModel))
 
     def testUnregisterNotRegistered(self):
+        reversion.unregister(TestModel)
         with self.assertRaises(reversion.RegistrationError):
             reversion.unregister(User)
 
 
-class CreateRevisionTest(TestBase):
+class CreateRevisionTest(TestModelMixin, TestBase):
 
     def testCreateRevision(self):
         with reversion.create_revision():
@@ -83,7 +89,7 @@ class CreateRevisionTest(TestBase):
         self.assertSingleRevision((obj,))
 
 
-class CreateRevisionManageManuallyTest(TestBase):
+class CreateRevisionManageManuallyTest(TestModelMixin, TestBase):
 
     def testCreateRevisionManageManually(self):
         with reversion.create_revision(manage_manually=True):
@@ -97,7 +103,7 @@ class CreateRevisionManageManuallyTest(TestBase):
         self.assertNoRevision()
 
 
-class CreateRevisionDbTest(TestBase):
+class CreateRevisionDbTest(TestModelMixin, TestBase):
 
     def testCreateRevisionMultiDb(self):
         with reversion.create_revision(using="mysql"), reversion.create_revision(using="postgres"):
@@ -107,7 +113,7 @@ class CreateRevisionDbTest(TestBase):
         self.assertSingleRevision((obj,), using="postgres")
 
 
-class CreateRevisionFollowTest(TestBase):
+class CreateRevisionFollowTest(TestModelMixin, TestBase):
 
     def testCreateRevisionFollow(self):
         reversion.unregister(TestModel)
@@ -126,7 +132,7 @@ class CreateRevisionFollowTest(TestBase):
                 TestModel.objects.create()
 
 
-class CreateRevisionIgnoreDuplicatesTest(TestBase):
+class CreateRevisionIgnoreDuplicatesTest(TestModelMixin, TestBase):
 
     def testCreateRevisionIgnoreDuplicates(self):
         reversion.unregister(TestModel)
@@ -138,15 +144,16 @@ class CreateRevisionIgnoreDuplicatesTest(TestBase):
         self.assertSingleRevision((obj,))
 
 
-class CreateRevisionInheritanceTest(TestBase):
+class CreateRevisionInheritanceTest(TestModelMixin, TestBase):
 
     def testCreateRevisionInheritance(self):
+        reversion.register(TestModelParent, follow=("testmodel_ptr",))
         with reversion.create_revision():
             obj = TestModelParent.objects.create()
         self.assertSingleRevision((obj, obj.testmodel_ptr))
 
 
-class SetCommentTest(TestBase):
+class SetCommentTest(TestModelMixin, TestBase):
 
     def testSetComment(self):
         with reversion.create_revision():
@@ -175,7 +182,7 @@ class GetCommentTest(TestBase):
             reversion.get_comment()
 
 
-class SetUserTest(UserTestBase):
+class SetUserTest(UserMixin, TestModelMixin, TestBase):
 
     def testSetUser(self):
         with reversion.create_revision():
@@ -188,7 +195,7 @@ class SetUserTest(UserTestBase):
             reversion.set_user(self.user)
 
 
-class GetUserTest(UserTestBase):
+class GetUserTest(UserMixin, TestBase):
 
     def testGetUser(self):
         with reversion.create_revision():
@@ -204,7 +211,7 @@ class GetUserTest(UserTestBase):
             reversion.get_user()
 
 
-class SetDateCreatedTest(TestBase):
+class SetDateCreatedTest(TestModelMixin, TestBase):
 
     def testSetDateCreated(self):
         date_created = timezone.now() - timedelta(days=20)
@@ -235,7 +242,7 @@ class GetDateCreatedTest(TestBase):
             reversion.get_date_created()
 
 
-class AddMetaTest(TestBase):
+class AddMetaTest(TestModelMixin, TestBase):
 
     def testAddMeta(self):
         with reversion.create_revision():

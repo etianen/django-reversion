@@ -3,10 +3,10 @@ from django.core.management import CommandError
 from django.utils import timezone
 import reversion
 from test_app.models import TestModel
-from test_app.tests.base import TestBase
+from test_app.tests.base import TestBase, TestModelMixin
 
 
-class CreateInitialRevisionsTest(TestBase):
+class CreateInitialRevisionsTest(TestModelMixin, TestBase):
 
     def testCreateInitialRevisions(self):
         obj = TestModel.objects.create()
@@ -20,7 +20,7 @@ class CreateInitialRevisionsTest(TestBase):
         self.assertSingleRevision((obj,), comment="Initial version.")
 
 
-class CreateInitialRevisionsAppLabelTest(TestBase):
+class CreateInitialRevisionsAppLabelTest(TestModelMixin, TestBase):
 
     def testCreateInitialRevisionsAppLabel(self):
         obj = TestModel.objects.create()
@@ -50,7 +50,7 @@ class CreateInitialRevisionsAppLabelTest(TestBase):
         self.assertNoRevision()
 
 
-class CreateInitialRevisionsDbTest(TestBase):
+class CreateInitialRevisionsDbTest(TestModelMixin, TestBase):
 
     def testCreateInitialRevisionsDb(self):
         obj = TestModel.objects.create()
@@ -65,7 +65,7 @@ class CreateInitialRevisionsDbTest(TestBase):
         self.assertSingleRevision((obj,), comment="Initial version.", using="mysql")
 
 
-class CreateInitialRevisionsModelDbTest(TestBase):
+class CreateInitialRevisionsModelDbTest(TestModelMixin, TestBase):
 
     def testCreateInitialRevisionsModelDb(self):
         obj = TestModel.objects.db_manager("postgres").create()
@@ -73,7 +73,7 @@ class CreateInitialRevisionsModelDbTest(TestBase):
         self.assertSingleRevision((obj,), comment="Initial version.", model_db="postgres")
 
 
-class CreateInitialRevisionsCommentTest(TestBase):
+class CreateInitialRevisionsCommentTest(TestModelMixin, TestBase):
 
     def testCreateInitialRevisionsComment(self):
         obj = TestModel.objects.create()
@@ -81,7 +81,7 @@ class CreateInitialRevisionsCommentTest(TestBase):
         self.assertSingleRevision((obj,), comment="comment v1")
 
 
-class DeleteRevisionsTest(TestBase):
+class DeleteRevisionsTest(TestModelMixin, TestBase):
 
     def testDeleteRevisions(self):
         with reversion.create_revision():
@@ -90,7 +90,7 @@ class DeleteRevisionsTest(TestBase):
         self.assertNoRevision()
 
 
-class DeleteRevisionsAppLabelTest(TestBase):
+class DeleteRevisionsAppLabelTest(TestModelMixin, TestBase):
 
     def testDeleteRevisionsAppLabel(self):
         with reversion.create_revision():
@@ -123,7 +123,7 @@ class DeleteRevisionsAppLabelTest(TestBase):
         self.assertSingleRevision((obj,))
 
 
-class DeleteRevisionsDbTest(TestBase):
+class DeleteRevisionsDbTest(TestModelMixin, TestBase):
 
     def testDeleteRevisionsDb(self):
         with reversion.create_revision(using="postgres"):
@@ -144,7 +144,7 @@ class DeleteRevisionsDbTest(TestBase):
         self.assertSingleRevision((obj,))
 
 
-class DeleteRevisionsModelDbTest(TestBase):
+class DeleteRevisionsModelDbTest(TestModelMixin, TestBase):
 
     def testDeleteRevisionsModelDb(self):
         with reversion.create_revision():
@@ -153,7 +153,7 @@ class DeleteRevisionsModelDbTest(TestBase):
         self.assertNoRevision(using="postgres")
 
 
-class DeleteRevisionsDaysTest(TestBase):
+class DeleteRevisionsDaysTest(TestModelMixin, TestBase):
 
     def testDeleteRevisionsDays(self):
         date_created = timezone.now() - timedelta(days=20)
@@ -172,7 +172,7 @@ class DeleteRevisionsDaysTest(TestBase):
         self.assertSingleRevision((obj,), date_created=date_created)
 
 
-class DeleteRevisionsKeepTest(TestBase):
+class DeleteRevisionsKeepTest(TestModelMixin, TestBase):
 
     def testDeleteRevisionsKeep(self):
         with reversion.create_revision():

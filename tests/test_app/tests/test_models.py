@@ -2,10 +2,10 @@ from django.utils.encoding import force_text
 import reversion
 from reversion.models import Version
 from test_app.models import TestModel, TestModelParent
-from test_app.tests.base import TestBase
+from test_app.tests.base import TestBase, TestModelMixin, TestModelParentMixin
 
 
-class GetForModelTest(TestBase):
+class GetForModelTest(TestModelMixin, TestBase):
 
     def testGetForModel(self):
         with reversion.create_revision():
@@ -13,7 +13,7 @@ class GetForModelTest(TestBase):
         self.assertEqual(Version.objects.get_for_model(obj.__class__).count(), 1)
 
 
-class GetForModelDbTest(TestBase):
+class GetForModelDbTest(TestModelMixin, TestBase):
 
     def testGetForModelDb(self):
         with reversion.create_revision(using="postgres"):
@@ -26,7 +26,7 @@ class GetForModelDbTest(TestBase):
         self.assertEqual(Version.objects.using("mysql").get_for_model(obj.__class__).count(), 1)
 
 
-class GetForObjectTest(TestBase):
+class GetForObjectTest(TestModelMixin, TestBase):
 
     def testGetForObject(self):
         with reversion.create_revision():
@@ -55,7 +55,7 @@ class GetForObjectTest(TestBase):
         self.assertEqual(Version.objects.get_for_object(obj_2).get().object, obj_2)
 
 
-class GetForObjectDbTest(TestBase):
+class GetForObjectDbTest(TestModelMixin, TestBase):
 
     def testGetForObjectDb(self):
         with reversion.create_revision(using="postgres"):
@@ -70,7 +70,7 @@ class GetForObjectDbTest(TestBase):
         self.assertEqual(Version.objects.using("mysql").get_for_object(obj).count(), 1)
 
 
-class GetForObjectModelDbTest(TestBase):
+class GetForObjectModelDbTest(TestModelMixin, TestBase):
 
     def testGetForObjectModelDb(self):
         with reversion.create_revision():
@@ -79,7 +79,7 @@ class GetForObjectModelDbTest(TestBase):
         self.assertEqual(Version.objects.get_for_object(obj, model_db="postgres").count(), 1)
 
 
-class GetForObjectUniqueTest(TestBase):
+class GetForObjectUniqueTest(TestModelMixin, TestBase):
 
     def testGetForObjectUnique(self):
         with reversion.create_revision():
@@ -97,7 +97,7 @@ class GetForObjectUniqueTest(TestBase):
         self.assertEqual(len(list(Version.objects.get_for_object(obj).get_unique())), 2)
 
 
-class GetForObjectReferenceTest(TestBase):
+class GetForObjectReferenceTest(TestModelMixin, TestBase):
 
     def testGetForObjectReference(self):
         with reversion.create_revision():
@@ -126,7 +126,7 @@ class GetForObjectReferenceTest(TestBase):
         self.assertEqual(Version.objects.get_for_object_reference(TestModel, obj_2.pk).get().object, obj_2)
 
 
-class GetForObjectReferenceDbTest(TestBase):
+class GetForObjectReferenceDbTest(TestModelMixin, TestBase):
 
     def testGetForObjectReferenceModelDb(self):
         with reversion.create_revision(using="postgres"):
@@ -135,7 +135,7 @@ class GetForObjectReferenceDbTest(TestBase):
         self.assertEqual(Version.objects.using("postgres").get_for_object_reference(TestModel, obj.pk).count(), 1)
 
 
-class GetForObjectReferenceModelDbTest(TestBase):
+class GetForObjectReferenceModelDbTest(TestModelMixin, TestBase):
 
     def testGetForObjectReferenceModelDb(self):
         with reversion.create_revision():
@@ -150,7 +150,7 @@ class GetForObjectReferenceModelDbTest(TestBase):
         self.assertEqual(Version.objects.get_for_object_reference(TestModel, obj.pk, model_db="mysql").count(), 1)
 
 
-class GetDeletedTest(TestBase):
+class GetDeletedTest(TestModelMixin, TestBase):
 
     def testGetDeleted(self):
         with reversion.create_revision():
@@ -176,7 +176,7 @@ class GetDeletedTest(TestBase):
         self.assertEqual(Version.objects.get_deleted(TestModel)[1].object_id, force_text(pk_1))
 
 
-class GetDeletedDbTest(TestBase):
+class GetDeletedDbTest(TestModelMixin, TestBase):
 
     def testGetDeletedDb(self):
         with reversion.create_revision(using="postgres"):
@@ -193,7 +193,7 @@ class GetDeletedDbTest(TestBase):
         self.assertEqual(Version.objects.using("mysql").get_deleted(TestModel).count(), 1)
 
 
-class GetDeletedModelDbTest(TestBase):
+class GetDeletedModelDbTest(TestModelMixin, TestBase):
 
     def testGetDeletedModelDb(self):
         with reversion.create_revision():
@@ -203,7 +203,7 @@ class GetDeletedModelDbTest(TestBase):
         self.assertEqual(Version.objects.get_deleted(TestModel, model_db="postgres").count(), 1)
 
 
-class FieldDictTest(TestBase):
+class FieldDictTest(TestModelMixin, TestBase):
 
     def testFieldDict(self):
         with reversion.create_revision():
@@ -245,7 +245,7 @@ class FieldDictTest(TestBase):
         })
 
 
-class FieldDictInheritanceTest(TestBase):
+class FieldDictInheritanceTest(TestModelParentMixin, TestBase):
 
     def testFieldDictInheritance(self):
         with reversion.create_revision():
@@ -273,7 +273,7 @@ class FieldDictInheritanceTest(TestBase):
         })
 
 
-class RevertTest(TestBase):
+class RevertTest(TestModelMixin, TestBase):
 
     def testRevert(self):
         with reversion.create_revision():
@@ -300,7 +300,7 @@ class RevertTest(TestBase):
             Version.objects.get_for_object(obj).get().revert()
 
 
-class RevisionRevertTest(TestBase):
+class RevisionRevertTest(TestModelMixin, TestBase):
 
     def testRevert(self):
         with reversion.create_revision():
@@ -322,7 +322,7 @@ class RevisionRevertTest(TestBase):
         self.assertEqual(obj_2.name, "obj_2 v1")
 
 
-class RevisionRevertDeleteTest(TestBase):
+class RevisionRevertDeleteTest(TestModelMixin, TestBase):
 
     def testRevertDelete(self):
         reversion.unregister(TestModel)

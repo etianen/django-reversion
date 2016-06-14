@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.test.utils import override_settings
 from test_app.models import TestModel
-from test_app.tests.base import TestBase, LoginTestBase
+from test_app.tests.base import TestBase, TestModelMixin, LoginMixin
 
 
 use_middleware = override_settings(
@@ -11,7 +11,7 @@ use_middleware = override_settings(
 
 
 @use_middleware
-class RevisionMiddlewareTest(TestBase):
+class RevisionMiddlewareTest(TestModelMixin, TestBase):
 
     def testCreateRevision(self):
         response = self.client.post("/test-app/save-obj/")
@@ -29,7 +29,7 @@ class RevisionMiddlewareTest(TestBase):
 
 
 @use_middleware
-class RevisionMiddlewareUserTest(LoginTestBase):
+class RevisionMiddlewareUserTest(TestModelMixin, LoginMixin, TestBase):
 
     def testCreateRevisionUser(self):
         response = self.client.post("/test-app/save-obj/")

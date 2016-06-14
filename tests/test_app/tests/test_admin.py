@@ -8,23 +8,21 @@ import reversion
 from reversion.admin import VersionAdmin
 from reversion.models import Version
 from test_app.models import TestModel, TestModelParent, TestModelInline, TestModelGenericInline
-from test_app.tests.base import TestBase, LoginTestBase
+from test_app.tests.base import TestBase, LoginMixin
 
 
-class AdminTestBase(LoginTestBase):
+class AdminMixin(TestBase):
 
     def setUp(self):
-        super(AdminTestBase, self).setUp()
-        reversion.unregister(TestModel)
-        reversion.unregister(TestModelParent)
+        super(AdminMixin, self).setUp()
         admin.site.register(TestModelParent, VersionAdmin)
 
     def tearDown(self):
-        super(AdminTestBase, self).tearDown()
+        super(AdminMixin, self).tearDown()
         admin.site.unregister(TestModelParent)
 
 
-class AdminRegisterTest(AdminTestBase):
+class AdminRegisterTest(AdminMixin, TestBase):
 
     def setAutoRegister(self):
         self.assertTrue(reversion.is_registered(TestModelParent))
@@ -33,45 +31,7 @@ class AdminRegisterTest(AdminTestBase):
         self.assertTrue(reversion.is_registered(TestModel))
 
 
-class TestModelInlineAdmin(admin.TabularInline):
-
-    model = TestModelInline
-
-
-class TestModelGenericInlineAdmin(GenericTabularInline):
-
-    model = TestModelGenericInline
-
-
-class TestModelParentAdmin(VersionAdmin):
-
-    inlines = (TestModelInlineAdmin, TestModelGenericInlineAdmin)
-
-
-class AdminRegisterInlineTest(TestBase):
-
-    def setUp(self):
-        super(AdminRegisterInlineTest, self).setUp()
-        reversion.unregister(TestModel)
-        reversion.unregister(TestModelParent)
-        admin.site.register(TestModelParent, TestModelParentAdmin)
-
-    def tearDown(self):
-        super(AdminRegisterInlineTest, self).tearDown()
-        if reversion.is_registered(TestModelInline):
-            reversion.unregister(TestModelInline)
-        if reversion.is_registered(TestModelGenericInline):
-            reversion.unregister(TestModelGenericInline)
-        admin.site.unregister(TestModelParent)
-
-    def testAutoRegisterInline(self):
-        self.assertTrue(reversion.is_registered(TestModelInline))
-
-    def testAutoRegisterGenericInline(self):
-        self.assertTrue(reversion.is_registered(TestModelGenericInline))
-
-
-class AdminAddViewTest(AdminTestBase):
+class AdminAddViewTest(LoginMixin, AdminMixin, TestBase):
 
     def testAddView(self):
         self.client.post(resolve_url("admin:test_app_testmodelparent_add"), {
@@ -82,7 +42,7 @@ class AdminAddViewTest(AdminTestBase):
         self.assertSingleRevision((obj, obj.testmodel_ptr), user=self.user, comment=None)
 
 
-class AdminUpdateViewTest(AdminTestBase):
+class AdminUpdateViewTest(LoginMixin, AdminMixin, TestBase):
 
     def testUpdateView(self):
         obj = TestModelParent.objects.create()
@@ -93,7 +53,7 @@ class AdminUpdateViewTest(AdminTestBase):
         self.assertSingleRevision((obj, obj.testmodel_ptr), user=self.user, comment=None)
 
 
-class AdminChangelistView(AdminTestBase):
+class AdminChangelistView(LoginMixin, AdminMixin, TestBase):
 
     def testChangelistView(self):
         obj = TestModelParent.objects.create()
@@ -101,7 +61,7 @@ class AdminChangelistView(AdminTestBase):
         self.assertContains(response, resolve_url("admin:test_app_testmodelparent_change", obj.pk))
 
 
-class AdminRevisionViewTest(AdminTestBase):
+class AdminRevisionViewTest(LoginMixin, AdminMixin, TestBase):
 
     def setUp(self):
         super(AdminRevisionViewTest, self).setUp()
@@ -160,7 +120,7 @@ class AdminRevisionViewTest(AdminTestBase):
         self.assertEqual(self.obj.parent_name, "parent v1")
 
 
-class AdminRecoverViewTest(AdminTestBase):
+class AdminRecoverViewTest(LoginMixin, AdminMixin, TestBase):
 
     def setUp(self):
         super(AdminRecoverViewTest, self).setUp()
@@ -189,7 +149,7 @@ class AdminRecoverViewTest(AdminTestBase):
         self.assertEqual(obj.parent_name, "parent v1")
 
 
-class AdminRecoverlistViewTest(AdminTestBase):
+class AdminRecoverlistViewTest(LoginMixin, AdminMixin, TestBase):
 
     def testRecoverlistView(self):
         with reversion.create_revision():
@@ -202,7 +162,7 @@ class AdminRecoverlistViewTest(AdminTestBase):
         ))
 
 
-class AdminHistoryViewTest(AdminTestBase):
+class AdminHistoryViewTest(LoginMixin, AdminMixin, TestBase):
 
     def testHistorylistView(self):
         with reversion.create_revision():
@@ -213,3 +173,35 @@ class AdminHistoryViewTest(AdminTestBase):
             obj.pk,
             Version.objects.get_for_model(TestModelParent).get().pk,
         ))
+
+
+class TestModelInlineAdmin(admin.TabularInline):
+
+    model = TestModelInline
+
+
+class TestModelGenericInlineAdmin(GenericTabularInline):
+
+    model = TestModelGenericInline
+
+
+class TestModelParentAdmin(VersionAdmin):
+
+    inlines = (TestModelInlineAdmin, TestModelGenericInlineAdmin)
+
+
+class AdminRegisterInlineTest(TestBase):
+
+    def setUp(self):
+        super(AdminRegisterInlineTest, self).setUp()
+        admin.site.register(TestModelParent, TestModelParentAdmin)
+
+    def tearDown(self):
+        super(AdminRegisterInlineTest, self).tearDown()
+        admin.site.unregister(TestModelParent)
+
+    def testAutoRegisterInline(self):
+        self.assertTrue(reversion.is_registered(TestModelInline))
+
+    def testAutoRegisterGenericInline(self):
+        self.assertTrue(reversion.is_registered(TestModelGenericInline))
