@@ -1,5 +1,6 @@
 from datetime import timedelta
 from django.contrib.auth.models import User
+from django.db import models
 from django.utils import timezone
 import reversion
 from test_app.models import TestModel, TestModelRelated, TestModelThrough, TestModelParent, TestMeta
@@ -38,13 +39,28 @@ class RegisterTest(TestBase):
         self.assertTrue(reversion.is_registered(TestModel))
 
     def testRegisterDecorator(self):
-        reversion.register()(TestModel)
-        self.assertTrue(reversion.is_registered(TestModel))
+        @reversion.register()
+        class TestModelDecorater(models.Model):
+            pass
+        self.assertTrue(reversion.is_registered(TestModelDecorater))
 
     def testRegisterAlreadyRegistered(self):
         reversion.register(TestModel)
         with self.assertRaises(reversion.RegistrationError):
             reversion.register(TestModel)
+
+    def testRegisterM2MSThroughLazy(self):
+        # When register is used as a decorator in models.py, lazy relations haven't had a chance to be resolved, so
+        # will still be a string.
+        @reversion.register()
+        class TestModelLazy(models.Model):
+            related = models.ManyToManyField(
+                TestModelRelated,
+                through="TestModelThroughLazy",
+            )
+
+        class TestModelThroughLazy(models.Model):
+            pass
 
 
 class UnregisterTest(TestModelMixin, TestBase):

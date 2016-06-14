@@ -4,6 +4,12 @@ django-reversion changelog
 ==========================
 
 
+2.0.3 - Pending
+---------------
+
+- Added support for m2m fields with a custom ``through`` model (@etianen).
+
+
 2.0.2 - 13/06/2016
 ------------------
 

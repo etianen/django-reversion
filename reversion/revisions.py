@@ -321,7 +321,6 @@ def _get_senders_and_signals(model):
                     app_label=opts.app_label,
                     m2m_model=m2m_model
                 )
-            m2m_model = apps.get_model(m2m_model)
         yield m2m_model, m2m_changed, _m2m_changed_receiver
 
 
