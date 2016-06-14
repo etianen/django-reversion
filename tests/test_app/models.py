@@ -29,12 +29,46 @@ class TestModel(models.Model):
         default="v1",
     )
 
-    related_instances = models.ManyToManyField(
-        "self",
+    related = models.ManyToManyField(
+        "TestModelRelated",
         blank=True,
+        related_name="+",
+    )
+
+    related_through = models.ManyToManyField(
+        "TestModelRelated",
+        blank=True,
+        through="TestModelThrough",
+        related_name="+",
     )
 
     generic_inlines = GenericRelation(TestModelGenericInline)
+
+
+class TestModelThrough(models.Model):
+
+    test_model = models.ForeignKey(
+        "TestModel",
+        related_name="+",
+    )
+
+    test_model_related = models.ForeignKey(
+        "TestModelRelated",
+        related_name="+",
+    )
+
+    name = models.CharField(
+        max_length=191,
+        default="v1",
+    )
+
+
+class TestModelRelated(models.Model):
+
+    name = models.CharField(
+        max_length=191,
+        default="v1",
+    )
 
 
 class TestModelParent(TestModel):

@@ -2,7 +2,7 @@ from datetime import timedelta
 from django.contrib.auth.models import User
 from django.utils import timezone
 import reversion
-from test_app.models import TestModel, TestModelParent, TestMeta
+from test_app.models import TestModel, TestModelRelated, TestModelThrough, TestModelParent, TestMeta
 from test_app.tests.base import TestBase, TestModelMixin, UserMixin
 
 
@@ -18,8 +18,10 @@ class IsRegisteredTest(TestModelMixin, TestBase):
     def testIsRegistered(self):
         self.assertTrue(reversion.is_registered(TestModel))
 
+
+class IsRegisterUnregisteredTest(TestBase):
+
     def testIsRegisteredFalse(self):
-        reversion.unregister(TestModel)
         self.assertFalse(reversion.is_registered(TestModel))
 
 
@@ -51,8 +53,10 @@ class UnregisterTest(TestModelMixin, TestBase):
         reversion.unregister(TestModel)
         self.assertFalse(reversion.is_registered(TestModel))
 
+
+class UnregisterUnregisteredTest(TestBase):
+
     def testUnregisterNotRegistered(self):
-        reversion.unregister(TestModel)
         with self.assertRaises(reversion.RegistrationError):
             reversion.unregister(User)
 
@@ -113,29 +117,40 @@ class CreateRevisionDbTest(TestModelMixin, TestBase):
         self.assertSingleRevision((obj,), using="postgres")
 
 
-class CreateRevisionFollowTest(TestModelMixin, TestBase):
+class CreateRevisionFollowTest(TestBase):
 
     def testCreateRevisionFollow(self):
-        reversion.unregister(TestModel)
-        reversion.register(TestModel, follow=("related_instances",))
-        obj_2 = TestModel.objects.create()
+        reversion.register(TestModel, follow=("related",))
+        reversion.register(TestModelRelated)
+        obj_related = TestModelRelated.objects.create()
         with reversion.create_revision():
-            obj_1 = TestModel.objects.create()
-            obj_1.related_instances.add(obj_2)
-        self.assertSingleRevision((obj_1, obj_2))
+            obj = TestModel.objects.create()
+            obj.related.add(obj_related)
+        self.assertSingleRevision((obj, obj_related))
+
+    def testCreateRevisionFollowThrough(self):
+        reversion.register(TestModel, follow=("related_through",))
+        reversion.register(TestModelThrough, follow=("test_model", "test_model_related",))
+        reversion.register(TestModelRelated)
+        obj_related = TestModelRelated.objects.create()
+        with reversion.create_revision():
+            obj = TestModel.objects.create()
+            obj_through = TestModelThrough.objects.create(
+                test_model=obj,
+                test_model_related=obj_related,
+            )
+        self.assertSingleRevision((obj, obj_through, obj_related))
 
     def testCreateRevisionFollowInvalid(self):
-        reversion.unregister(TestModel)
         reversion.register(TestModel, follow=("name",))
         with reversion.create_revision():
             with self.assertRaises(reversion.RegistrationError):
                 TestModel.objects.create()
 
 
-class CreateRevisionIgnoreDuplicatesTest(TestModelMixin, TestBase):
+class CreateRevisionIgnoreDuplicatesTest(TestBase):
 
     def testCreateRevisionIgnoreDuplicates(self):
-        reversion.unregister(TestModel)
         reversion.register(TestModel, ignore_duplicates=True)
         with reversion.create_revision():
             obj = TestModel.objects.create()

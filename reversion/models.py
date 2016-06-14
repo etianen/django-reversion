@@ -224,7 +224,12 @@ class Version(models.Model):
         field_dict = {}
         for field_name in version_options.fields:
             field = model._meta.get_field(field_name)
-            field_dict[field.attname] = object_version.m2m_data.get(field.attname, getattr(obj, field.attname))
+            if isinstance(field, models.ManyToManyField):
+                # M2M fields with a custom through are not stored in m2m_data, but as a separate model.
+                if field.attname in object_version.m2m_data:
+                    field_dict[field.attname] = object_version.m2m_data[field.attname]
+            else:
+                field_dict[field.attname] = getattr(obj, field.attname)
         return field_dict
 
     @cached_property

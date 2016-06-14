@@ -1,7 +1,7 @@
 from django.utils.encoding import force_text
 import reversion
 from reversion.models import Version
-from test_app.models import TestModel, TestModelParent
+from test_app.models import TestModel, TestModelRelated, TestModelParent
 from test_app.tests.base import TestBase, TestModelMixin, TestModelParentMixin
 
 
@@ -211,22 +211,24 @@ class FieldDictTest(TestModelMixin, TestBase):
         self.assertEqual(Version.objects.get_for_object(obj).get().field_dict, {
             "id": obj.pk,
             "name": "v1",
-            "related_instances": [],
+            "related": [],
         })
 
     def testFieldDictM2M(self):
+        obj_related = TestModelRelated.objects.create()
         with reversion.create_revision():
-            obj_1 = TestModel.objects.create()
-            obj_2 = TestModel.objects.create()
-            obj_1.related_instances.add(obj_2)
-        self.assertEqual(Version.objects.get_for_object(obj_1).get().field_dict, {
-            "id": obj_1.pk,
+            obj = TestModel.objects.create()
+            obj.related.add(obj_related)
+        self.assertEqual(Version.objects.get_for_object(obj).get().field_dict, {
+            "id": obj.pk,
             "name": "v1",
-            "related_instances": [obj_2.pk],
+            "related": [],
         })
 
+
+class FieldDictFieldsTest(TestBase):
+
     def testFieldDictFieldFields(self):
-        reversion.unregister(TestModel)
         reversion.register(TestModel, fields=("name",))
         with reversion.create_revision():
             obj = TestModel.objects.create()
@@ -234,14 +236,16 @@ class FieldDictTest(TestModelMixin, TestBase):
             "name": "v1",
         })
 
+
+class FieldDictExcludeTest(TestBase):
+
     def testFieldDictFieldExclude(self):
-        reversion.unregister(TestModel)
         reversion.register(TestModel, exclude=("name",))
         with reversion.create_revision():
             obj = TestModel.objects.create()
         self.assertEqual(Version.objects.get_for_object(obj).get().field_dict, {
             "id": obj.pk,
-            "related_instances": [],
+            "related": [],
         })
 
 
@@ -253,7 +257,7 @@ class FieldDictInheritanceTest(TestModelParentMixin, TestBase):
         self.assertEqual(Version.objects.get_for_object(obj).get().field_dict, {
             "id": obj.pk,
             "name": "v1",
-            "related_instances": [],
+            "related": [],
             "parent_name": "parent v1",
             "testmodel_ptr_id": obj.pk,
         })
@@ -268,7 +272,7 @@ class FieldDictInheritanceTest(TestModelParentMixin, TestBase):
             "id": obj.pk,
             "name": "v2",
             "parent_name": "parent v2",
-            "related_instances": [],
+            "related": [],
             "testmodel_ptr_id": obj.pk,
         })
 
@@ -322,19 +326,19 @@ class RevisionRevertTest(TestModelMixin, TestBase):
         self.assertEqual(obj_2.name, "obj_2 v1")
 
 
-class RevisionRevertDeleteTest(TestModelMixin, TestBase):
+class RevisionRevertDeleteTest(TestBase):
 
     def testRevertDelete(self):
-        reversion.unregister(TestModel)
-        reversion.register(TestModel, follow=("related_instances",))
+        reversion.register(TestModel, follow=("related",))
+        reversion.register(TestModelRelated)
         with reversion.create_revision():
-            obj_1 = TestModel.objects.create()
-        obj_2 = TestModel.objects.create()
+            obj = TestModel.objects.create()
+        obj_related = TestModelRelated.objects.create()
         with reversion.create_revision():
-            obj_1.related_instances.add(obj_2)
-            obj_1.name = "v2"
-            obj_1.save()
-        Version.objects.get_for_object(obj_1)[1].revision.revert(delete=True)
-        obj_1.refresh_from_db()
-        self.assertEqual(obj_1.name, "v1")
-        self.assertFalse(TestModel.objects.filter(pk=obj_2.pk).exists())
+            obj.related.add(obj_related)
+            obj.name = "v2"
+            obj.save()
+        Version.objects.get_for_object(obj)[1].revision.revert(delete=True)
+        obj.refresh_from_db()
+        self.assertEqual(obj.name, "v1")
+        self.assertFalse(TestModelRelated.objects.filter(pk=obj_related.pk).exists())
