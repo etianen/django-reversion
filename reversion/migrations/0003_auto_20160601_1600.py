@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 from collections import defaultdict
 from django.db import migrations, models, router
+from django.apps import apps as live_apps
 
 
 def de_dupe_version_table(apps, schema_editor):
@@ -43,7 +44,11 @@ def set_version_db(apps, schema_editor):
     content_types = Version.objects.order_by().values_list("content_type__app_label", "content_type__model").distinct()
     model_dbs = defaultdict(list)
     for app_label, model_name in content_types:
-        model = apps.get_model(app_label, model_name)
+        # We need to be able to access all models in the project, and we can't
+        # specify them up-front in the migration dependencies. So we have to
+        # just get the live model. This should be fine, since we don't actually
+        # manipulate the live model in any way.
+        model = live_apps.get_model(app_label, model_name)
         db = router.db_for_write(model)
         model_dbs[db].append((app_label, model_name))
     for db, model_keys in model_dbs.items():
