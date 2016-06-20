@@ -4,6 +4,13 @@ django-reversion changelog
 ==========================
 
 
+2.0.4 - 20/06/2016
+------------------
+
+- Fixed LookupError when running migration 0003 (@etianen).
+- Fixed duplicate versions using ``get_deleted()`` (@etianen).
+
+
 2.0.3 - 14/06/2016
 ------------------
 

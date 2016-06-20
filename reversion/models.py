@@ -125,7 +125,9 @@ class VersionQuerySet(models.QuerySet):
                 "object_id",
                 model._default_manager.using(model_db),
                 model._meta.pk.name,
-            ).order_by().values_list("pk", flat=True),
+            ).values_list("object_id").annotate(
+                latest_pk=models.Max("pk")
+            ).order_by().values_list("latest_pk", flat=True),
         )
 
     def get_unique(self):

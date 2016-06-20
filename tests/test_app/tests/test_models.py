@@ -155,6 +155,8 @@ class GetDeletedTest(TestModelMixin, TestBase):
     def testGetDeleted(self):
         with reversion.create_revision():
             obj = TestModel.objects.create()
+        with reversion.create_revision():
+            obj.save()
         obj.delete()
         self.assertEqual(Version.objects.get_deleted(TestModel).count(), 1)
 
