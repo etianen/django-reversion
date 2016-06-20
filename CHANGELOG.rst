@@ -9,6 +9,7 @@ django-reversion changelog
 
 - Fixed LookupError when running migration 0003 (@etianen).
 - Fixed duplicate versions using ``get_deleted()`` (@etianen).
+- Fixed unexpected deletion of underflowing revisions when using ``--keep`` switch with ``deleterevisions`` (@etianen).
 
 
 2.0.3 - 14/06/2016

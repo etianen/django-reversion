@@ -44,34 +44,40 @@ class Command(BaseRevisionCommand):
                     self.stdout.write("Finding stale revisions for {name}".format(
                         name=model._meta.verbose_name,
                     ))
-                # If we have at least one model, then we can
-                can_delete = True
-                revision_query |= models.Q(
-                    pk__in=Version.objects.using(using).get_for_model(
-                        model,
-                        model_db=model_db,
-                    ).order_by().values_list("revision_id", flat=True)
+                # Find all matching revision IDs.
+                model_query = Version.objects.using(using).get_for_model(
+                    model,
+                    model_db=model_db,
                 )
                 if keep:
-                    overflow_object_ids = Version.objects.using(using).get_for_model(
+                    overflow_object_ids = list(Version.objects.using(using).get_for_model(
                         model,
                         model_db=model_db,
                     ).order_by().values_list("object_id").annotate(
                         count=models.Count("object_id"),
                     ).filter(
                         count__gt=keep,
-                    ).values_list("object_id", flat=True)
-                    for object_id in overflow_object_ids.iterator():
+                    ).values_list("object_id", flat=True).iterator())
+                    # Only delete overflow revisions.
+                    model_query = model_query.filter(object_id__in=overflow_object_ids)
+                    for object_id in overflow_object_ids:
                         if verbosity >= 2:
                             self.stdout.write("- Finding stale revisions for {name} #{object_id}".format(
                                 name=model._meta.verbose_name,
                                 object_id=object_id,
                             ))
+                        # But keep the underflow revisions.
                         keep_revision_ids.update(Version.objects.using(using).get_for_object_reference(
                             model,
                             object_id,
                             model_db=model_db,
                         ).values_list("revision_id", flat=True)[:keep].iterator())
+                # Add to revision query.
+                revision_query |= models.Q(
+                    pk__in=model_query.order_by().values_list("revision_id", flat=True)
+                )
+                # If we have at least one model, then we can delete.
+                can_delete = True
             if can_delete:
                 revisions_to_delete = Revision.objects.using(using).filter(
                     revision_query,

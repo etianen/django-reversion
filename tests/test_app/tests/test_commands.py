@@ -187,6 +187,9 @@ class DeleteRevisionsKeepTest(TestModelMixin, TestBase):
         with reversion.create_revision():
             obj_2.save()
             reversion.set_comment("obj_2 v2")
+        with reversion.create_revision():
+            obj_3 = TestModel.objects.create()
         self.callCommand("deleterevisions", keep=1)
         self.assertSingleRevision((obj_1,), comment="obj_1 v2")
         self.assertSingleRevision((obj_2,), comment="obj_2 v2")
+        self.assertSingleRevision((obj_3,))
