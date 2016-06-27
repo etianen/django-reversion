@@ -324,7 +324,7 @@ reversion.models.VersionQuerySet
 A ``QuerySet`` of :ref:`Version`. The results are ordered with the most recent :ref:`Version` first.
 
 
-``VersionQuerySet.get_for_model(model, model_db=None)``
+``Version.objects.get_for_model(model, model_db=None)``
 
     Returns a :ref:`VersionQuerySet` for the given model.
 
@@ -336,7 +336,7 @@ A ``QuerySet`` of :ref:`Version`. The results are ordered with the most recent :
     .. include:: /_include/model-db-arg.rst
 
 
-``VersionQuerySet.get_for_object(obj, model_db=None)``
+``Version.objects.get_for_object(obj, model_db=None)``
 
     Returns a :ref:`VersionQuerySet` for the given model instance.
 
@@ -348,7 +348,7 @@ A ``QuerySet`` of :ref:`Version`. The results are ordered with the most recent :
     .. include:: /_include/model-db-arg.rst
 
 
-``VersionQuerySet.get_for_object_reference(model, pk, model_db=None)``
+``Version.objects.get_for_object_reference(model, pk, model_db=None)``
 
     Returns a :ref:`VersionQuerySet` for the given model instance.
 
@@ -363,7 +363,7 @@ A ``QuerySet`` of :ref:`Version`. The results are ordered with the most recent :
     .. include:: /_include/model-db-arg.rst
 
 
-``VersionQuerySet.get_deleted(model, model_db=None)``
+``Version.objects.get_deleted(model, model_db=None)``
 
     Returns a :ref:`VersionQuerySet` for the given model containing versions where the serialized model no longer exists in the database.
 
@@ -378,7 +378,7 @@ A ``QuerySet`` of :ref:`Version`. The results are ordered with the most recent :
     .. include:: /_include/model-db-arg.rst
 
 
-``VersionQuerySet.get_unique()``
+``Version.objects.get_unique()``
 
     Returns an iterable of :ref:`Version`, where each version is unique for a given database, model instance, and set of serialized fields.
 
