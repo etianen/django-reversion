@@ -120,6 +120,7 @@ Low-level API
 * Added ``for_concrete_model`` argument to ``reversion.register()`` (@etianen).
 * Added ``Version.objects.get_for_model()`` lookup function (@etianen).
 * Added ``reversion.add_to_revision()`` for manually adding model instances to an active revision (@etianen).
+* Removed ``Version.object_id_int`` field, in favor of a unified ``Version.object_id`` field for all primary key types (@etianen).
 
 * **Breaking:** ``reversion.get_for_object_reference()`` has been moved to ``Version.objects.get_for_object_reference()`` (@etianen).
 
