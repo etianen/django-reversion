@@ -48,9 +48,15 @@ def set_version_db(apps, schema_editor):
         # specify them up-front in the migration dependencies. So we have to
         # just get the live model. This should be fine, since we don't actually
         # manipulate the live model in any way.
-        model = live_apps.get_model(app_label, model_name)
-        db = router.db_for_write(model)
+        try:
+            model = live_apps.get_model(app_label, model_name)
+        except LookupError:
+            # If the model appears not to exist, play it safe and use the default db.
+            db = "default"
+        else:
+            db = router.db_for_write(model)
         model_dbs[db].append((app_label, model_name))
+    # Update db field.
     for db, model_keys in model_dbs.items():
         db_query = models.Q()
         for app_label, model_name in model_keys:
