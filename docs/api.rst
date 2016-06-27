@@ -255,6 +255,8 @@ Revision API
     .. include:: /_include/throws-revision-error.rst
 
 
+.. _set_comment:
+
 ``reversion.set_comment(comment)``
 
     Sets the comment for the current revision.

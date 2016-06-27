@@ -11,9 +11,9 @@ Decorators
 
 ``reversion.views.create_revision(manage_manually=False, using=None)``
 
-    Decorates a view to wrap the every request that isn't ``GET``, ``HEAD`` or ``OPTIONS`` in a revision block.
+    Decorates a view to wrap every request that isn't ``GET``, ``HEAD`` or ``OPTIONS`` in a revision block.
 
-    The request user will also be added to the revision metadata.
+    The request user will also be added to the revision metadata. You can set the revision comment by calling :ref:`reversion.set_comment() <set_comment>` within your view.
 
     .. include:: /_include/create-revision-args.rst
 
@@ -21,9 +21,9 @@ Decorators
 reversion.views.RevisionMixin
 -----------------------------
 
-Mixin a class-based view to wrap the every request that isn't ``GET``, ``HEAD`` or ``OPTIONS`` in a revision block.
+Mixin a class-based view to wrap every request that isn't ``GET``, ``HEAD`` or ``OPTIONS`` in a revision block.
 
-The request user will also be added to the revision metadata.
+The request user will also be added to the revision metadata. You can set the revision comment by calling :ref:`reversion.set_comment() <set_comment>` within your view.
 
 .. code:: python
 
