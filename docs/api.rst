@@ -153,7 +153,7 @@ Registration API
 
 .. _register:
 
-``reversion.register(model, \*\*options)``
+``reversion.register(model, **options)``
 
     Registers a model with django-reversion.
 
@@ -291,7 +291,7 @@ Revision API
     .. include:: /_include/throws-revision-error.rst
 
 
-``reversion.add_meta(model, \*\*values)``
+``reversion.add_meta(model, **values)``
 
     Adds custom metadata to a revision.
 

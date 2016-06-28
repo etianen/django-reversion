@@ -98,7 +98,7 @@ A subclass of ``django.contrib.ModelAdmin`` providing rollback and recovery.
     If ``True``, revisions will be displayed with the most recent revision first.
 
 
-``reversion_register(model, \*\*options)``
+``reversion_register(model, **options)``
 
     Callback used by the auto-registration machinery to register the model with django-reversion. Override this to customize how models are registered.
 
