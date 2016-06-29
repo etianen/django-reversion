@@ -4,8 +4,8 @@ django-reversion changelog
 ==========================
 
 
-2.0.5 - Pending
----------------
+2.0.5 - 29/06/2016
+------------------
 
 - Fixed LookupError when running migration 0003 with stale content types (@etianen).
 
