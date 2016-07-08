@@ -43,6 +43,16 @@ If the 3rd party model is already registered with the Django admin, you may have
         pass
 
 
+Using a custom User Model
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can specify a customer USer model, if you don't want/need django-reversion use the classic AUTH_USER_MODEL.
+Simply add in your settings file:
+
+.. code:: python
+
+    REVERSION_USER_MODEL = 'myapp.myCustomUserModel'
+
 .. _VersionAdmin:
 
 reversion.admin.VersionAdmin

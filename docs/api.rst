@@ -245,7 +245,7 @@ Revision API
     .. include:: /_include/throws-revision-error.rst
 
     ``user``
-        A ``User`` model instance (or whatever your ``settings.AUTH_USER_MODEL`` is).
+        A ``User`` model instance (or whatever your ``settings.REVERSION_USER_MODEL`` is, default to ``settings.AUTH_USER_MODEL``).
 
 
 ``reversion.get_user()``

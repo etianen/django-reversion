@@ -46,7 +46,7 @@ class Revision(models.Model):
     )
 
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        getattr(settings, 'REVERSION_USER_MODEL', 'AUTH_USER_MODEL'),
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
