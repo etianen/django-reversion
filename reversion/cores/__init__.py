@@ -68,6 +68,8 @@ class DataRevisionISCore(UIRESTModelISCore):
 
 class ReversionUIRESTModelISCore(UIRESTModelISCore):
     abstract = True
+    create_permission = False
+    delete_permission = False
 
     def get_view_classes(self):
         view_classes = super(ReversionUIRESTModelISCore, self).get_view_classes()
@@ -75,25 +77,13 @@ class ReversionUIRESTModelISCore(UIRESTModelISCore):
         view_classes['edit'] = (r'^/(?P<pk>\d+)/$', ReversionEditView)
         return view_classes
 
-    def has_create_permission(self, *args, **kwargs):
-        return False
-
-    def has_delete_permission(self, *args, **kwargs):
-        return False
-
 
 class AuditLogUIRESTModelISCore(UIRESTModelISCore):
     abstract = True
     model = AuditLog
-    list_display = ('created_at', 'content_types', 'object_pks', 'short_comment')
-    form_fields = ('created_at', 'related_objects_display', 'revisions_display', 'comment')
+    list_display = ('created_at', 'content_types', 'object_pks', 'short_comment', 'priority', 'slug')
+    form_fields = ('created_at', 'comment', 'priority', 'slug', 'related_objects_display', 'revisions_display')
     menu_group = 'audit-log'
-
-    def has_create_permission(self, *args, **kwargs):
-        return False
-
-    def has_update_permission(self, request, obj=None):
-        return False
-
-    def has_delete_permission(self, *args, **kwargs):
-        return False
+    create_permission = False
+    delete_permission = False
+    update_permission = False

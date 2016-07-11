@@ -1,6 +1,6 @@
 import django
 
-if django.get_version() >= '1.9':
+if django.get_version() >= '1.8':
     from django.apps import apps
 
     get_app = lambda app_label: apps.get_app_config(app_label).models_module

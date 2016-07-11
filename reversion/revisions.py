@@ -308,9 +308,9 @@ class RevisionContextManager(local):
         self._assert_active()
         self._callbacks.append(callback)
 
-    def create_audit_log(self, manager, comment, objects=None):
+    def create_audit_log(self, manager, comment, slug=None, priority=None, objects=None):
         self._assert_active()
-        audit_log = AuditLog.objects.create(comment=comment)
+        audit_log = AuditLog.objects.create(comment=comment, slug=slug, priority=priority)
         if objects:
             for obj in objects:
                 self._current_frame.objects[manager][1][obj].add(audit_log)
@@ -719,9 +719,9 @@ class RevisionManager(object):
         # Return the deleted versions!
         return self._get_versions(db).filter(pk__in=deleted_version_pks).order_by('-pk')
 
-    def create_audit_log(self, comment, objects=None):
+    def create_audit_log(self, comment, slug=None, priority=None, objects=None):
         if self._revision_context_manager.is_active():
-            self._revision_context_manager.create_audit_log(self, comment, objects)
+            self._revision_context_manager.create_audit_log(self, comment, slug, priority, objects)
 
     # Signal receivers.
     def _signal_receiver(self, instance, signal, **kwargs):
