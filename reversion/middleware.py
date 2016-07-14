@@ -26,16 +26,16 @@ class RevisionMiddleware(object):
                 setattr(request, "_revision_middleware", {})
             request._revision_middleware[self] = context
 
-    def _close_revision(self, request):
+    def _close_revision(self, request, is_exception):
         if self in getattr(request, "_revision_middleware", {}):
-            request._revision_middleware.pop(self).__exit__(*sys.exc_info())
+            request._revision_middleware.pop(self).__exit__(*sys.exc_info() if is_exception else (None, None, None))
 
     def process_response(self, request, response):
-        self._close_revision(request)
+        self._close_revision(request, False)
         return response
 
     def process_exception(self, request, exception):
-        self._close_revision(request)
+        self._close_revision(request, True)
 
     def __call__(self, request):
         return self.get_response(request)
