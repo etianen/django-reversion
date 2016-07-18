@@ -62,17 +62,6 @@ A subclass of ``django.contrib.ModelAdmin`` providing rollback and recovery.
     *   ``'reversion/revision_form.html'``
 
 
-``revision_form_template = None``
-
-    A custom template to render the revision form.
-
-    Alternatively, create specially named templates to override the default templates on a per-model or per-app basis.
-
-    *   ``'reversion/app_label/model_name/revision_form.html'``
-    *   ``'reversion/app_label/revision_form.html'``
-    *   ``'reversion/revision_form.html'``
-
-
 ``recover_list_template = None``
 
     A custom template to render the recover list.
