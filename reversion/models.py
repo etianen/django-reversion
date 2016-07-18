@@ -17,6 +17,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text, python_2_unicode_compatible
 from django.utils.safestring import mark_safe
+from django.utils.html import format_html_join
 from django.template.defaultfilters import truncatechars
 
 from chamber.utils.datastructures import ChoicesNumEnum
@@ -256,6 +257,8 @@ class AuditLog(models.Model):
     created_at = models.DateTimeField(verbose_name=_('created at'), auto_now_add=True, db_index=True)
     versions = models.ManyToManyField(Version, verbose_name=_('versions'))
     comment = models.TextField(verbose_name=_('comment'), blank=True, help_text=_('A text comment on this revision.'))
+    priority = models.PositiveIntegerField(verbose_name=_('priority'), null=True, blank=True)
+    slug = models.SlugField(verbose_name=_('slug'), null=True, blank=True)
 
     def short_comment(self):
         return truncatechars(self.comment, config.AUDIT_LOG_SHORT_COMMENT_LENGTH)
@@ -270,15 +273,21 @@ class AuditLog(models.Model):
         for version in self.versions.all():
             obj = version.object
             if obj:
-                rendered_objects.append(render_model_object_with_link(request, obj))
-        return mark_safe(', '.join(rendered_objects))
+                rendered_objects.append((obj._meta.verbose_name, render_model_object_with_link(request, obj)))
+
+        return mark_safe('<ul>{}</ul>'.format(
+            format_html_join(
+                '\n', '<li>{}: {}</li>',
+                ((name, mark_safe(link)) for name, link in rendered_objects)
+            )
+        ))
     related_objects_display.short_description = _('related objects')
 
     def revisions_display(self, request):
         from is_core.utils import render_model_object_with_link
 
         rendered_objects = []
-        for revision in Revision.objects.filter(versions=self.versions.all()).distinct():
+        for revision in Revision.objects.filter(versions__in=self.versions.all()).distinct():
             rendered_objects.append(render_model_object_with_link(request, revision))
         return mark_safe(', '.join(rendered_objects))
     revisions_display.short_description = _('data revision')

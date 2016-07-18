@@ -314,6 +314,7 @@ class FollowModelsTestCase(ReversionTestBase):
 class ReversionTestModel1ChildProxy(ReversionTestModel1Child):
     class Meta:
         proxy = True
+        app_label = 'test_reversion'
 
 
 class ProxyModelApiTestCase(RevisionTestBase):
@@ -646,14 +647,16 @@ class RegistrationTestCase(TestCase):
         # Test the use of register as a decorator
         @reversion.register
         class DecoratorModel(models.Model):
-            pass
+            class Meta:
+                app_label = 'test_reversion'
         self.assertTrue(reversion.is_registered(DecoratorModel))
 
     def test_decorator_args(self):
         # Test a decorator with arguments
         @reversion.register(format='yaml')
         class DecoratorArgsModel(models.Model):
-            pass
+            class Meta:
+                app_label = 'test_reversion'
         self.assertTrue(reversion.is_registered(DecoratorArgsModel))
 
     def test_eager_registration(self):
