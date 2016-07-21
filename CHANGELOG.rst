@@ -4,6 +4,13 @@ django-reversion changelog
 ==========================
 
 
+2.0.6 - 21/07/2016
+------------------
+
+- Fixed ``RevisionMiddleware`` always rolling back transactions in gunicorn (@stebunovd, @etianen).
+- Tweaks and minor bugfixes (@SahilMak).
+
+
 2.0.5 - 29/06/2016
 ------------------
 
