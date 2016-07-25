@@ -155,6 +155,7 @@ class Version(models.Model):
     object_id = models.CharField(
         max_length=191,
         help_text="Primary key of the model under version control.",
+        db_index=True,
     )
 
     content_type = models.ForeignKey(
