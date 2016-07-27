@@ -8,6 +8,36 @@ from is_core.generic_views.mixins import TabsViewMixin
 from is_core.generic_views.form_views import EditModelFormView, DetailModelFormView
 from is_core.patterns import reverse_pattern
 
+from reversion.models import Version
+
+
+class VersionInlineFormView(TabularInlineObjectsView):
+    model = Version
+    fields = (
+        ('type', _('type')),
+        ('content_type', _('content type')),
+        ('object', _('object')),
+        ('data', _('data')),
+    )
+
+    def parse_object(self, obj):
+        return {
+            'type': obj.get_type_display(), 'object': self.get_object(obj), 'content_type': obj.content_type,
+            'data': ', '.join(('{}: {}'.format(k, v if v != '' else '--') for k, v in obj.flat_field_dict.items()))
+        }
+
+    def get_object(self, version):
+        from is_core.utils import render_model_object_with_link
+
+        obj = version.object
+        if obj:
+            return render_model_object_with_link(self.request, obj)
+        return obj
+
+    def get_objects(self):
+        return self.parent_instance.versions.all()
+
+
 
 class ReversionTabsViewMixin(TabsViewMixin):
 
@@ -66,12 +96,11 @@ class ListVersionInlineView(TabularInlineObjectsView):
 
 
 class ReversionHistoryView(ReversionBreadCrumbsTabsViewMixin, DetailModelFormView):
-    inline_views = (ListVersionInlineView,)
 
     def get_title(self):
         return ugettext('History of %s') % self.get_obj()
 
     def get_fieldsets(self):
         return (
-            (ugettext('History of %s') % self.get_obj(), {'inline_view': 'ListVersionInlineView'}),
+            (ugettext('History of %s') % self.get_obj(), {'inline_view': ListVersionInlineView}),
         )
