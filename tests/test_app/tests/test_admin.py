@@ -84,6 +84,8 @@ class AdminRevisionViewTest(LoginMixin, AdminMixin, TestBase):
         self.obj.refresh_from_db()
         self.assertEqual(self.obj.name, "v2")
         self.assertEqual(self.obj.parent_name, "parent v2")
+        self.assertIn("revert", response.context)
+        self.assertTrue(response.context["revert"])
 
     def testRevisionViewOldRevision(self):
         response = self.client.get(resolve_url(
@@ -135,6 +137,8 @@ class AdminRecoverViewTest(LoginMixin, AdminMixin, TestBase):
         ))
         self.assertContains(response, 'value="v1"')
         self.assertContains(response, 'value="parent v1"')
+        self.assertIn("recover", response.context)
+        self.assertTrue(response.context["recover"])
 
     def testRecoverViewRecover(self):
         self.client.post(resolve_url(
