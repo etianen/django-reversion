@@ -21,7 +21,7 @@ class VersionContextTypeFilter(DefaultFilter):
     ALL_LABEL = '--------'
     ALL_SLUG = '__all__'
 
-    def get_widget(self):
+    def get_widget(self, request):
         from reversion.models import AuditLog
 
         if self.widget:
