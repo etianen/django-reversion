@@ -200,6 +200,7 @@ class VersionAdmin(admin.ModelAdmin):
         version = get_object_or_404(Version, pk=version_id)
         context = {
             "title": _("Recover %(name)s") % {"name": version.object_repr},
+            "recover": True,
         }
         context.update(extra_context or {})
         return self._reversion_revisionform_view(
@@ -215,6 +216,7 @@ class VersionAdmin(admin.ModelAdmin):
         version = get_object_or_404(Version, pk=version_id, object_id=object_id)
         context = {
             "title": _("Revert %(name)s") % {"name": version.object_repr},
+            "revert": True,
         }
         context.update(extra_context or {})
         return self._reversion_revisionform_view(

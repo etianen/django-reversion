@@ -228,11 +228,6 @@ Revision API
     Returns whether there is currently an active revision block.
 
 
-    ``reversion.is_active()``
-
-        Returns whether there is currently an active revision block.
-
-
 ``reversion.is_manage_manually()``
 
     Returns whether the current revision block is in ``manage_manually`` mode.

@@ -12,8 +12,9 @@ def de_dupe_version_table(apps, schema_editor):
     Removes some duplicate Version models that may have crept into the database and will prevent the
     unique index being added by migration 0004.
     """
+    db_alias = schema_editor.connection.alias
     Version = apps.get_model("reversion", "Version")
-    keep_version_ids = Version.objects.order_by().values_list(
+    keep_version_ids = Version.objects.using(db_alias).order_by().values_list(
         # Group by the unique constraint we intend to enforce.
         "revision_id",
         "content_type_id",
@@ -23,14 +24,14 @@ def de_dupe_version_table(apps, schema_editor):
         max_pk=models.Max("pk"),
     ).values_list("max_pk", flat=True)
     # Do not do anything if we're keeping all ids anyway.
-    if keep_version_ids.count() == Version.objects.all().count():
+    if keep_version_ids.count() == Version.objects.using(db_alias).all().count():
         return
     # Delete all duplicate versions. Can't do this as a delete with subquery because MySQL doesn't like running a
     # subquery on the table being updated/deleted.
-    delete_version_ids = list(Version.objects.exclude(
+    delete_version_ids = list(Version.objects.using(db_alias).exclude(
         pk__in=keep_version_ids,
     ).values_list("pk", flat=True))
-    Version.objects.filter(
+    Version.objects.using(db_alias).filter(
         pk__in=delete_version_ids,
     ).delete()
 
@@ -40,8 +41,9 @@ def set_version_db(apps, schema_editor):
     Updates the db field in all Version models to point to the correct write
     db for the model.
     """
+    db_alias = schema_editor.connection.alias
     Version = apps.get_model("reversion", "Version")
-    content_types = Version.objects.order_by().values_list("content_type__app_label", "content_type__model").distinct()
+    content_types = Version.objects.using(db_alias).order_by().values_list("content_type__app_label", "content_type__model").distinct()
     model_dbs = defaultdict(list)
     for app_label, model_name in content_types:
         # We need to be able to access all models in the project, and we can't
@@ -63,7 +65,7 @@ def set_version_db(apps, schema_editor):
             db_query |= models.Q(
                 content_type__app_label=app_label, content_type__model=model_name
             )
-        Version.objects.filter(db_query).update(db=db)
+        Version.objects.using(db_alias).filter(db_query).update(db=db)
 
 
 class Migration(migrations.Migration):
