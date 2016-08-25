@@ -11,6 +11,7 @@ try:
 except ImportError:
     from mock import MagicMock
 
+
 class SaveTest(TestModelMixin, TestBase):
 
     def testModelSave(self):
