@@ -13,6 +13,7 @@ from django.utils.encoding import force_text
 from django.utils import timezone, six
 from reversion.compat import remote_field
 from reversion.errors import RevisionManagementError, RegistrationError
+from reversion.signals import pre_revision_commit, post_revision_commit
 
 
 _VersionOptions = namedtuple("VersionOptions", (
@@ -222,6 +223,12 @@ def _save_revision(versions, user=None, comment="", meta=(), date_created=None, 
         user=user,
         comment=comment,
     )
+    # Send the pre_revision_commit signal.
+    pre_revision_commit.send(
+        sender=create_revision,
+        revision=revision,
+        versions=versions,
+    )
     # Save the revision.
     revision.save(using=using)
     # Save version models.
@@ -234,6 +241,12 @@ def _save_revision(versions, user=None, comment="", meta=(), date_created=None, 
             revision=revision,
             **meta_fields
         )
+    # Send the post_revision_commit signal.
+    post_revision_commit.send(
+        sender=create_revision,
+        revision=revision,
+        versions=versions,
+    )
 
 
 @contextmanager

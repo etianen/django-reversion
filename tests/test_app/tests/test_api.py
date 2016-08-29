@@ -6,6 +6,11 @@ import reversion
 from test_app.models import TestModel, TestModelRelated, TestModelThrough, TestModelParent, TestMeta
 from test_app.tests.base import TestBase, TestModelMixin, UserMixin
 
+try:
+    from unittest.mock import MagicMock
+except ImportError:
+    from mock import MagicMock
+
 
 class SaveTest(TestModelMixin, TestBase):
 
@@ -107,6 +112,22 @@ class CreateRevisionTest(TestModelMixin, TestBase):
     def testCreateRevisionDecorator(self):
         obj = reversion.create_revision()(TestModel.objects.create)()
         self.assertSingleRevision((obj,))
+
+    def testPreRevisionCommitSignal(self):
+        _callback = MagicMock()
+        reversion.signals.pre_revision_commit.connect(_callback)
+
+        with reversion.create_revision():
+            TestModel.objects.create()
+        self.assertEqual(_callback.call_count, 1)
+
+    def testPostRevisionCommitSignal(self):
+        _callback = MagicMock()
+        reversion.signals.post_revision_commit.connect(_callback)
+
+        with reversion.create_revision():
+            TestModel.objects.create()
+        self.assertEqual(_callback.call_count, 1)
 
 
 class CreateRevisionManageManuallyTest(TestModelMixin, TestBase):
