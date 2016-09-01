@@ -28,7 +28,7 @@ class VersionContextTypeFilter(DefaultFilter):
             return self.widget
 
         formfield = forms.ModelChoiceField(queryset=ContentType.objects.filter(
-            pk__in=AuditLog.objects.all().values('versions__content_type')))
+            pk__in=AuditLog.objects.order_by('versions__content_type').values('versions__content_type').distinct()))
         formfield.choices = list(formfield.choices)
         if not formfield.choices[0][0]:
             del formfield.choices[0]
