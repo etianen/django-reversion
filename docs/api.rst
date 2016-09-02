@@ -345,7 +345,7 @@ A ``QuerySet`` of :ref:`Version`. The results are ordered with the most recent :
 
 ``Version.objects.get_for_object_reference(model, pk, model_db=None)``
 
-    Returns a :ref:`VersionQuerySet` for the given model instance.
+    Returns a :ref:`VersionQuerySet` for the given model and primary key.
 
     .. include:: /_include/throws-registration-error.rst
 
