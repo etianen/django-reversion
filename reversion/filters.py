@@ -2,11 +2,33 @@ from __future__ import unicode_literals
 
 from django import forms
 from django.contrib.contenttypes.models import ContentType
+from django.utils.translation import ugettext
 
 try:
     from is_core.filters.default_filters import DefaultFilter
+    from is_core.filters.exceptions import FilterException
 except ImportError:
     DefaultFilter = object
+    FilterException = object
+
+
+class RelatedObjectsFilter(DefaultFilter):
+    widget = forms.TextInput()
+
+    def get_filter_term(self, request):
+        self._check_suffix()
+
+        if '|' not in self.value:
+            term = {
+                'versions__object_id': self.value
+            }
+        else:
+            content_type, object_id = self.value.split('|', 1)
+            term = {
+                'versions__object_id': object_id,
+                'versions__content_type': content_type
+            }
+        return {''.join((self.get_filter_prefix(), key)): val for key, val in term.items()}
 
 
 class VersionIDFilter(DefaultFilter):

@@ -22,7 +22,7 @@ from django.template.defaultfilters import truncatechars
 
 from chamber.utils.datastructures import ChoicesNumEnum
 
-from reversion.filters import VersionIDFilter, VersionContextTypeFilter
+from reversion.filters import VersionIDFilter, VersionContextTypeFilter, RelatedObjectsFilter
 from reversion import config
 
 
@@ -266,6 +266,19 @@ class AuditLog(models.Model):
     short_comment.filter_by = 'comment'
     short_comment.order_by = 'comment'
 
+    def related_objects(self, request):
+        from is_core.utils import render_model_object_with_link
+
+        rendered_objects = []
+        for version in self.versions.all():
+            obj = version.object
+            if obj:
+                rendered_objects.append((obj._meta.verbose_name, render_model_object_with_link(request, obj)))
+
+        return mark_safe(', '.join(('{}: {}'.format(name, link) for name, link in rendered_objects)))
+    related_objects.short_description = _('related objects')
+    related_objects.filter = RelatedObjectsFilter
+
     def related_objects_display(self, request):
         from is_core.utils import render_model_object_with_link
 
@@ -282,6 +295,7 @@ class AuditLog(models.Model):
             )
         ))
     related_objects_display.short_description = _('related objects')
+    related_objects_display.filter = RelatedObjectsFilter
 
     def revisions_display(self, request):
         from is_core.utils import render_model_object_with_link
