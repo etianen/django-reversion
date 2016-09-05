@@ -42,7 +42,7 @@ class ReversionUIRESTModelISCore(UIRESTModelISCore):
 class AuditLogUIRESTModelISCore(UIRESTModelISCore):
     abstract = True
     model = AuditLog
-    list_display = ('created_at', 'content_types', 'object_pks', 'short_comment', 'priority', 'slug')
+    list_display = ('created_at', 'related_objects', 'content_types', 'object_pks', 'short_comment', 'priority', 'slug')
     form_fields = ('created_at', 'comment', 'priority', 'slug', 'related_objects_display', 'revisions_display')
     menu_group = 'audit-log'
     create_permission = False
