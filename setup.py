@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='django-reversion',
-    version='2.0.3',
+    version='2.0.4',
     license='BSD',
     description='An extension to the Django web framework that provides comprehensive version control facilities',
     author='Dave Hall',
