@@ -14,6 +14,7 @@ from django.core.urlresolvers import reverse
 from django.core.exceptions import PermissionDenied, ImproperlyConfigured
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils.text import capfirst
+from django.utils.timezone import template_localtime
 from django.utils.translation import ugettext as _
 from django.utils.encoding import force_text
 from django.utils.formats import localize
@@ -176,7 +177,7 @@ class VersionAdmin(admin.ModelAdmin):
                     # Decide on whether the keep the changes.
                     if request.method == "POST" and response.status_code == 302:
                         set_comment(_("Reverted to previous version, saved on %(datetime)s") % {
-                            "datetime": localize(version.revision.date_created),
+                            "datetime": localize(template_localtime(version.revision.date_created)),
                         })
                     else:
                         response.template_name = template_name  # Set the template name to the correct template.
