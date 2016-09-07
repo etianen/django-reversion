@@ -16,7 +16,6 @@ except ImportError:  # For Django < 1.8
     from django.utils.importlib import import_module
 
 from django.core.exceptions import ImproperlyConfigured
-from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 from django.contrib.contenttypes.models import ContentType
 from django.db import reset_queries
@@ -27,32 +26,42 @@ from django.conf import settings
 from reversion.revisions import default_revision_manager
 from reversion.models import Version, has_int_pk
 from reversion.revisions import VersionAdapter
+from reversion.compatibility import CompatibilityBaseCommand
 
 
-class Command(BaseCommand):
-    option_list = BaseCommand.option_list + (
-        make_option("--comment",
-            action="store",
-            dest="comment",
-            default="Initial version.",
-            help='Specify the comment to add to the revisions. Defaults to "Initial version.".'),
-        make_option("--batch-size",
-            action="store",
-            dest="batch_size",
-            type=int,
-            default=500,
-            help="For large sets of data, revisions will be populated in batches. Defaults to 500"),
-        make_option('--database', action='store', dest='database',
-            help='Nominates a database to create revisions in.'),
-        )
+class Command(CompatibilityBaseCommand):
+
     args = '[appname, appname.ModelName, ...] [--comment="Initial version."]'
     help = "Creates initial revisions for a given app [and model]."
 
-    def handle(self, *app_labels, **options):
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--app_labels',
+            metavar='--app_labels',
+            help='Optional app_label or app_label.model_name list.',
+        )
+        parser.add_argument(
+            '--comment',
+            action='store',
+            dest='comment',
+            default='Initial version.',
+            help='Specify the comment to add to the revisions. Defaults to "Initial version.".')
+        parser.add_argument(
+            '--batch-size',
+            action='store',
+            dest='batch_size',
+            type=int,
+            default=500,
+            help='For large sets of data, revisions will be populated in batches. Defaults to 500')
+        parser.add_argument('--database', action='store', dest='database',
+            help='Nominates a database to create revisions in.')
+
+    def handle(self,  *args, **options):
 
         # Activate project's default language
         translation.activate(settings.LANGUAGE_CODE)
 
+        app_labels = options["app_labels"].split(',') if options["app_labels"] else ()
         comment = options["comment"]
         batch_size = options["batch_size"]
         database = options.get('database')
