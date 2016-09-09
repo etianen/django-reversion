@@ -266,7 +266,7 @@ class AuditLog(models.Model):
     short_comment.filter_by = 'comment'
     short_comment.order_by = 'comment'
 
-    def related_objects(self, request):
+    def _related_objects(self, request):
         from is_core.utils import render_model_object_with_link
 
         rendered_objects = []
@@ -276,10 +276,18 @@ class AuditLog(models.Model):
                 rendered_objects.append((obj._meta.verbose_name, render_model_object_with_link(request, obj)))
 
         return mark_safe(', '.join(('{}: {}'.format(name, link) for name, link in rendered_objects)))
+
+    def related_objects(self, request):
+        return self._related_objects(request)
     related_objects.short_description = _('related objects')
     related_objects.filter = RelatedObjectsFilter
 
-    def related_objects_display(self, request):
+    def related_objects_with_int_id(self, request):
+        return self._related_objects(request)
+    related_objects_with_int_id.short_description = _('related objects')
+    related_objects_with_int_id.filter = RelatedObjectsFilter
+
+    def _related_objects_display(self, request):
         from is_core.utils import render_model_object_with_link
 
         rendered_objects = []
@@ -294,8 +302,16 @@ class AuditLog(models.Model):
                 ((name, mark_safe(link)) for name, link in rendered_objects)
             )
         ))
+
+    def related_objects_display(self, request):
+        return self._related_objects_display(request)
     related_objects_display.short_description = _('related objects')
     related_objects_display.filter = RelatedObjectsFilter
+
+    def related_objects_with_int_id_display(self, request):
+        return self._related_objects_display(request)
+    related_objects_with_int_id_display.short_description = _('related objects')
+    related_objects_with_int_id_display.filter = RelatedObjectsFilter
 
     def revisions_display(self, request):
         from is_core.utils import render_model_object_with_link
