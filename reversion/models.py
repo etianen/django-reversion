@@ -294,7 +294,7 @@ def _safe_subquery(method, left_query, left_field_name, right_subquery, right_fi
         left_query.db != right_subquery.db or not
         (
             left_field.get_internal_type() != right_field.get_internal_type() and
-            connections[left_query.db].vendor in ("sqlite", "postgres")
+            connections[left_query.db].vendor in ("sqlite", "postgresql")
         )
     ):
         right_subquery = list(right_subquery.iterator())
