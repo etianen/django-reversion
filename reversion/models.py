@@ -22,7 +22,9 @@ from django.template.defaultfilters import truncatechars
 
 from chamber.utils.datastructures import ChoicesNumEnum
 
-from reversion.filters import VersionIDFilter, VersionContextTypeFilter, RelatedObjectsFilter
+from reversion.filters import (
+    VersionIDFilter, VersionContextTypeFilter, RelatedObjectsFilter, RelatedObjectsWithIntIdFilter
+)
 from reversion import config
 
 
@@ -285,7 +287,7 @@ class AuditLog(models.Model):
     def related_objects_with_int_id(self, request):
         return self._related_objects(request)
     related_objects_with_int_id.short_description = _('related objects')
-    related_objects_with_int_id.filter = RelatedObjectsFilter
+    related_objects_with_int_id.filter = RelatedObjectsWithIntIdFilter
 
     def _related_objects_display(self, request):
         from is_core.utils import render_model_object_with_link
@@ -311,7 +313,7 @@ class AuditLog(models.Model):
     def related_objects_with_int_id_display(self, request):
         return self._related_objects_display(request)
     related_objects_with_int_id_display.short_description = _('related objects')
-    related_objects_with_int_id_display.filter = RelatedObjectsFilter
+    related_objects_with_int_id_display.filter = RelatedObjectsWithIntIdFilter
 
     def revisions_display(self, request):
         from is_core.utils import render_model_object_with_link
