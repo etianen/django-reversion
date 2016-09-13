@@ -1,3 +1,4 @@
+import re
 from django.contrib import admin
 try:
     from django.contrib.contenttypes.admin import GenericTabularInline
@@ -39,7 +40,11 @@ class AdminAddViewTest(LoginMixin, AdminMixin, TestBase):
             "parent_name": "parent_v1",
         })
         obj = TestModelParent.objects.get()
-        self.assertSingleRevision((obj, obj.testmodel_ptr), user=self.user, comment=None)
+        self.assertSingleRevision(
+            (obj, obj.testmodel_ptr), user=self.user,
+            # Django 1.8 gives "Initial version.", Django > 1.8 "Added."
+            comment=re.compile(r"(Initial version\.|Added\.)")
+        )
 
 
 class AdminUpdateViewTest(LoginMixin, AdminMixin, TestBase):
@@ -50,7 +55,10 @@ class AdminUpdateViewTest(LoginMixin, AdminMixin, TestBase):
             "name": "v2",
             "parent_name": "parent v2",
         })
-        self.assertSingleRevision((obj, obj.testmodel_ptr), user=self.user, comment=None)
+        self.assertSingleRevision(
+            (obj, obj.testmodel_ptr), user=self.user,
+            comment="Changed name and parent_name."
+        )
 
 
 class AdminChangelistView(LoginMixin, AdminMixin, TestBase):

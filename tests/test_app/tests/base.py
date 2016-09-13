@@ -4,7 +4,7 @@ from django.core.management import call_command
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.utils import timezone
-from django.utils.six import StringIO
+from django.utils.six import StringIO, assertRegex
 import reversion
 from reversion.models import Revision, Version
 from test_app.models import TestModel, TestModelParent
@@ -31,7 +31,9 @@ class TestBase(TestCase):
                              using=None, model_db=None):
         revision = Version.objects.using(using).get_for_object(objects[0], model_db=model_db).get().revision
         self.assertEqual(revision.user, user)
-        if comment is not None:  # Allow a wildcard comment.
+        if hasattr(comment, 'pattern'):
+            assertRegex(self, revision.comment, comment)
+        elif comment is not None:  # Allow a wildcard comment.
             self.assertEqual(revision.comment, comment)
         self.assertAlmostEqual(revision.date_created, date_created or timezone.now(), delta=timedelta(seconds=1))
         # Check meta.
