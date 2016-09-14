@@ -190,15 +190,15 @@ class CreateInitialRevisionsCommandTestCase(ReversionTestBase):
         assert_equal(Version.objects.count(), vercount)
 
     def test_create_initial_revisions_specific_apps(self):
-        call_command('createinitialrevisions', 'test_reversion')
+        call_command('createinitialrevisions', app_labels='test_reversion')
         assert_equal(Revision.objects.count(), 6)
         assert_equal(Version.objects.count(), 6)
 
     def test_create_initial_revisions_specific_models(self):
-        call_command('createinitialrevisions', 'test_reversion.ReversionTestModel1')
+        call_command('createinitialrevisions', app_labels='test_reversion.ReversionTestModel1')
         assert_equal(Revision.objects.count(), 2)
         assert_equal(Version.objects.count(), 2)
-        call_command('createinitialrevisions', 'test_reversion.ReversionTestModel2')
+        call_command('createinitialrevisions', app_labels='test_reversion.ReversionTestModel2')
         assert_equal(Revision.objects.count(), 4)
         assert_equal(Version.objects.count(), 4)
 

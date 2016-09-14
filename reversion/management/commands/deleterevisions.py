@@ -3,73 +3,81 @@ from __future__ import unicode_literals
 import datetime, operator
 from optparse import make_option
 
-from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 from django.db.models import Q, Count
+from django.db.utils import DatabaseError
 from django.contrib.contenttypes.models import ContentType
 from django.utils.six.moves import input
 
 from reversion.models import Revision, Version
-from django.db.utils import DatabaseError
+from reversion.compatibility import CompatibilityBaseCommand
 
 
-class Command(BaseCommand):
-    option_list = BaseCommand.option_list + (
-        make_option("--date", "-t",
-            dest="date",
-            help="Delete only revisions older than the specify date. The date should be a valid date given in the ISO format (YYYY-MM-DD)"),
-        make_option("--days", "-d",
-            dest="days",
-            default=0,
-            type="int",
-            help="Delete only revisions older than the specify number of days."),
-        make_option("--keep-revision", "-k",
-            dest="keep",
-            default=0,
-            type="int",
-            help="Keep the specified number of revisions (most recent) for each object."),
-        make_option("--force", "-f",
-            action="store_true",
-            dest="force",
-            default=False,
-            help="Force the deletion of revisions even if an other app/model is involved"),
-        make_option("--no-confirmation", "-c",
-            action="store_false",
-            dest="confirmation",
-            default=True,
-            help="Disable the confirmation before deleting revisions"),
-        make_option('--manager', '-m', dest='manager',
-            help='Delete revisions only from specified manager. Defaults from all managers.'),
-        make_option('--database', action='store', dest='database',
-            help='Nominates a database to delete revisions from.'),
-        )
-    args = "[appname, appname.ModelName, ...] [--date=YYYY-MM-DD | days=0] [--keep=0] [--force] [--no-confirmation]"
+class Command(CompatibilityBaseCommand):
+
+    args = '[appname, appname.ModelName, ...] [--date=YYYY-MM-DD | days=0] [--keep=0] [--force] [--no-confirmation]'
     help = """Deletes revisions for a given app [and model] and/or before a specified delay or date.
-    
-If an app or a model is specified, revisions that have an other app/model involved will not be deleted. Use --force to avoid that.
 
-You can specify only apps/models or only delay or date or only a nuber of revision to keep or use all possible combinations of these options.
+    If an app or a model is specified, revisions that have an other app/model involved will not be deleted. Use --force to avoid that.
 
-Examples:
+    You can specify only apps/models or only delay or date or only a nuber of revision to keep or use all possible combinations of these options.
 
-        deleterevisions myapp
-    
-    That will delete every revisions of myapp (except if there's an other app involved in the revision)
-    
-        deleterevisions --date=2010-11-01
-    
-    That will delete every revision created before November 1, 2010 for all apps.
-    
-        deleterevisions myapp.mymodel --days=365 --force
-        
-    That will delete every revision of myapp.model that are older than 365 days, even if there's revisions involving other apps and/or models.
-    
-        deleterevisions myapp.mymodel --keep=10
-        
-    That will delete only revisions of myapp.model if there's more than 10 revisions for an object, keeping the 10 most recent revisons.
-"""
+    Examples:
 
-    def handle(self, *app_labels, **options):
+            deleterevisions myapp
+
+        That will delete every revisions of myapp (except if there's an other app involved in the revision)
+
+            deleterevisions --date=2010-11-01
+
+        That will delete every revision created before November 1, 2010 for all apps.
+
+            deleterevisions myapp.mymodel --days=365 --force
+
+        That will delete every revision of myapp.model that are older than 365 days, even if there's revisions involving other apps and/or models.
+
+            deleterevisions myapp.mymodel --keep=10
+
+        That will delete only revisions of myapp.model if there's more than 10 revisions for an object, keeping the 10 most recent revisons.
+    """
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--app_labels',
+            metavar='--app_labels',
+            help='Optional app_label or app_label.model_name list.',
+        )
+        parser.add_argument(
+            '--date', '-t',
+            dest='date',
+            help='Delete only revisions older than the specify date. The date should be a valid date given in the ISO format (YYYY-MM-DD)')
+        parser.add_argument('--days', '-d',
+            dest='days',
+            default=0,
+            type='int',
+            help='Delete only revisions older than the specify number of days.')
+        parser.add_argument('--keep-revision', '-k',
+            dest='keep',
+            default=0,
+            type='int',
+            help='Keep the specified number of revisions (most recent) for each object.')
+        parser.add_argument('--force', '-f',
+            action='store_true',
+            dest='force',
+            default=False,
+            help='Force the deletion of revisions even if an other app/model is involved')
+        parser.add_argument('--no-confirmation', '-c',
+            action='store_false',
+            dest='confirmation',
+            default=True,
+            help='Disable the confirmation before deleting revisions')
+        parser.add_argument('--manager', '-m', dest='manager',
+            help='Delete revisions only from specified manager. Defaults from all managers.')
+        parser.add_argument('--database', action='store', dest='database',
+            help='Nominates a database to delete revisions from.')
+
+    def handle(self, *args, **options):
+        app_labels = options["app_labels"].split(',') if options["app_labels"] else ()
         days = options["days"]
         keep = options["keep"]
         force = options["force"]
