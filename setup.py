@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='django-reversion',
-    version='2.0.5',
+    version='2.0.6',
     license='BSD',
     description='An extension to the Django web framework that provides comprehensive version control facilities',
     author='Dave Hall',
@@ -14,7 +14,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'django>=1.6',
-        'django-chamber>=0.1.18'
+        'django-chamber>=0.1.20'
     ],
     extras_require={
         'diff': [
@@ -36,7 +36,7 @@ setup(
         'Framework :: Django',
     ],
     dependency_links=[
-        'https://github.com/druids/django-chamber/tarball/0.1.18#egg=django-chamber-0.1.18',
+        'https://github.com/druids/django-chamber/tarball/0.1.20#egg=django-chamber-0.1.20',
     ],
 
 )
