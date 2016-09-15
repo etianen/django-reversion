@@ -189,7 +189,7 @@ class VersionAdmin(admin.ModelAdmin):
                     else:
                         response.template_name = template_name  # Set the template name to the correct template.
                         response.render()  # Eagerly render the response, so it's using the latest version.
-                        raise _RollBackRevisionView(response)  # Raise an exception to undo the transaction and the revision.
+                        raise _RollBackRevisionView(response)  # Raise exception to undo the transaction and revision.
         except RevertError as ex:
             opts = self.model._meta
             messages.error(request, force_text(ex))
