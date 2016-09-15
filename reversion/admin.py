@@ -12,7 +12,10 @@ try:
     from django.contrib.contenttypes.fields import GenericRelation
 except ImportError:  # Django < 1.9 pragma: no cover
     from django.contrib.contenttypes.generic import GenericInlineModelAdmin, GenericRelation
-from django.core.urlresolvers import reverse
+try:
+    from django.urls import reverse
+except ImportError:  # Django < 1.10 pragma: no cover
+    from django.core.urlresolvers import reverse
 from django.core.exceptions import PermissionDenied, ImproperlyConfigured
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils.text import capfirst
