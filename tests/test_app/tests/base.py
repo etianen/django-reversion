@@ -1,6 +1,8 @@
 from datetime import timedelta
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.management import call_command
+from django.core.urlresolvers import clear_url_caches
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.utils import timezone
@@ -8,6 +10,11 @@ from django.utils.six import StringIO
 import reversion
 from reversion.models import Revision, Version
 from test_app.models import TestModel, TestModelParent
+from importlib import import_module
+try:
+    from importlib import reload
+except ImportError:  # Python 2.7
+    pass
 
 
 # Test helpers.
@@ -15,6 +22,10 @@ from test_app.models import TestModel, TestModelParent
 class TestBase(TestCase):
 
     multi_db = True
+
+    def reloadUrls(self):
+        reload(import_module(settings.ROOT_URLCONF))
+        clear_url_caches()
 
     def tearDown(self):
         super(TestBase, self).tearDown()

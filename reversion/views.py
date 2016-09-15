@@ -4,6 +4,12 @@ from reversion.compat import is_authenticated
 from reversion.revisions import create_revision as create_revision_base, set_user
 
 
+class _RollBackRevisionView(Exception):
+
+    def __init__(self, response):
+        self.response = response
+
+
 def _request_creates_revision(request):
     return request.method not in ("OPTIONS", "GET", "HEAD")
 
@@ -23,9 +29,17 @@ def create_revision(manage_manually=False, using=None):
         @wraps(func)
         def do_revision_view(request, *args, **kwargs):
             if _request_creates_revision(request):
-                with create_revision_base(manage_manually=manage_manually, using=None):
-                    _set_user_from_request(request)
-                    return func(request, *args, **kwargs)
+                try:
+                    with create_revision_base(manage_manually=manage_manually, using=None):
+                        _set_user_from_request(request)
+                        response = func(request, *args, **kwargs)
+                        # Check for an error response.
+                        if response.status_code >= 400:
+                            raise _RollBackRevisionView(response)
+                        # Otherwise, we're good.
+                        return response
+                except _RollBackRevisionView as ex:
+                    return ex.response
             return func(request, *args, **kwargs)
         return do_revision_view
     return decorator

@@ -16,10 +16,12 @@ class AdminMixin(TestBase):
     def setUp(self):
         super(AdminMixin, self).setUp()
         admin.site.register(TestModelParent, VersionAdmin)
+        self.reloadUrls()
 
     def tearDown(self):
         super(AdminMixin, self).tearDown()
         admin.site.unregister(TestModelParent)
+        self.reloadUrls()
 
 
 class AdminRegisterTest(AdminMixin, TestBase):
@@ -199,10 +201,12 @@ class AdminRegisterInlineTest(TestBase):
     def setUp(self):
         super(AdminRegisterInlineTest, self).setUp()
         admin.site.register(TestModelParent, TestModelParentAdmin)
+        self.reloadUrls()
 
     def tearDown(self):
         super(AdminRegisterInlineTest, self).tearDown()
         admin.site.unregister(TestModelParent)
+        self.reloadUrls()
 
     def testAutoRegisterInline(self):
         self.assertTrue(reversion.is_registered(TestModelInline))

@@ -3,6 +3,20 @@
 django-reversion changelog
 ==========================
 
+Latest
+------
+
+- Database migrations now db-aware (@alukach).
+- Added "revert" and "recover" context variables to admin templates (@kezabelle).
+- Added ``post_revision_commit`` and ``pre_revision_commit`` signals back in (@carlosxl).
+- Fixing datetime in admin change message (@arogachev).
+- Fixing performance bug in postgres (@st4lk).
+- Fixing admin change messages in Django 1.10+ (@claudep).
+- Fixing revision middleware behavior in Django 1.10+ (@etianen).
+- Documentation tweaks (@jschneier).
+- Deprecation fixes (@KhasanovBI, @zsiciarz).
+
+
 
 2.0.6 - 21/07/2016
 ------------------

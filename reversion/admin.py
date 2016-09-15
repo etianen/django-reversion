@@ -22,11 +22,7 @@ from reversion.compat import remote_field, remote_model
 from reversion.errors import RevertError
 from reversion.models import Version
 from reversion.revisions import is_active, register, is_registered, set_comment, create_revision, set_user
-
-
-class _RollBackRevisionView(Exception):
-
-    pass
+from reversion.views import _RollBackRevisionView
 
 
 class VersionAdmin(admin.ModelAdmin):
@@ -182,13 +178,13 @@ class VersionAdmin(admin.ModelAdmin):
                     else:
                         response.template_name = template_name  # Set the template name to the correct template.
                         response.render()  # Eagerly render the response, so it's using the latest version.
-                        raise _RollBackRevisionView  # Raise an exception to undo the transaction and the revision.
+                        raise _RollBackRevisionView(response)  # Raise an exception to undo the transaction and the revision.
         except RevertError as ex:
             opts = self.model._meta
             messages.error(request, force_text(ex))
             return redirect("{}:{}_{}_changelist".format(self.admin_site.name, opts.app_label, opts.model_name))
-        except _RollBackRevisionView:
-            pass
+        except _RollBackRevisionView as ex:
+            return ex.response
         return response
 
     def recover_view(self, request, version_id, extra_context=None):
