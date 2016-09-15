@@ -1,9 +1,11 @@
 from __future__ import unicode_literals
+import json
 from contextlib import contextmanager
 from django.db import models, transaction, connection
 from django.conf.urls import url
 from django.contrib import admin, messages
 from django.contrib.admin import options
+from django.contrib.admin.models import LogEntry
 from django.contrib.admin.utils import unquote, quote
 try:
     from django.contrib.contenttypes.admin import GenericInlineModelAdmin
@@ -70,7 +72,13 @@ class VersionAdmin(admin.ModelAdmin):
     def log_addition(self, request, object, change_message=None):
         change_message = change_message or _("Initial version.")
         if is_active():
-            set_comment(change_message)
+            # If https://code.djangoproject.com/ticket/27218 is implemented, we
+            # could first call super() and get the change_message from the returned
+            # LogEntry.
+            if isinstance(change_message, list):
+                set_comment(LogEntry(change_message=json.dumps(change_message)).get_change_message())
+            else:
+                set_comment(change_message)
         try:
             super(VersionAdmin, self).log_addition(request, object, change_message)
         except TypeError:  # Django < 1.9 pragma: no cover
@@ -78,7 +86,10 @@ class VersionAdmin(admin.ModelAdmin):
 
     def log_change(self, request, object, message):
         if is_active():
-            set_comment(message)
+            if isinstance(message, list):
+                set_comment(LogEntry(change_message=json.dumps(message)).get_change_message())
+            else:
+                set_comment(message)
         super(VersionAdmin, self).log_change(request, object, message)
 
     # Auto-registration.
