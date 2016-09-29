@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 import json
 from contextlib import contextmanager
-from django.db import models, transaction, connection
+from django.db import models, transaction, connection, DatabaseError
 from django.conf.urls import url
 from django.contrib import admin, messages
 from django.contrib.admin import options
@@ -141,8 +141,14 @@ class VersionAdmin(admin.ModelAdmin):
     def __init__(self, *args, **kwargs):
         super(VersionAdmin, self).__init__(*args, **kwargs)
         # Check that database transactions are supported.
-        if not connection.features.uses_savepoints:
-            raise ImproperlyConfigured("Cannot use VersionAdmin with a database that does not support savepoints.")
+        # Check if manage.py collectstatic command running
+        try:
+            connection.cursor()
+            if not connection.features.uses_savepoints:
+                raise DatabaseError("Cannot use VersionAdmin with a database that does not support savepoints.")
+        except ImproperlyConfigured:
+            pass
+
         # Automatically register models if required.
         if not is_registered(self.model):
             inline_fields = ()
