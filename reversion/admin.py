@@ -140,9 +140,6 @@ class VersionAdmin(admin.ModelAdmin):
 
     def __init__(self, *args, **kwargs):
         super(VersionAdmin, self).__init__(*args, **kwargs)
-        # Check that database transactions are supported.
-        if not connection.features.uses_savepoints:
-            raise ImproperlyConfigured("Cannot use VersionAdmin with a database that does not support savepoints.")
         # Automatically register models if required.
         if not is_registered(self.model):
             inline_fields = ()
@@ -177,6 +174,10 @@ class VersionAdmin(admin.ModelAdmin):
             return super(VersionAdmin, self).change_view(request, object_id, form_url, extra_context)
 
     def _reversion_revisionform_view(self, request, version, template_name, extra_context=None):
+        # Check that database transactions are supported.
+        if not connection.features.uses_savepoints:
+            raise ImproperlyConfigured("Cannot use VersionAdmin with a database that does not support savepoints.")
+        # Run the view.
         try:
             with transaction.atomic(using=version.db):
                 # Revert the revision.
