@@ -36,4 +36,6 @@ else:
         get_registered_models,
     )
 
+    default_app_config = 'reversion.apps.DjangoRevisionConfig'
+
 __version__ = VERSION = (2, 0, 6)
