@@ -3,8 +3,8 @@
 django-reversion changelog
 ==========================
 
-Latest
-------
+2.0.7 - 31/10/2016
+------------------
 
 - Database migrations now db-aware (@alukach).
 - Added "revert" and "recover" context variables to admin templates (@kezabelle).
