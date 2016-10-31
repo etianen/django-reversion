@@ -14,8 +14,8 @@ Latest
 - Fixing admin change messages in Django 1.10+ (@claudep).
 - Fixing revision middleware behavior in Django 1.10+ (@etianen).
 - Documentation tweaks (@jschneier).
-- Deprecation fixes (@KhasanovBI, @zsiciarz).
-
+- Deprecation fixes (@KhasanovBI, @zsiciarz, @claudep).
+- Releasing as a universal wheel (@adamchainz).
 
 
 2.0.6 - 21/07/2016
