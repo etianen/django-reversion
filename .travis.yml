@@ -1,38 +1,35 @@
 language: python
 python:
-    - 3.5
+- 3.5
 sudo: false
 cache:
   directories:
-    - $HOME/.cache/pip
+  - "$HOME/.cache/pip"
 env:
-  matrix:
-    - TOXENV=py27-django18
-    - TOXENV=py27-django19
-    - TOXENV=py27-django110
-    - TOXENV=py34-django18
-    - TOXENV=py34-django19
-    - TOXENV=py34-django110
-    - TOXENV=py35-django18
-    - TOXENV=py35-django19
-    - TOXENV=py35-django110
-    - TOXENV=flake8
-    - TOXENV=docs
   global:
-    - PYTHONWARNINGS=default,ignore::PendingDeprecationWarning,ignore::ResourceWarning
-    - DJANGO_DATABASE_USER_POSTGRES=postgres
-    - DJANGO_DATABASE_USER_MYSQL=travis
+  - PYTHONWARNINGS=default,ignore::PendingDeprecationWarning,ignore::ResourceWarning
+  - DJANGO_DATABASE_USER_POSTGRES=postgres
+  - DJANGO_DATABASE_USER_MYSQL=travis
 matrix:
   fast_finish: true
 services:
-  - postgresql
+- postgresql
 addons:
   mariadb: '10.1'
 install:
-  - pip install 'tox>=2.3.1'
+- pip install 'tox>=2.3.1'
 before_script:
-  - mysql -e 'create database test_project'
-  - psql -c 'create database test_project;' -U postgres;
+- mysql -e 'create database test_project'
+- psql -c 'create database test_project;' -U postgres;
 script: tox
+deploy:
+  provider: pypi
+  user: etianen
+  password:
+    secure: XW4/9HiChbPJSJe4d/MRcO+ViPGhW1iQ8kVi814KJh7mCxOAKijpW5hfdc9oSKB6d8iYB3OzZ7naIUU9GMce40bpeTgPDLVBLCSYKRNLuVoJdh+Q6ItGUiFf8kAJz5jgopG80QnCpLA9JvYxKVJ4amfYWWm204eQmIEnRRAd+Jk=
+  on:
+    tags: true
+    distributions: sdist bdist_wheel
+    repo: etianen/django-reversion
 notifications:
   email: false
