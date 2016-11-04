@@ -1,7 +1,7 @@
 from functools import wraps
 
 from reversion.compat import is_authenticated
-from reversion.revisions import create_revision as create_revision_base, set_user
+from reversion.revisions import create_revision as create_revision_base, set_user, get_user
 
 
 class _RollBackRevisionView(Exception):
@@ -15,7 +15,7 @@ def _request_creates_revision(request):
 
 
 def _set_user_from_request(request):
-    if hasattr(request, "user") and is_authenticated(request.user):
+    if hasattr(request, "user") and is_authenticated(request.user) and get_user() is None:
         set_user(request.user)
 
 
@@ -31,12 +31,12 @@ def create_revision(manage_manually=False, using=None):
             if _request_creates_revision(request):
                 try:
                     with create_revision_base(manage_manually=manage_manually, using=None):
-                        _set_user_from_request(request)
                         response = func(request, *args, **kwargs)
                         # Check for an error response.
                         if response.status_code >= 400:
                             raise _RollBackRevisionView(response)
                         # Otherwise, we're good.
+                        _set_user_from_request(request)
                         return response
                 except _RollBackRevisionView as ex:
                     return ex.response

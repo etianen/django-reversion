@@ -3,6 +3,12 @@
 django-reversion changelog
 ==========================
 
+Development
+-----------
+
+- Setting ``revision.user`` in ``process_response`` for middleware (@etianen).
+
+
 2.0.7 - 31/10/2016
 ------------------
 

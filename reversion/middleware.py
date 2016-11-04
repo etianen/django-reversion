@@ -21,7 +21,6 @@ class RevisionMiddleware(object):
         if _request_creates_revision(request):
             context = create_revision_base(manage_manually=self.manage_manually, using=self.using)
             context.__enter__()
-            _set_user_from_request(request)
             if not hasattr(request, "_revision_middleware"):
                 setattr(request, "_revision_middleware", {})
             request._revision_middleware[self] = context
@@ -31,6 +30,7 @@ class RevisionMiddleware(object):
             request._revision_middleware.pop(self).__exit__(*sys.exc_info() if is_exception else (None, None, None))
 
     def process_response(self, request, response):
+        _set_user_from_request(request)
         self._close_revision(request, False)
         return response
 
