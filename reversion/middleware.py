@@ -27,10 +27,10 @@ class RevisionMiddleware(object):
 
     def _close_revision(self, request, is_exception):
         if self in getattr(request, "_revision_middleware", {}):
+            _set_user_from_request(request)
             request._revision_middleware.pop(self).__exit__(*sys.exc_info() if is_exception else (None, None, None))
 
     def process_response(self, request, response):
-        _set_user_from_request(request)
         self._close_revision(request, False)
         return response
 
