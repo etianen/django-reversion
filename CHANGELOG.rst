@@ -254,6 +254,10 @@ Helpers
 
     The old implementation is available for reference from the `previous release <https://github.com/etianen/django-reversion/blob/release-1.10.2/src/reversion/helpers.py>`_.
 
+Models
+^^^^^^
+
+* **Breaking:** Ordering of ``-pk`` added to models ``Revision`` and ``Version``. Previous was the default ``pk``.
 
 1.10.2 - 18/04/2016
 -------------------
