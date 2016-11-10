@@ -27,7 +27,7 @@
                     <tbody>
                         {% for deletion in deleted %}
                             <tr>
-                                <th scope="row"><a href="{% url opts|admin_urlname:'recover' deletion.pk %}">{{deletion.revision.date_created}}</a></th>
+                                <th scope="row"><a href="{% url opts|admin_urlname:'recover' deletion.pk|unlocalize %}">{{deletion.revision.date_created}}</a></th>
                                 <td>{{deletion.object_repr}}</td>
                             </tr>
                         {% endfor %}
