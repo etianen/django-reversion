@@ -3,10 +3,12 @@
 django-reversion changelog
 ==========================
 
-Development
------------
+2.0.8 - 28/11/2016
+------------------
 
 - Setting ``revision.user`` in ``process_response`` for middleware (@etianen).
+- Fixing localization of model primary keys in `recover_list.html` (@w4rri0r3k).
+- Documentation tweaks (@jaywink).
 
 
 2.0.7 - 31/10/2016
