@@ -5,6 +5,9 @@ Admin integration
 
 django-reversion can be used to add rollback and recovery to your admin site.
 
+.. Warning::
+    The admin integration requires that your database engine supports transactions. This is the case for PostgreSQL, SQLite and MySQL InnoDB. If you are using MySQL MyISSAM, upgrade your database tables to InnoDB!
+
 
 Overview
 --------
