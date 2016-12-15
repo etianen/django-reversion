@@ -5,7 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 
 
 try:
-    from is_core.filters.default_filters import DefaultFilter
+    from is_core.filters.default_filters import DefaultMethodFilter
     from is_core.filters.exceptions import FilterException
     from is_core.forms.models import ModelChoiceField
 except ImportError:
@@ -14,53 +14,49 @@ except ImportError:
     from django.forms import ModelChoiceField
 
 
-class RelatedObjectsFilter(DefaultFilter):
+class RelatedObjectsFilter(DefaultMethodFilter):
+
     widget = forms.TextInput()
 
-    def get_filter_term(self, request):
-        self._check_suffix()
-
-        if '|' not in self.value:
-            term = {
-                'versions__object_id': self.value
+    def get_filter_term_without_prefix(self, value, suffix, request):
+        if '|' not in value:
+            return {
+                'versions__object_id': value
             }
         else:
-            content_type, object_id = self.value.split('|', 1)
-            term = {
+            content_type, object_id = value.split('|', 1)
+            return {
                 'versions__object_id': object_id,
                 'versions__content_type': content_type
             }
-        return {''.join((self.get_filter_prefix(), key)): val for key, val in term.items()}
 
 
-class RelatedObjectsWithIntIdFilter(DefaultFilter):
+class RelatedObjectsWithIntIdFilter(DefaultMethodFilter):
+
     widget = forms.TextInput()
 
-    def get_filter_term(self, request):
-        self._check_suffix()
-
-        if '|' not in self.value:
-            term = {
-                'versions__object_id_int': self.value
+    def get_filter_term_without_prefix(self, value, suffix, request):
+        if '|' not in value:
+            return {
+                'versions__object_id_int': value
             }
         else:
-            content_type, object_id = self.value.split('|', 1)
-            term = {
+            content_type, object_id = value.split('|', 1)
+            return {
                 'versions__object_id_int': object_id,
                 'versions__content_type': content_type
             }
-        return {''.join((self.get_filter_prefix(), key)): val for key, val in term.items()}
 
 
-class VersionIDFilter(DefaultFilter):
+class VersionIDFilter(DefaultMethodFilter):
     widget = forms.TextInput()
 
-    def get_filter_term(self, request):
-        self._check_suffix()
-        return {''.join((self.get_filter_prefix(), 'versions__object_id')): self.value}
+    def get_filter_term_without_prefix(self, value, suffix, request):
+        return {'versions__object_id': value}
 
 
-class VersionContextTypeFilter(DefaultFilter):
+class VersionContextTypeFilter(DefaultMethodFilter):
+
     ALL_LABEL = '--------'
     ALL_SLUG = '__all__'
 
@@ -75,9 +71,9 @@ class VersionContextTypeFilter(DefaultFilter):
         formfield.choices.insert(0, (self.ALL_SLUG, self.ALL_LABEL))
         return formfield.widget
 
-    def get_filter_term(self, request):
-        suffix = self._check_suffix()
+    def get_filter_term_without_prefix(self, value, suffix, request):
         if not suffix:
-            if self.value == self.ALL_SLUG:
+            if value == self.ALL_SLUG:
                 return {}
-        return {''.join((self.get_filter_prefix(), 'versions__content_type')): self.value}
+
+        return {'versions__content_type': value}
