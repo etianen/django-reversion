@@ -1,5 +1,5 @@
 from __future__ import unicode_literals
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 from contextlib import contextmanager
 from functools import wraps
 from threading import local
@@ -214,6 +214,24 @@ def add_to_revision(obj, model_db=None):
 
 def _save_revision(versions, user=None, comment="", meta=(), date_created=None, using=None):
     from reversion.models import Revision
+    # Only save versions that exist in the database.
+    model_db_pks = defaultdict(lambda: defaultdict(set))
+    for version in versions:
+        model_db_pks[version._model][version.db].add(version.object_id)
+    model_db_existing_pks = {
+        model: {
+            db: frozenset(map(
+                force_text,
+                model._default_manager.using(db).filter(pk__in=pks).values_list("pk", flat=True),
+            ))
+            for db, pks in db_pks.items()
+        }
+        for model, db_pks in model_db_pks.items()
+    }
+    versions = [
+        version for version in versions
+        if version.object_id in model_db_existing_pks[version._model][version.db]
+    ]
     # Bail early if there are no objects to save.
     if not versions:
         return

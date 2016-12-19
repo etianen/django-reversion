@@ -3,6 +3,12 @@
 django-reversion changelog
 ==========================
 
+Development
+-----------
+
+- Bugfix: Deleted inline admin instances no longer added to revision.
+
+
 2.0.8 - 28/11/2016
 ------------------
 
