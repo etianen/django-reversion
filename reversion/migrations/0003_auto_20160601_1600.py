@@ -3,7 +3,7 @@
 from __future__ import unicode_literals
 
 from collections import defaultdict
-from django.db import migrations, models, router
+from django.db import DEFAULT_DB_ALIAS, migrations, models, router
 from django.apps import apps as live_apps
 
 
@@ -43,9 +43,13 @@ def set_version_db(apps, schema_editor):
     """
     db_alias = schema_editor.connection.alias
     Version = apps.get_model("reversion", "Version")
-    content_types = Version.objects.using(db_alias).order_by().values_list("content_type__app_label", "content_type__model").distinct()
+    content_types = Version.objects.using(db_alias).order_by().values_list(
+        "content_type_id",
+        "content_type__app_label",
+        "content_type__model"
+    ).distinct()
     model_dbs = defaultdict(list)
-    for app_label, model_name in content_types:
+    for content_type_id, app_label, model_name in content_types:
         # We need to be able to access all models in the project, and we can't
         # specify them up-front in the migration dependencies. So we have to
         # just get the live model. This should be fine, since we don't actually
@@ -57,15 +61,16 @@ def set_version_db(apps, schema_editor):
             db = "default"
         else:
             db = router.db_for_write(model)
-        model_dbs[db].append((app_label, model_name))
+        model_dbs[db].append(content_type_id)
     # Update db field.
-    for db, model_keys in model_dbs.items():
-        db_query = models.Q()
-        for app_label, model_name in model_keys:
-            db_query |= models.Q(
-                content_type__app_label=app_label, content_type__model=model_name
-            )
-        Version.objects.using(db_alias).filter(db_query).update(db=db)
+    # speedup for case when there is only default db
+    if DEFAULT_DB_ALIAS in model_dbs and len(model_dbs) == 1:
+        Version.objects.using(db_alias).update(db=DEFAULT_DB_ALIAS)
+    else:
+        for db, content_type_ids in model_dbs.items():
+            Version.objects.using(db_alias).filter(
+                content_type__in=content_type_ids
+            ).update(db=db)
 
 
 class Migration(migrations.Migration):
