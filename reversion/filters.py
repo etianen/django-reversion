@@ -9,7 +9,7 @@ try:
     from is_core.filters.exceptions import FilterException
     from is_core.forms.models import ModelChoiceField
 except ImportError:
-    DefaultFilter = object
+    DefaultMethodFilter = object
     FilterException = object
     from django.forms import ModelChoiceField
 
