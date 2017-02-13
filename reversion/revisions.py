@@ -24,7 +24,7 @@ from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.signals import request_finished
 from django.db import models, connection, transaction
-from django.db.models import Max
+from django.db.models import Max, Model
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, post_delete, pre_delete, pre_save
 from django.utils.encoding import force_text
@@ -313,6 +313,8 @@ class RevisionContextManager(local):
         audit_log = AuditLog.objects.create(comment=comment, slug=slug, priority=priority)
         if objects:
             for obj in objects:
+                assert isinstance(obj, Model), 'audit log related object must be model type'
+
                 self._current_frame.objects[manager][1][obj].add(audit_log)
 
     # Revision context properties that apply to the current stack frame.
