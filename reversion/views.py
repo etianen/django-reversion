@@ -19,7 +19,7 @@ def _set_user_from_request(request):
         set_user(request.user)
 
 
-def create_revision(manage_manually=False, using=None):
+def create_revision(manage_manually=False, using=None, atomic=True):
     """
     View decorator that wraps the request in a revision.
 
@@ -30,7 +30,7 @@ def create_revision(manage_manually=False, using=None):
         def do_revision_view(request, *args, **kwargs):
             if _request_creates_revision(request):
                 try:
-                    with create_revision_base(manage_manually=manage_manually, using=None):
+                    with create_revision_base(manage_manually=manage_manually, using=None, atomic=atomic):
                         response = func(request, *args, **kwargs)
                         # Check for an error response.
                         if response.status_code >= 400:
