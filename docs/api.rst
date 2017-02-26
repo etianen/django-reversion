@@ -216,9 +216,9 @@ Registration API
 Revision API
 ------------
 
-``reversion.create_revision(manage_manually=False, using=None)``
+``reversion.create_revision(manage_manually=False, using=None, atomic=True)``
 
-    Marks a block of code as a *revision block*. Can also be used as a decorator. The revision block will be wrapped in a ``transaction.atomic()``.
+    Marks a block of code as a *revision block*. Can also be used as a decorator.
 
     .. include:: /_include/create-revision-args.rst
 
