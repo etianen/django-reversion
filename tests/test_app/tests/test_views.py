@@ -21,7 +21,7 @@ class CreateRevisionAtomicTest(TestModelMixin, TestBaseNonAtomic):
         self.assertEqual(is_atomic, 'True')
 
     def testCreateRevisionNonAtomic(self):
-        is_atomic = self.client.post("/test-app/atomic-revision/").content
+        is_atomic = self.client.post("/test-app/non-atomic-revision/").content
         self.assertEqual(is_atomic, 'False')
 
 
