@@ -73,7 +73,7 @@ class TestBase(TestBaseMixin, TestCase):
     pass
 
 
-class TestBaseNonAtomic(TestBaseMixin, TransactionTestCase):
+class TestBaseTransaction(TestBaseMixin, TransactionTestCase):
     pass
 
 

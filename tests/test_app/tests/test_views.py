@@ -1,5 +1,5 @@
 from test_app.models import TestModel
-from test_app.tests.base import TestBase, TestBaseNonAtomic, TestModelMixin, LoginMixin
+from test_app.tests.base import TestBase, TestBaseTransaction, TestModelMixin, LoginMixin
 
 
 class CreateRevisionTest(TestModelMixin, TestBase):
@@ -14,13 +14,13 @@ class CreateRevisionTest(TestModelMixin, TestBase):
         self.assertNoRevision()
 
 
-class CreateRevisionAtomicTest(TestModelMixin, TestBaseNonAtomic):
+class RevisionAtomicTest(TestModelMixin, TestBaseTransaction):
 
-    def testCreateRevisionAtomic(self):
+    def testRevisionAtomic(self):
         is_atomic = self.client.post("/test-app/atomic-revision/").content
         self.assertEqual(is_atomic, 'True')
 
-    def testCreateRevisionNonAtomic(self):
+    def testRevisionNonAtomic(self):
         is_atomic = self.client.post("/test-app/non-atomic-revision/").content
         self.assertEqual(is_atomic, 'False')
 
@@ -45,7 +45,7 @@ class RevisionMixinTest(TestModelMixin, TestBase):
         self.assertNoRevision()
 
 
-class RevisionMixinTest(TestModelMixin, TestBaseNonAtomic):
+class RevisionAtomicMixinTest(TestModelMixin, TestBaseTransaction):
 
     def testRevisionMixinAtomic(self):
         is_atomic = self.client.post("/test-app/revision-mixin-atomic/").content

@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.test.utils import override_settings
 from test_app.models import TestModel
-from test_app.tests.base import TestBase, TestBaseNonAtomic, TestModelMixin, LoginMixin
+from test_app.tests.base import TestBase, TestBaseTransaction, TestModelMixin, LoginMixin
 
 
 use_middleware = override_settings(
@@ -34,14 +34,14 @@ class RevisionMiddlewareTest(TestModelMixin, TestBase):
 
 
 @use_middleware
-class RevisionAtomicMiddlewareTest(TestModelMixin, TestBaseNonAtomic):
+class RevisionAtomicMiddlewareTest(TestModelMixin, TestBaseTransaction):
     def testCreateRevisionAtomic(self):
         is_atomic = self.client.post("/test-app/is-atomic/").content
         self.assertEqual(is_atomic, 'True')
 
 
 @use_non_atomic_middleware
-class RevisionNonAtomicMiddlewareTest(TestModelMixin, TestBaseNonAtomic):
+class RevisionNonAtomicMiddlewareTest(TestModelMixin, TestBaseTransaction):
     def testCreateRevisionNonAtomic(self):
         is_atomic = self.client.post("/test-app/is-atomic/").content
         self.assertEqual(is_atomic, 'False')
