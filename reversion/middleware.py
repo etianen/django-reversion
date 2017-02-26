@@ -11,15 +11,25 @@ class RevisionMiddleware(object):
 
     using = None
 
+    atomic = True
+
     def __init__(self, get_response=None):
         super(RevisionMiddleware, self).__init__()
         # Support Django 1.10 middleware.
         if get_response is not None:
-            self.get_response = create_revision(manage_manually=self.manage_manually, using=self.using)(get_response)
+            self.get_response = create_revision(
+                manage_manually=self.manage_manually,
+                using=self.using,
+                atomic=self.atomic
+            )(get_response)
 
     def process_request(self, request):
         if _request_creates_revision(request):
-            context = create_revision_base(manage_manually=self.manage_manually, using=self.using)
+            context = create_revision_base(
+                manage_manually=self.manage_manually,
+                using=self.using,
+                atomic=self.atomic
+            )
             context.__enter__()
             if not hasattr(request, "_revision_middleware"):
                 setattr(request, "_revision_middleware", {})

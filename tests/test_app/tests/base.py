@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.utils.six import StringIO, assertRegex
 import reversion
 from reversion.models import Revision, Version
+from reversion.middleware import RevisionMiddleware
 from test_app.models import TestModel, TestModelParent
 from importlib import import_module
 try:
@@ -105,3 +106,7 @@ class LoginMixin(UserMixin):
     def setUp(self):
         super(LoginMixin, self).setUp()
         self.client.login(username="test", password="password")
+
+
+class NonAtomicRevisionMiddleware(RevisionMiddleware):
+    atomic = False
