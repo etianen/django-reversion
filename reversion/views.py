@@ -57,9 +57,12 @@ class RevisionMixin(object):
 
     revision_using = None
 
+    revision_atomic = True
+
     def __init__(self, *args, **kwargs):
         super(RevisionMixin, self).__init__(*args, **kwargs)
         self.dispatch = create_revision(
             manage_manually=self.revision_manage_manually,
             using=self.revision_using,
+            atomic=self.revision_atomic
         )(self.dispatch)

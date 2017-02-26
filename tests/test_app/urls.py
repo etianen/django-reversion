@@ -9,4 +9,6 @@ urlpatterns = [
     url("^atomic-revision/", views.atomic_revision_view),
     url("^non-atomic-revision/", views.non_atomic_revision_view),
     url("^revision-mixin/", views.RevisionMixinView.as_view()),
+    url("^revision-mixin-atomic/", views.RevisionMixinAtomicView.as_view()),
+    url("^revision-mixin-non-atomic/", views.RevisionMixinNonAtomicView.as_view()),
 ]
