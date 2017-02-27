@@ -18,11 +18,11 @@ class RevisionAtomicTest(TestModelMixin, TestBaseTransaction):
 
     def testRevisionAtomic(self):
         is_atomic = self.client.post("/test-app/atomic-revision/").content
-        self.assertEqual(is_atomic, 'True')
+        self.assertEqual(is_atomic, b'True')
 
     def testRevisionNonAtomic(self):
         is_atomic = self.client.post("/test-app/non-atomic-revision/").content
-        self.assertEqual(is_atomic, 'False')
+        self.assertEqual(is_atomic, b'False')
 
 
 class CreateRevisionUserTest(LoginMixin, TestModelMixin, TestBase):
@@ -49,11 +49,11 @@ class RevisionAtomicMixinTest(TestModelMixin, TestBaseTransaction):
 
     def testRevisionMixinAtomic(self):
         is_atomic = self.client.post("/test-app/revision-mixin-atomic/").content
-        self.assertEqual(is_atomic, 'True')
+        self.assertEqual(is_atomic, b'True')
 
     def testRevisionMixinNonAtomic(self):
         is_atomic = self.client.post("/test-app/revision-mixin-non-atomic/").content
-        self.assertEqual(is_atomic, 'False')
+        self.assertEqual(is_atomic, b'False')
 
 
 class RevisionMixinUserTest(LoginMixin, TestModelMixin, TestBase):

@@ -37,14 +37,14 @@ class RevisionMiddlewareTest(TestModelMixin, TestBase):
 class RevisionAtomicMiddlewareTest(TestModelMixin, TestBaseTransaction):
     def testCreateRevisionAtomic(self):
         is_atomic = self.client.post("/test-app/is-atomic/").content
-        self.assertEqual(is_atomic, 'True')
+        self.assertEqual(is_atomic, b'True')
 
 
 @use_non_atomic_middleware
 class RevisionNonAtomicMiddlewareTest(TestModelMixin, TestBaseTransaction):
     def testCreateRevisionNonAtomic(self):
         is_atomic = self.client.post("/test-app/is-atomic/").content
-        self.assertEqual(is_atomic, 'False')
+        self.assertEqual(is_atomic, b'False')
 
 
 @use_middleware
