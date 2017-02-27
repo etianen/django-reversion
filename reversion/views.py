@@ -30,7 +30,7 @@ def create_revision(manage_manually=False, using=None, atomic=True):
         def do_revision_view(request, *args, **kwargs):
             if _request_creates_revision(request):
                 try:
-                    with create_revision_base(manage_manually=manage_manually, using=None, atomic=atomic):
+                    with create_revision_base(manage_manually=manage_manually, using=using, atomic=atomic):
                         response = func(request, *args, **kwargs)
                         # Check for an error response.
                         if response.status_code >= 400:
