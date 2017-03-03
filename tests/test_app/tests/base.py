@@ -12,7 +12,6 @@ from django.utils import timezone
 from django.utils.six import StringIO, assertRegex
 import reversion
 from reversion.models import Revision, Version
-from reversion.middleware import RevisionMiddleware
 from test_app.models import TestModel, TestModelParent
 from importlib import import_module
 try:
