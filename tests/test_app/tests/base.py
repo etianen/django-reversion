@@ -106,7 +106,3 @@ class LoginMixin(UserMixin):
     def setUp(self):
         super(LoginMixin, self).setUp()
         self.client.login(username="test", password="password")
-
-
-class NonAtomicRevisionMiddleware(RevisionMiddleware):
-    atomic = False
