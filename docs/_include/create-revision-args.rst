@@ -3,3 +3,6 @@
 
 ``using``
     .. include:: /_include/create-revision-using.rst
+
+``atomic``
+    .. include:: /_include/create-revision-atomic.rst

@@ -6,7 +6,7 @@ try:
     from django.urls import clear_url_caches
 except ImportError:  # Django < 1.10 pragma: no cover
     from django.core.urlresolvers import clear_url_caches
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.test.utils import override_settings
 from django.utils import timezone
 from django.utils.six import StringIO, assertRegex
@@ -22,7 +22,7 @@ except ImportError:  # Python 2.7
 
 # Test helpers.
 
-class TestBase(TestCase):
+class TestBaseMixin(object):
 
     multi_db = True
 
@@ -31,7 +31,7 @@ class TestBase(TestCase):
         clear_url_caches()
 
     def tearDown(self):
-        super(TestBase, self).tearDown()
+        super(TestBaseMixin, self).tearDown()
         for model in list(reversion.get_registered_models()):
             reversion.unregister(model)
 
@@ -66,6 +66,14 @@ class TestBase(TestCase):
 
     def assertNoRevision(self, using=None):
         self.assertEqual(Revision.objects.using(using).all().count(), 0)
+
+
+class TestBase(TestBaseMixin, TestCase):
+    pass
+
+
+class TestBaseTransaction(TestBaseMixin, TransactionTestCase):
+    pass
 
 
 class TestModelMixin(object):

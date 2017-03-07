@@ -9,7 +9,7 @@ Shortcuts when using django-reversion in views.
 Decorators
 ----------
 
-``reversion.views.create_revision(manage_manually=False, using=None)``
+``reversion.views.create_revision(manage_manually=False, using=None, atomic=True)``
 
     Decorates a view to wrap every request that isn't ``GET``, ``HEAD`` or ``OPTIONS`` in a revision block.
 

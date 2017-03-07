@@ -1,10 +1,11 @@
 from datetime import timedelta
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.transaction import get_connection
 from django.utils import timezone
 import reversion
 from test_app.models import TestModel, TestModelRelated, TestModelThrough, TestModelParent, TestMeta
-from test_app.tests.base import TestBase, TestModelMixin, UserMixin
+from test_app.tests.base import TestBase, TestBaseTransaction, TestModelMixin, UserMixin
 
 try:
     from unittest.mock import MagicMock
@@ -128,6 +129,18 @@ class CreateRevisionTest(TestModelMixin, TestBase):
         with reversion.create_revision():
             TestModel.objects.create()
         self.assertEqual(_callback.call_count, 1)
+
+
+class CreateRevisionAtomicTest(TestModelMixin, TestBaseTransaction):
+    def testCreateRevisionAtomic(self):
+        self.assertFalse(get_connection().in_atomic_block)
+        with reversion.create_revision():
+            self.assertTrue(get_connection().in_atomic_block)
+
+    def testCreateRevisionNonAtomic(self):
+        self.assertFalse(get_connection().in_atomic_block)
+        with reversion.create_revision(atomic=False):
+            self.assertFalse(get_connection().in_atomic_block)
 
 
 class CreateRevisionManageManuallyTest(TestModelMixin, TestBase):

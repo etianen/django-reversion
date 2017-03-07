@@ -27,3 +27,8 @@ To enable ``RevisionMiddleware``, add ``'reversion.middleware.RevisionMiddleware
 ``RevisionMiddleware.using = None``
 
     .. include:: /_include/create-revision-using.rst
+
+
+``RevisionMiddleware.atomic = True``
+
+    .. include:: /_include/create-revision-atomic.rst
