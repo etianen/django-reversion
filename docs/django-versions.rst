@@ -10,9 +10,9 @@ Older versions of Django require an older version of django-reversion to be inst
 ==============  =================
 Django version  Reversion release
 ==============  =================
-1.8+            2.0.0
-1.7+            1.10.0
-1.6+            1.8.5
+1.8 - current   2.0.0
+1.7             1.10.x
+1.6             1.8.x
 ==============  =================
 
 .. Warning::
