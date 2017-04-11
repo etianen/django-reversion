@@ -169,6 +169,8 @@ Low-level API
 
 * **Breaking:** ``reversion.get_deleted()`` has been moved to ``Version.objects.get_deleted()`` (@etianen).
 
+* **Breaking:** ``Version.object_version`` has been renamed to ``Version._object_version`` (@etianen).
+
 * **Breaking:** Refactored multi-db support (@etianen).
 
     django-reversion now supports restoring model instances to their original database automatically. Several parameter names have also be updated to match Django coding conventions.
