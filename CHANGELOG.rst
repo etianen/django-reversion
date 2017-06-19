@@ -3,8 +3,8 @@
 django-reversion changelog
 ==========================
 
-Development
------------
+2.0.9 - 19/06/2017
+------------------
 
 - Bugfix: Deleted inline admin instances no longer added to revision.
 - Bugfix: M2M relations correctly added to revision (@etianen, @claudep).
