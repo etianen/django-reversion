@@ -7,6 +7,10 @@ Development
 -----------
 
 - Bugfix: Deleted inline admin instances no longer added to revision.
+- Improved performance of 0003 migration (@mkurek).
+- Documentation improvements (@orlra, @guettli, @meilinger).
+- Django 1.11 support (@claudep).
+- Added ``atomic=True`` parameter to ``create_revision`` (Ernesto Ferro).
 
 
 2.0.8 - 28/11/2016
