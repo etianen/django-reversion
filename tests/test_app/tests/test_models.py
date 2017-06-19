@@ -224,7 +224,7 @@ class FieldDictTest(TestModelMixin, TestBase):
         self.assertEqual(Version.objects.get_for_object(obj).get().field_dict, {
             "id": obj.pk,
             "name": "v1",
-            "related": [],
+            "related": [obj_related.pk],
         })
 
 

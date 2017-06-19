@@ -328,7 +328,7 @@ def _post_save_receiver(sender, instance, using, **kwargs):
 
 def _m2m_changed_receiver(instance, using, action, model, reverse, **kwargs):
     if action.startswith("post_") and not reverse:
-        if is_registered(model) and is_active() and not is_manage_manually():
+        if is_registered(instance) and is_active() and not is_manage_manually():
             add_to_revision(instance, model_db=using)
 
 

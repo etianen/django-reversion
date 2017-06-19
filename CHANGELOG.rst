@@ -7,6 +7,7 @@ Development
 -----------
 
 - Bugfix: Deleted inline admin instances no longer added to revision.
+- Bugfix: M2M relations correctly added to revision (@etianen, @claudep).
 - Improved performance of 0003 migration (@mkurek).
 - Documentation improvements (@orlra, @guettli, @meilinger).
 - Django 1.11 support (@claudep).
