@@ -15,7 +15,7 @@ def _request_creates_revision(request):
 
 
 def _set_user_from_request(request):
-    if hasattr(request, "user") and is_authenticated(request.user) and get_user() is None:
+    if getattr(request, "user", None) and is_authenticated(request.user) and get_user() is None:
         set_user(request.user)
 
 
