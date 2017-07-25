@@ -41,7 +41,7 @@ For more information about admin integration, see :ref:`admin`.
 Low-level API
 -------------
 
-You can the django-reversion API to build version-controlled applications. See :ref:`api`.
+You can use the django-reversion API to build version-controlled applications. See :ref:`api`.
 
 
 More information
