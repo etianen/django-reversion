@@ -38,7 +38,6 @@ class VersionInlineFormView(TabularInlineObjectsView):
         return self.parent_instance.versions.all()
 
 
-
 class ReversionTabsViewMixin(TabsViewMixin):
 
     def get_tabs(self):

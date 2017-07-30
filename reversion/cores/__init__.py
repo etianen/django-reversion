@@ -8,8 +8,8 @@ from .views import ReversionEditView, ReversionHistoryView, VersionInlineFormVie
 
 
 class DataRevisionISCore(UIRESTModelISCore):
-    abstract = True
 
+    abstract = True
     model = Revision
     list_display = ('created_at', 'user', 'comment')
     rest_list_fields = ('pk',)
@@ -40,6 +40,7 @@ class ReversionUIRESTModelISCore(UIRESTModelISCore):
 
 
 class AuditLogUIRESTModelISCore(UIRESTModelISCore):
+
     abstract = True
     model = AuditLog
     list_display = ('created_at', 'related_objects', 'content_types', 'object_pks', 'short_comment', 'priority', 'slug')
@@ -48,3 +49,4 @@ class AuditLogUIRESTModelISCore(UIRESTModelISCore):
     create_permission = False
     delete_permission = False
     update_permission = False
+    rest_extra_filter_fields = ('related_objects_with_int_id', 'related_objects_display', 'related_objects')
