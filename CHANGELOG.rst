@@ -3,6 +3,23 @@
 django-reversion changelog
 ==========================
 
+2.0.10 - 18/08/2017
+-------------------
+
+- Bugfix: Handling case of `None` user in request (@pawelad).
+- Documentation corrections (@danielquinn).
+- Bugfix: "invalid literal for int() with base 10: 'None'" for unversioned admin inline relations.
+  If, after updating, you still experience this issue, run the following in a Django shell:
+
+  ``` py
+  from reversion.models import Version
+  Version.objects.filter(object_id="None").delete()
+  ```
+
+  **Important:** Ensure that none of your versioned models contain a string primary key where `"None"` is a valid value
+  before running this snippet!
+
+
 2.0.9 - 19/06/2017
 ------------------
 
