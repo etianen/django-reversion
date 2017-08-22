@@ -45,6 +45,11 @@ class TestModel(models.Model):
     generic_inlines = GenericRelation(TestModelGenericInline)
 
 
+class TestModelEscapePK(models.Model):
+
+    name = models.CharField(max_length=191, primary_key=True)
+
+
 class TestModelThrough(models.Model):
 
     test_model = models.ForeignKey(
