@@ -69,6 +69,12 @@ class Migration(migrations.Migration):
             ],
             bases=('test_app.testmodel',),
         ),
+        migrations.CreateModel(
+            name='TestModelEscapePK',
+            fields=[
+                ('name', models.CharField(max_length=191, primary_key=True, serialize=False)),
+            ],
+        ),
         migrations.AddField(
             model_name='testmodelthrough',
             name='test_model',
