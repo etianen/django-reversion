@@ -3,6 +3,12 @@
 django-reversion changelog
 ==========================
 
+Master
+------
+
+- Dramatically improved performance of ``get_deleted()`` over large datasets (@alexey-v-paramonov, @etianen).
+
+
 2.0.10 - 18/08/2017
 -------------------
 
