@@ -24,4 +24,4 @@ def _choose_is_authenticated():
     return django_1_10_and_later
 
 
-is_authenticated = _choose_is_authenticated
+is_authenticated = _choose_is_authenticated()
