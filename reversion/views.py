@@ -1,7 +1,7 @@
 from functools import wraps
 
 from reversion.compat import is_authenticated
-from reversion.revisions import create_revision as create_revision_base, set_user, get_user
+from reversion.revisions import create_revision as create_revision_base, set_user, get_user, set_comment
 
 
 class _RollBackRevisionView(Exception):
@@ -19,7 +19,7 @@ def _set_user_from_request(request):
         set_user(request.user)
 
 
-def create_revision(manage_manually=False, using=None, atomic=True):
+def create_revision(manage_manually=False, using=None, atomic=True, comment_func=None):
     """
     View decorator that wraps the request in a revision.
 
@@ -37,6 +37,8 @@ def create_revision(manage_manually=False, using=None, atomic=True):
                             raise _RollBackRevisionView(response)
                         # Otherwise, we're good.
                         _set_user_from_request(request)
+                        if comment_func:
+                            set_comment(comment_func(request))
                         return response
                 except _RollBackRevisionView as ex:
                     return ex.response
@@ -59,10 +61,14 @@ class RevisionMixin(object):
 
     revision_atomic = True
 
+    revision_comment_method = 'create_revision_comment'
+
     def __init__(self, *args, **kwargs):
         super(RevisionMixin, self).__init__(*args, **kwargs)
+        comment_method = getattr(self, self.revision_comment_method, None)
         self.dispatch = create_revision(
             manage_manually=self.revision_manage_manually,
             using=self.revision_using,
-            atomic=self.revision_atomic
+            atomic=self.revision_atomic,
+            comment_func=comment_method
         )(self.dispatch)
