@@ -1,7 +1,6 @@
-dist: precise
 language: python
 python:
-- 3.5
+- 3.6
 sudo: false
 cache:
   directories:
