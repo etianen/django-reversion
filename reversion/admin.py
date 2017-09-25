@@ -30,6 +30,13 @@ from reversion.revisions import is_active, register, is_registered, set_comment,
 from reversion.views import _RollBackRevisionView
 
 
+def private_fields(meta):
+    try:
+        return meta.private_fields
+    except AttributeError:  # Django < 1.10 pragma: no cover
+        return meta.virtual_fields
+
+
 class VersionAdmin(admin.ModelAdmin):
 
     object_history_template = "reversion/object_history.html"
@@ -112,7 +119,7 @@ class VersionAdmin(admin.ModelAdmin):
             inline_model = inline.model
             ct_field = inline.ct_field
             fk_name = inline.ct_fk_field
-            for field in self.model._meta.virtual_fields:
+            for field in private_fields(self.model._meta):
                 if (
                     isinstance(field, GenericRelation) and
                     remote_model(field) == inline_model and
