@@ -1,7 +1,11 @@
+sudo: false
 language: python
 python:
 - 3.6
-sudo: false
+addons:
+  apt:
+    packages:
+    - libmysqlclient-dev
 cache:
   directories:
   - "$HOME/.cache/pip"
