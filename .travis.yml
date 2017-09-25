@@ -16,9 +16,6 @@ env:
   - DJANGO_DATABASE_USER_MYSQL=travis
 matrix:
   fast_finish: true
-  allow_failures:
-    - env: TOXENV=test-py34-djangomaster
-    - env: TOXENV=test-py35-djangomaster
 services:
 - postgresql
 - mysql
