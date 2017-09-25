@@ -192,12 +192,14 @@ class AdminHistoryViewTest(LoginMixin, AdminMixin, TestBase):
 class AdminQuotingTest(LoginMixin, AdminMixin, TestBase):
 
     def setUp(self):
-        admin.site.register(TestModelEscapePK, VersionAdmin)
         super(AdminQuotingTest, self).setUp()
+        admin.site.register(TestModelEscapePK, VersionAdmin)
+        self.reloadUrls()
 
     def tearDown(self):
-        admin.site.unregister(TestModelEscapePK)
         super(AdminQuotingTest, self).tearDown()
+        admin.site.unregister(TestModelEscapePK)
+        self.reloadUrls()
 
     def testHistoryWithQuotedPrimaryKey(self):
         pk = 'ABC_123'

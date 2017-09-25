@@ -30,6 +30,11 @@ class TestBaseMixin(object):
         reload(import_module(settings.ROOT_URLCONF))
         clear_url_caches()
 
+    def setUp(self):
+        super(TestBaseMixin, self).setUp()
+        for model in list(reversion.get_registered_models()):
+            reversion.unregister(model)
+
     def tearDown(self):
         super(TestBaseMixin, self).tearDown()
         for model in list(reversion.get_registered_models()):
