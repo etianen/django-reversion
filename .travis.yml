@@ -23,6 +23,9 @@ services:
 - postgresql
 - mysql
 install:
+- pyenv install 2.7
+- pyenv install 3.5
+- pyenv install 3.6
 - pip install 'tox>=2.3.1'
 before_script:
 - mysql -e 'create database test_project'
