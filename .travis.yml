@@ -17,8 +17,7 @@ matrix:
     - env: TOXENV=test-py35-djangomaster
 services:
 - postgresql
-addons:
-  mariadb: '10.1'
+- mysql
 install:
 - pip install 'tox>=2.3.1'
 before_script:
