@@ -19,7 +19,7 @@ Registering models
 
 .. Note::
 
-    If you've registered your models using :ref:`reversion.register() <register>`, the admin class will use the configuration you specify there. Otherwise, the admin class will auto-register your model, following all inline model relations and parent superclasses.
+    If you've registered your models using :ref:`reversion.register() <register>`, the admin class will use the configuration you specify there. Otherwise, the admin class will auto-register your model, following all inline model relations and parent superclasses. Customize the admin registration by overriding :ref:`VersionAdmin.register() <VersionAdmin_register>`.
 
 
 Integration with 3rd party apps
@@ -89,6 +89,8 @@ A subclass of ``django.contrib.ModelAdmin`` providing rollback and recovery.
 
     If ``True``, revisions will be displayed with the most recent revision first.
 
+
+.. _VersionAdmin_register:
 
 ``reversion_register(model, **options)``
 
