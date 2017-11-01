@@ -16,7 +16,7 @@ def _request_creates_revision(request):
 
 def _set_user_from_request(request):
     if getattr(request, "user", None) and is_authenticated(request.user) and get_user() is None:
-        set_user(request.user)
+        set_user(request.user.uu_id)
 
 
 def create_revision(manage_manually=False, using=None, atomic=True):
