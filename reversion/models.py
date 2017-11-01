@@ -6,7 +6,6 @@ try:
     from django.contrib.contenttypes.fields import GenericForeignKey
 except ImportError:  # Django < 1.9 pragma: no cover
     from django.contrib.contenttypes.generic import GenericForeignKey
-from django.conf import settings
 from django.core import serializers
 from django.core.serializers.base import DeserializationError
 from django.core.exceptions import ObjectDoesNotExist
@@ -46,13 +45,11 @@ class Revision(models.Model):
         help_text="The date and time this revision was created.",
     )
 
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+    user = models.UUIDField(
         blank=True,
         null=True,
-        on_delete=models.SET_NULL,
         verbose_name=_("user"),
-        help_text="The user who created this revision.",
+        help_text="The UUID of the user who created this revision.",
     )
 
     comment = models.TextField(

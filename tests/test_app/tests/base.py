@@ -1,6 +1,7 @@
 from datetime import timedelta
+from uuid import uuid4
+
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.core.management import call_command
 try:
     from django.urls import clear_url_caches
@@ -100,13 +101,10 @@ class UserMixin(TestBase):
 
     def setUp(self):
         super(UserMixin, self).setUp()
-        self.user = User(username="test", is_staff=True, is_superuser=True)
-        self.user.set_password("password")
-        self.user.save()
+        self.user = uuid4()
 
 
 class LoginMixin(UserMixin):
 
     def setUp(self):
         super(LoginMixin, self).setUp()
-        self.client.login(username="test", password="password")

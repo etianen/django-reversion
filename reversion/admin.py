@@ -23,7 +23,7 @@ from django.utils.timezone import template_localtime
 from django.utils.translation import ugettext as _
 from django.utils.encoding import force_text
 from django.utils.formats import localize
-from reversion.compat import remote_field, remote_model
+from reversion.compat import remote_field, remote_model, is_authenticated
 from reversion.errors import RevertError
 from reversion.models import Version
 from reversion.revisions import is_active, register, is_registered, set_comment, create_revision, set_user
@@ -58,7 +58,7 @@ class VersionAdmin(admin.ModelAdmin):
     @contextmanager
     def create_revision(self, request):
         with create_revision():
-            set_user(request.user)
+            set_user(request.user.uu_id if is_authenticated(request.user) else None)
             yield
 
     # Revision helpers.
@@ -297,7 +297,7 @@ class VersionAdmin(admin.ModelAdmin):
             in self._reversion_order_version_queryset(Version.objects.get_for_object_reference(
                 self.model,
                 unquote(object_id),  # Underscores in primary key get quoted to "_5F"
-            ).select_related("revision__user"))
+            ))
         ]
         # Compile the context.
         context = {"action_list": action_list}

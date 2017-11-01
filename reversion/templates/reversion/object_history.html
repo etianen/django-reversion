@@ -22,12 +22,7 @@
                             <tr>
                                 <th scope="row"><a href="{{action.url}}">{{action.revision.date_created|date:"DATETIME_FORMAT"}}</a></th>
                                 <td>
-                                    {% if action.revision.user %}
-                                        {{action.revision.user.get_username}}
-                                        {% if action.revision.user.get_full_name %} ({{action.revision.user.get_full_name}}){% endif %}
-                                    {% else %}
-                                        &mdash;
-                                    {% endif %}
+                                    {{action.revision.user}}
                                 </td>
                                 <td>{{action.revision.comment|linebreaksbr|default:""}}</td>
                             </tr>
