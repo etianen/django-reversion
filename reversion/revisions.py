@@ -230,7 +230,7 @@ def _save_revision(versions, user=None, comment="", meta=(), date_created=None, 
             }
         for model, db_pks in model_db_pks.items()
         }
-    custom_models = getattr(settings, 'DJANGO_REVISION_CUSTOM_MODELS', default=False)
+    custom_models = getattr(settings, 'DJANGO_REVISION_CUSTOM_MODELS', False)
 
     if custom_models:
         if hasattr(settings, 'DJANGO_REVISION_EXCLUDED_MODELS'):
