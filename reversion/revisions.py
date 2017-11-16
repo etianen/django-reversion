@@ -5,7 +5,7 @@ from functools import wraps
 from threading import local
 from django.apps import apps
 from django.core import serializers
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ImproperlyConfigured
 from django.db import models, transaction, router
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, m2m_changed
@@ -14,7 +14,7 @@ from django.utils import timezone, six
 from reversion.compat import remote_field
 from reversion.errors import RevisionManagementError, RegistrationError
 from reversion.signals import pre_revision_commit, post_revision_commit
-
+from django.conf import settings
 
 _VersionOptions = namedtuple("VersionOptions", (
     "fields",
@@ -23,7 +23,6 @@ _VersionOptions = namedtuple("VersionOptions", (
     "for_concrete_model",
     "ignore_duplicates",
 ))
-
 
 _StackFrame = namedtuple("StackFrame", (
     "manage_manually",
@@ -36,7 +35,6 @@ _StackFrame = namedtuple("StackFrame", (
 
 
 class _Local(local):
-
     def __init__(self):
         self.stack = ()
 
@@ -59,7 +57,7 @@ def _copy_db_versions(db_versions):
         db: versions.copy()
         for db, versions
         in db_versions.items()
-    }
+        }
 
 
 def _push_frame(manage_manually, using):
@@ -96,7 +94,7 @@ def _pop_frame():
             db: prev_frame.db_versions[db]
             for db
             in current_frame.db_versions.keys()
-        }
+            }
         _update_frame(
             user=prev_frame.user,
             comment=prev_frame.comment,
@@ -163,6 +161,7 @@ def _follow_relations_recursive(obj):
             relations.add(obj)
             for related in _follow_relations(obj):
                 do_follow(related)
+
     relations = set()
     do_follow(obj)
     return relations
@@ -228,13 +227,33 @@ def _save_revision(versions, user=None, comment="", meta=(), date_created=None, 
                 model._default_manager.using(db).filter(pk__in=pks).values_list("pk", flat=True),
             ))
             for db, pks in db_pks.items()
-        }
+            }
         for model, db_pks in model_db_pks.items()
-    }
-    versions = [
-        version for version in versions
-        if version.object_id in model_db_existing_pks[version._model][version.db]
-    ]
+        }
+    custom_models = getattr(settings, 'DJANGO_REVISION_CUSTOM_MODELS', default=False)
+
+    if custom_models:
+        if hasattr(settings, 'DJANGO_REVISION_EXCLUDED_MODELS'):
+            versions = [
+                version for version in versions
+                if version._model._meta.object_name not in settings.DJANGO_REVISION_EXCLUDED_MODELS and
+                version.object_id in model_db_existing_pks[version._model][version.db]
+                ]
+        elif hasattr(settings, 'DJANGO_REVISION_ALLOWED_MODELS'):
+            versions = [
+                version for version in versions
+                if version._model._meta.object_name in settings.DJANGO_REVISION_ALLOWED_MODELS and
+                version.object_id in model_db_existing_pks[version._model][version.db]
+                ]
+        else:
+            raise ImproperlyConfigured(
+                "Using 'DJANGO_REVISION_CUSTOM_MODELS' without either the 'DJANGO_REVISION_EXCLUDED_MODELS' in"
+                " settings or the 'DJANGO_REVISION_ALLOWED_MODELS' in settings is prohibited.")
+    else:
+        versions = [
+            version for version in versions
+            if version.object_id in model_db_existing_pks[version._model][version.db]
+            ]
     # Bail early if there are no objects to save.
     if not versions:
         return
@@ -304,7 +323,6 @@ def create_revision(manage_manually=False, using=None, atomic=True):
 
 
 class _ContextWrapper(object):
-
     def __init__(self, func, args):
         self._func = func
         self._args = args
@@ -321,6 +339,7 @@ class _ContextWrapper(object):
         def do_revision_context(*args, **kwargs):
             with self._func(*self._args):
                 return func(*args, **kwargs)
+
         return do_revision_context
 
 
@@ -379,10 +398,10 @@ def register(model=None, fields=None, exclude=(), follow=(), format="json",
                 field_name
                 for field_name
                 in ([
-                    field.name
-                    for field
-                    in opts.local_fields + opts.local_many_to_many
-                ] if fields is None else fields)
+                        field.name
+                        for field
+                        in opts.local_fields + opts.local_many_to_many
+                        ] if fields is None else fields)
                 if field_name not in exclude
             ),
             follow=tuple(follow),
@@ -397,6 +416,7 @@ def register(model=None, fields=None, exclude=(), follow=(), format="json",
             signal.connect(signal_receiver, sender=sender)
         # All done!
         return model
+
     # Return a class decorator if model is not given
     if model is None:
         return register
