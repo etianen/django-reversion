@@ -11,6 +11,7 @@ from django.core import serializers
 from django.core.serializers.base import DeserializationError
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, IntegrityError, transaction, router, connections
+from django.db.models.deletion import Collector
 from django.db.models.expressions import RawSQL
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _, ugettext
@@ -86,11 +87,9 @@ class Revision(models.Model):
                         for obj in old_revision
                     )
                     # Delete objects that are no longer in the current revision.
-                    for item in current_revision:
-                        # The item PK will be None if the item has been caught by a cascade delete.
-                        # https://github.com/etianen/django-reversion/issues/678
-                        if item.pk is not None and item not in old_revision:
-                            item.delete(using=version.db)
+                    collector = Collector(using=version_db)
+                    collector.collect([item for item in current_revision if item not in old_revision])
+                    collector.delete()
                 # Attempt to revert all revisions.
                 _safe_revert(versions)
 
