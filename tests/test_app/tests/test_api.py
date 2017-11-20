@@ -106,7 +106,7 @@ class CreateRevisionTest(TestModelMixin, TestBase):
             with reversion.create_revision():
                 TestModel.objects.create()
                 raise Exception("Boom!")
-        except:
+        except Exception as ex:
             pass
         self.assertNoRevision()
 
