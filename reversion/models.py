@@ -87,7 +87,9 @@ class Revision(models.Model):
                     )
                     # Delete objects that are no longer in the current revision.
                     for item in current_revision:
-                        if item not in old_revision:
+                        # The item PK will be None if the item has been caught by a cascade delete.
+                        # https://github.com/etianen/django-reversion/issues/678
+                        if item.pk is not None and item not in old_revision:
                             item.delete(using=version.db)
                 # Attempt to revert all revisions.
                 _safe_revert(versions)
