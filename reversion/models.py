@@ -72,7 +72,7 @@ class Revision(models.Model):
             self.pk,
             self.comment,
             iso_date_created,
-            self.user,
+            getattr(self, 'user', None),
         )
 
     def revert(self, delete=False):
@@ -315,9 +315,9 @@ class Version(models.Model):
     def __repr__(self):
         return 'Version(pk={!r}, revision={!r}, object_id={!r}, content_type={!r})'.format(
             self.pk,
-            self.revision,
+            getattr(self, 'revision', None),
             self.object_id,
-            self.content_type,
+            getattr(self, 'content_type', None),
         )
 
     class Meta:
