@@ -26,6 +26,11 @@ before_script:
 - mysql -e 'create database test_project'
 - psql -c 'create database test_project;' -U postgres;
 script: tox
+after_success:
+- |
+  pip install codecov
+  coverage xml
+  codecov --required -X search gcov pycov -f coverage.xml
 deploy:
   provider: pypi
   user: etianen
