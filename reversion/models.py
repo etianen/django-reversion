@@ -128,9 +128,9 @@ class VersionQuerySet(models.QuerySet):
     def get_deleted(self, model, model_db=None):
         # Try to do a faster JOIN.
         model_db = model_db or router.db_for_write(model)
-        if self.db == model_db:
+        connection = connections[self.db]
+        if self.db == model_db and connection.vendor in ("sqlite", "postgresql"):
             content_type = _get_content_type(model, self.db)
-            connection = connections[self.db]
             subquery = SubquerySQL(
                 """
                 SELECT MAX(V.{id})

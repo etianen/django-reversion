@@ -177,6 +177,22 @@ class GetDeletedTest(TestModelMixin, TestBase):
         self.assertEqual(Version.objects.get_deleted(TestModel)[0].object_id, force_text(pk_2))
         self.assertEqual(Version.objects.get_deleted(TestModel)[1].object_id, force_text(pk_1))
 
+    def testGetDeletedPostgres(self):
+        with reversion.create_revision(using="postgres"):
+            obj = TestModel.objects.using("postgres").create()
+        with reversion.create_revision(using="postgres"):
+            obj.save()
+        obj.delete()
+        self.assertEqual(Version.objects.using("postgres").get_deleted(TestModel, model_db="postgres").count(), 1)
+
+    def testGetDeletedMySQL(self):
+        with reversion.create_revision(using="mysql"):
+            obj = TestModel.objects.using("mysql").create()
+        with reversion.create_revision(using="mysql"):
+            obj.save()
+        obj.delete()
+        self.assertEqual(Version.objects.using("mysql").get_deleted(TestModel, model_db="mysql").count(), 1)
+
 
 class GetDeletedDbTest(TestModelMixin, TestBase):
 
