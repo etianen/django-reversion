@@ -44,8 +44,8 @@ commands. The test suite requires that both MySQL and PostgreSQL be installed.
 
 .. code:: bash
 
-    pip install 'tox>=2.3.1'
-    tox
+    pip install psycopg2 mysqlclient -e .
+    tests/manage.py test tests
 
 The django-reversion project is built on every push with `Travis CI <https://travis-ci.org/etianen/django-reversion>`_.
 

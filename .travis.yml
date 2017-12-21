@@ -1,31 +1,44 @@
 sudo: false
 language: python
 python:
-- 3.6
+  - 3.6
+  - 3.5
+  - 2.7
+cache: pip
+env:
+  global:
+    - PYTHONWARNINGS=default,ignore::PendingDeprecationWarning,ignore::ResourceWarning
+    - DJANGO_DATABASE_USER_POSTGRES=postgres
+    - DJANGO_DATABASE_USER_MYSQL=travis
+  matrix:
+    - DJANGO='>=2.0,<2.1'
+    - DJANGO='>=1.11,<1.12'
+    - DJANGO='>=1.10,<1.11'
+    - DJANGO='>=1.9,<1.10'
+    - DJANGO='>=1.8,<1.9'
+matrix:
+  fast_finish: true
+  exclude:
+    - python: 2.7
+      env: DJANGO='>=2.0,<2.1'
 addons:
   apt:
     packages:
-    - libmysqlclient-dev
-cache:
-  directories:
-  - "$HOME/.cache/pip"
-env:
-  global:
-  - PYTHONWARNINGS=default,ignore::PendingDeprecationWarning,ignore::ResourceWarning
-  - DJANGO_DATABASE_USER_POSTGRES=postgres
-  - DJANGO_DATABASE_USER_MYSQL=travis
-matrix:
-  fast_finish: true
+      - libmysqlclient-dev
 services:
-- postgresql
-- mysql
+  - postgresql
+  - mysql
 install:
-- pyenv shell 2.7 3.5 3.6
-- pip install 'tox>=2.3.1'
+  - pip install flake8 coverage mock sphinx django$DJANGO psycopg2 mysqlclient -e .
 before_script:
-- mysql -e 'create database test_project'
-- psql -c 'create database test_project;' -U postgres;
-script: tox
+  - mysql -e 'create database test_project'
+  - psql -c 'create database test_project;' -U postgres;
+script:
+  - flake8
+  - coverage run tests/manage.py test tests
+  - (cd docs && sphinx-build -n -W . _build)
+after_success:
+  - coverage report
 deploy:
   provider: pypi
   user: etianen
@@ -33,7 +46,9 @@ deploy:
     secure: XW4/9HiChbPJSJe4d/MRcO+ViPGhW1iQ8kVi814KJh7mCxOAKijpW5hfdc9oSKB6d8iYB3OzZ7naIUU9GMce40bpeTgPDLVBLCSYKRNLuVoJdh+Q6ItGUiFf8kAJz5jgopG80QnCpLA9JvYxKVJ4amfYWWm204eQmIEnRRAd+Jk=
   on:
     tags: true
-    distributions: sdist bdist_wheel
+    condition: $DJANGO='>=2.0,<2.1'
+    python: 3.6
     repo: etianen/django-reversion
+  distributions: sdist bdist_wheel
 notifications:
   email: false
