@@ -129,12 +129,12 @@ class VersionQuerySet(models.QuerySet):
         # Try to do a faster JOIN.
         model_db = model_db or router.db_for_write(model)
         connection = connections[self.db]
-        if self.db == model_db and connection.vendor in ("sqlite", "postgresql"):
+        if self.db == model_db and connection.vendor in ("sqlite", "postgresql", "oracle"):
             content_type = _get_content_type(model, self.db)
             subquery = SubquerySQL(
                 """
                 SELECT MAX(V.{id})
-                FROM {version} AS V
+                FROM {version} V
                 LEFT JOIN {model} ON V.{object_id} = CAST({model}.{model_id} as {str})
                 WHERE
                     V.{db} = %s AND
