@@ -9,8 +9,6 @@ import django.db.models.deletion
 
 class Migration(migrations.Migration):
 
-    replaces = [('reversion', '0001_initial'), ('reversion', '0002_auto_20141216_1509'), ('reversion', '0003_auto_20160601_1600'), ('reversion', '0004_auto_20160611_1202')]
-
     initial = True
 
     dependencies = [
