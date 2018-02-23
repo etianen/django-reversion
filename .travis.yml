@@ -46,7 +46,7 @@ deploy:
     secure: XW4/9HiChbPJSJe4d/MRcO+ViPGhW1iQ8kVi814KJh7mCxOAKijpW5hfdc9oSKB6d8iYB3OzZ7naIUU9GMce40bpeTgPDLVBLCSYKRNLuVoJdh+Q6ItGUiFf8kAJz5jgopG80QnCpLA9JvYxKVJ4amfYWWm204eQmIEnRRAd+Jk=
   on:
     tags: true
-    condition: $DJANGO='>=2.0,<2.1'
+    condition: $DJANGO = '>=2.0,<2.1'
     python: 3.6
     repo: etianen/django-reversion
   distributions: sdist bdist_wheel
