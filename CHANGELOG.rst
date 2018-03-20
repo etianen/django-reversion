@@ -3,7 +3,7 @@
 django-reversion changelog
 ==========================
 
-2.0.13 - 23/01/2017
+2.0.13 - 23/01/2018
 -------------------
 
 - Improve performance of ``get_deleted()`` for Oracle (@passuf).
