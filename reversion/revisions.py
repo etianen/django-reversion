@@ -8,7 +8,7 @@ from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction, router
 from django.db.models.query import QuerySet
-from django.db.models.signals import post_save, m2m_changed
+from django.db.models.signals import post_save, pre_delete, m2m_changed
 from django.utils.encoding import force_text
 from django.utils import timezone, six
 from reversion.compat import remote_field
@@ -352,6 +352,8 @@ def get_registered_models():
 
 def _get_senders_and_signals(model):
     yield model, post_save, _post_save_receiver
+    # remember delete model
+    yield model, pre_delete, _post_save_receiver
     opts = model._meta.concrete_model._meta
     for field in opts.local_many_to_many:
         m2m_model = remote_field(field).through
