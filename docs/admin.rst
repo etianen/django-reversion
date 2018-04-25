@@ -106,4 +106,4 @@ A subclass of ``django.contrib.ModelAdmin`` providing rollback and recovery.
         The model that will be registered with django-reversion.
 
     ``options``
-        Registeration options, see :ref:`reversion.register() <register>`.
+        Registration options, see :ref:`reversion.register() <register>`.
