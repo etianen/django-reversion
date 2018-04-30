@@ -161,7 +161,7 @@ Admin
         class YourVersionAdmin(VersionAdmin):
 
             def reversion_register(self, model, **options):
-                options["ignore_duplicate_revisions"] = True
+                options["ignore_duplicates"] = True
                 super(YourVersionAdmin, self).reversion_register(model, **options)
 
 
