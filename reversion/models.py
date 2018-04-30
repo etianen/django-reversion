@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 from collections import defaultdict
-from itertools import chain
+from itertools import chain, groupby
 from django.contrib.contenttypes.models import ContentType
 try:
     from django.contrib.contenttypes.fields import GenericForeignKey
@@ -88,7 +88,10 @@ class Revision(models.Model):
                     )
                     # Delete objects that are no longer in the current revision.
                     collector = Collector(using=version_db)
-                    collector.collect([item for item in current_revision if item not in old_revision])
+                    new_objs = [item for item in current_revision
+                                if item not in old_revision]
+                    for model, group in groupby(new_objs, type):
+                        collector.collect(list(group))
                     collector.delete()
                 # Attempt to revert all revisions.
                 _safe_revert(versions)

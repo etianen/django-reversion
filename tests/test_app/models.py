@@ -99,6 +99,18 @@ class TestModelInline(models.Model):
     )
 
 
+class TestModelNestedInline(models.Model):
+    test_model_inline = models.ForeignKey(
+        TestModelInline,
+        on_delete=models.CASCADE,
+    )
+
+    nested_inline_name = models.CharField(
+        max_length=191,
+        default="v1",
+    )
+
+
 class TestMeta(models.Model):
 
     revision = models.ForeignKey(
