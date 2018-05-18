@@ -48,6 +48,14 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
+            name='TestModelNestedInline',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('nested_inline_name', models.CharField(default=b'v1', max_length=191)),
+                ('test_model_inline', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='test_app.TestModelInline')),
+            ],
+        ),
+        migrations.CreateModel(
             name='TestModelRelated',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
