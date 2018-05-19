@@ -218,6 +218,7 @@ def add_to_revision(obj, model_db=None):
 def _save_revision(versions, user=None, comment="", meta=(), date_created=None, using=None):
     from reversion.models import Revision
     # Only save versions that exist in the database.
+    # Use _base_manager so we don't have problems when _default_manager is overriden
     model_db_pks = defaultdict(lambda: defaultdict(set))
     for version in versions:
         model_db_pks[version._model][version.db].add(version.object_id)
@@ -225,7 +226,7 @@ def _save_revision(versions, user=None, comment="", meta=(), date_created=None, 
         model: {
             db: frozenset(map(
                 force_text,
-                model._default_manager.using(db).filter(pk__in=pks).values_list("pk", flat=True),
+                model._base_manager.using(db).filter(pk__in=pks).values_list("pk", flat=True),
             ))
             for db, pks in db_pks.items()
         }
@@ -258,7 +259,7 @@ def _save_revision(versions, user=None, comment="", meta=(), date_created=None, 
         version.save(using=using)
     # Save the meta information.
     for meta_model, meta_fields in meta:
-        meta_model._default_manager.db_manager(using=using).create(
+        meta_model._base_manager.db_manager(using=using).create(
             revision=revision,
             **meta_fields
         )
