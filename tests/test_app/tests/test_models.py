@@ -1,7 +1,10 @@
 from django.utils.encoding import force_text
 import reversion
 from reversion.models import Version
-from test_app.models import TestModel, TestModelRelated, TestModelParent
+from test_app.models import (
+    TestModel, TestModelRelated, TestModelParent, TestModelInline,
+    TestModelNestedInline,
+)
 from test_app.tests.base import TestBase, TestModelMixin, TestModelParentMixin
 
 
@@ -373,3 +376,40 @@ class RevisionRevertDeleteTest(TestBase):
         obj.refresh_from_db()
         self.assertEqual(obj.name, "v1")
         self.assertFalse(TestModelRelated.objects.filter(pk=obj_related.pk).exists())
+
+    def testRevertDeleteNestedInline(self):
+        reversion.register(TestModel, follow=("testmodelinline_set",))
+        reversion.register(
+            TestModelInline, follow=("testmodelnestedinline_set",))
+        reversion.register(TestModelNestedInline)
+        with reversion.create_revision():
+            parent = TestModel.objects.create()
+            child_a = TestModelInline.objects.create(
+                test_model=parent)
+            grandchild_a = TestModelNestedInline.objects.create(
+                test_model_inline=child_a)
+
+        with reversion.create_revision():
+            child_b = TestModelInline.objects.create(
+                test_model=parent)
+            grandchild_b = TestModelNestedInline.objects.create(
+                test_model_inline=child_b)
+            reversion.add_to_revision(parent)
+
+        Version.objects.get_for_object(parent)[1].revision.revert(delete=True)
+        parent.refresh_from_db()
+        self.assertRaises(
+            TestModelInline.DoesNotExist,
+            lambda: child_b.refresh_from_db()
+        )
+
+        self.assertRaises(
+            TestModelNestedInline.DoesNotExist,
+            lambda: grandchild_b.refresh_from_db()
+        )
+        self.assertEqual(
+            list(parent.testmodelinline_set.all()), [child_a]
+        )
+        self.assertEqual(
+            list(child_a.testmodelnestedinline_set.all()), [grandchild_a]
+        )
