@@ -11,6 +11,7 @@ env:
     - DJANGO_DATABASE_USER_POSTGRES=postgres
     - DJANGO_DATABASE_USER_MYSQL=travis
   matrix:
+    - DJANGO='>=2.1a,<2.2'
     - DJANGO='>=2.0,<2.1'
     - DJANGO='>=1.11,<1.12'
     - DJANGO='>=1.10,<1.11'
@@ -21,6 +22,8 @@ matrix:
   exclude:
     - python: 2.7
       env: DJANGO='>=2.0,<2.1'
+    - python: 2.7
+      env: DJANGO='>=2.1a,<2.2'
 addons:
   apt:
     packages:
