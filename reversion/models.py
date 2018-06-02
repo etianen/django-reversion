@@ -7,6 +7,7 @@ try:
 except ImportError:  # Django < 1.9 pragma: no cover
     from django.contrib.contenttypes.generic import GenericForeignKey
 from django.conf import settings
+from django.contrib.admin.models import LogEntry
 from django.core import serializers
 from django.core.serializers.base import DeserializationError
 from django.core.exceptions import ObjectDoesNotExist
@@ -61,6 +62,14 @@ class Revision(models.Model):
         verbose_name=_("comment"),
         help_text="A text comment on this revision.",
     )
+
+    def get_comment(self):
+        try:
+            return LogEntry(change_message=self.comment).get_change_message()
+        except AttributeError:
+            # Django < 1.10
+            # LogEntry dont have `.get_change_message()`
+            return self.comment
 
     def revert(self, delete=False):
         # Group the models by the database of the serialized model.
