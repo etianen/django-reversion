@@ -62,6 +62,19 @@ class Revision(models.Model):
         help_text="A text comment on this revision.",
     )
 
+    def __repr__(self):
+        date_created = self.date_created
+        if date_created:
+            iso_date_created = date_created.replace(microsecond=0).isoformat()
+        else:
+            iso_date_created = None
+        return 'Revision(pk={!r}, comment={!r}, date_created={!r}, user={!r})'.format(
+            self.pk,
+            self.comment,
+            iso_date_created,
+            getattr(self, 'user', None),
+        )
+
     def revert(self, delete=False):
         # Group the models by the database of the serialized model.
         versions_by_db = defaultdict(list)
@@ -301,6 +314,14 @@ class Version(models.Model):
 
     def __str__(self):
         return self.object_repr
+
+    def __repr__(self):
+        return 'Version(pk={!r}, revision={!r}, object_id={!r}, content_type={!r})'.format(
+            self.pk,
+            getattr(self, 'revision', None),
+            self.object_id,
+            getattr(self, 'content_type', None),
+        )
 
     class Meta:
         app_label = 'reversion'
