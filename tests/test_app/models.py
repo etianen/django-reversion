@@ -109,24 +109,3 @@ class TestMeta(models.Model):
     name = models.CharField(
         max_length=191,
     )
-
-
-class TestModelSoftDeletableQuerySet(models.QuerySet):
-    pass
-
-
-class TestModelSoftDeletableManager(models.Manager):
-    def get_queryset(self):
-        # Exclude instances that are 'deleted'
-        return TestModelSoftDeletableQuerySet(self.model, using=self._db).filter(deleted=False)
-
-
-class TestModelSoftDeletable(models.Model):
-    name = models.CharField(
-        max_length=32,
-    )
-    deleted = models.BooleanField(
-        default=False
-    )
-
-    objects = TestModelSoftDeletableManager()

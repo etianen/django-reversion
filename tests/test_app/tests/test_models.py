@@ -1,7 +1,7 @@
 from django.utils.encoding import force_text
 import reversion
 from reversion.models import Version
-from test_app.models import TestModel, TestModelRelated, TestModelParent, TestModelSoftDeletable
+from test_app.models import TestModel, TestModelRelated, TestModelParent
 from test_app.tests.base import TestBase, TestModelMixin, TestModelParentMixin
 
 
@@ -373,31 +373,3 @@ class RevisionRevertDeleteTest(TestBase):
         obj.refresh_from_db()
         self.assertEqual(obj.name, "v1")
         self.assertFalse(TestModelRelated.objects.filter(pk=obj_related.pk).exists())
-
-
-class SoftDeleteTest(TestBase):
-
-    def testSoftDelete(self):
-        reversion.register(TestModelSoftDeletable)
-        with reversion.create_revision():
-            obj = TestModelSoftDeletable.objects.create(name='v1')
-        with reversion.create_revision():
-            obj.deleted = True
-            obj.name = 'v2'
-            obj.save()
-
-        obj_versions = Version.objects.get_for_object(obj)
-        total = obj_versions.count()
-        self.assertEqual(total, 2)
-
-        latest_version = obj_versions.first()
-        # Assert that the latest revision's data is ok
-        self.assertEqual(latest_version.field_dict['name'], 'v2')
-        self.assertTrue(latest_version.field_dict['deleted'])
-
-        # Revert to previous revision and assert objects data
-        earliest_version = obj_versions.last()
-        earliest_version.revision.revert(delete=True)
-        obj.refresh_from_db()
-        self.assertEquals(obj.name, 'v1')
-        self.assertFalse(obj.deleted)
