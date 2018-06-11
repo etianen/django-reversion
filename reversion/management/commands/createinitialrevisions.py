@@ -1,8 +1,13 @@
 from __future__ import unicode_literals
+
+import json
+
+from django.apps import apps
+from django.core.management import CommandError
 from django.db import reset_queries, transaction, router
 from reversion.models import Revision, Version, _safe_subquery
 from reversion.management.commands import BaseRevisionCommand
-from reversion.revisions import create_revision, set_comment, add_to_revision
+from reversion.revisions import create_revision, set_comment, add_to_revision, add_meta
 
 
 class Command(BaseRevisionCommand):
@@ -23,6 +28,14 @@ class Command(BaseRevisionCommand):
             default=500,
             help="For large sets of data, revisions will be populated in batches. Defaults to 500.",
         )
+        parser.add_argument(
+            "--meta",
+            action="store",
+            default={},
+            type=json.loads,
+            help=("Specify meta models and corresponding values for each initial revision as JSON"
+                  "eg. --meta \"{\"core.RevisionMeta\", {\"hello\": \"world\"}}\""),
+        )
 
     def handle(self, *app_labels, **options):
         verbosity = options["verbosity"]
@@ -30,6 +43,15 @@ class Command(BaseRevisionCommand):
         model_db = options["model_db"]
         comment = options["comment"]
         batch_size = options["batch_size"]
+        meta = options["meta"]
+        meta_models = []
+        for label in meta.keys():
+            try:
+                model = apps.get_model(label)
+                meta_models.append(model)
+            except LookupError:
+                raise CommandError("Unknown model: {}".format(label))
+        meta_values = meta.values()
         # Create revisions.
         using = using or router.db_for_write(Revision)
         with transaction.atomic(using=using):
@@ -58,6 +80,9 @@ class Command(BaseRevisionCommand):
                     objects = live_objs.in_bulk(chunked_ids)
                     for obj in objects.values():
                         with create_revision(using=using):
+                            if meta:
+                                for model, values in zip(meta_models, meta_values):
+                                    add_meta(model, **values)
                             set_comment(comment)
                             add_to_revision(obj, model_db=model_db)
                         created_count += 1
