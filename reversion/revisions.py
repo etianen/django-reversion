@@ -297,30 +297,47 @@ def _create_revision_context(manage_manually, using, atomic):
         _pop_frame()
 
 
-def create_revision(manage_manually=False, using=None, atomic=True):
+def create_revision(manage_manually=False, using=None, atomic=True, meta=None, user=None, comment=None, **kwargs):
     from reversion.models import Revision
     using = using or router.db_for_write(Revision)
-    return _ContextWrapper(_create_revision_context, (manage_manually, using, atomic))
+    return _ContextWrapper(_create_revision_context, (manage_manually, using, atomic), meta, user, comment, **kwargs)
 
 
 class _ContextWrapper(object):
 
-    def __init__(self, func, args):
+    def __init__(self, func, args, meta=None, user=None, comment=None, **kwargs):
         self._func = func
         self._args = args
         self._context = func(*args)
+        self._meta = meta
+        self._user = user
+        self._comment = comment
+        self._kwargs = kwargs
 
     def __enter__(self):
         return self._context.__enter__()
 
     def __exit__(self, exc_type, exc_value, traceback):
+        if self._meta:
+            add_meta(self._meta, **self._kwargs)
+        if self._user:
+            set_user(self._user)
+        if self._comment:
+            set_comment(self._comment)
         return self._context.__exit__(exc_type, exc_value, traceback)
 
     def __call__(self, func):
         @wraps(func)
         def do_revision_context(*args, **kwargs):
             with self._func(*self._args):
-                return func(*args, **kwargs)
+                result = func(*args, **kwargs)
+                if self._meta:
+                    add_meta(self._meta, **self._kwargs)
+                if self._user:
+                    set_user(self._user)
+                if self._comment:
+                    set_comment(self._comment)
+                return result
         return do_revision_context
 
 

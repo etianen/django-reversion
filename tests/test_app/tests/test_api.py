@@ -86,9 +86,12 @@ class UnregisterUnregisteredTest(TestBase):
 class CreateRevisionTest(TestModelMixin, TestBase):
 
     def testCreateRevision(self):
-        with reversion.create_revision():
+        meta_name = 'meta name'
+        kwargs = {'name': meta_name}
+        user = User.objects.create()
+        with reversion.create_revision(meta=TestMeta, user=user, comment='hello world!', **kwargs):
             obj = TestModel.objects.create()
-        self.assertSingleRevision((obj,))
+        self.assertSingleRevision((obj,), meta_names=(meta_name, ), user=user, comment='hello world!')
 
     def testCreateRevisionNested(self):
         with reversion.create_revision():
