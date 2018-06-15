@@ -1,3 +1,4 @@
+import json
 from datetime import timedelta
 from django.core.management import CommandError
 from django.utils import timezone
@@ -79,6 +80,15 @@ class CreateInitialRevisionsCommentTest(TestModelMixin, TestBase):
         obj = TestModel.objects.create()
         self.callCommand("createinitialrevisions", comment="comment v1")
         self.assertSingleRevision((obj,), comment="comment v1")
+
+
+class CreateInitialRevisionsMetaTest(TestModelMixin, TestBase):
+    def testCreateInitialRevisionsComment(self):
+        obj = TestModel.objects.create()
+        meta_name = "meta name"
+        meta = json.dumps({"test_app.TestMeta": {"name": meta_name}})
+        self.callCommand("createinitialrevisions", "--meta", meta)
+        self.assertSingleRevision((obj,), meta_names=(meta_name, ), comment="Initial version.")
 
 
 class DeleteRevisionsTest(TestModelMixin, TestBase):

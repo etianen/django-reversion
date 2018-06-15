@@ -17,6 +17,7 @@ Creates an initial revision for all registered models in your project. It should
 
     ./manage.py createinitialrevisions
     ./manage.py createinitialrevisions your_app.YourModel --comment="Initial revision."
+    ./manage.py createinitialrevisions your_app.YourModel --meta="{\"your_app.RevisionMeta\": {\"hello\": \"world\"}}"
 
 Run ``./manage.py createinitialrevisions --help`` for more information.
 
