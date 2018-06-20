@@ -26,6 +26,7 @@ def create_revision(manage_manually=False, using=None, atomic=True, request_crea
     The revision will have it's user set from the request automatically.
     """
     request_creates_revision = request_creates_revision or _request_creates_revision
+
     def decorator(func):
         @wraps(func)
         def do_revision_view(request, *args, **kwargs):
