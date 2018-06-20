@@ -9,14 +9,14 @@ Shortcuts when using django-reversion in views.
 reversion.middleware.RevisionMiddleware
 ---------------------------------------
 
-Wrap the every request that isn't ``GET``, ``HEAD`` or ``OPTIONS`` in a revision block.
+Wrap every request in a revision block.
 
 The request user will also be added to the revision metadata.
 
 To enable ``RevisionMiddleware``, add ``'reversion.middleware.RevisionMiddleware'`` to your ``MIDDLEWARE_CLASSES`` setting. For Django >= 1.10, add it to your ``MIDDLEWARE`` setting.
 
 .. Warning::
-    This will wrap every request that isn't ``GET``, ``HEAD`` or ``OPTIONS`` in a database transaction. For best performance, consider marking individual views instead.
+    This will wrap every request that meets the specified criterion in a database transaction. For best performance, consider marking individual views instead.
 
 
 ``RevisionMiddleware.manage_manually = False``
@@ -32,3 +32,21 @@ To enable ``RevisionMiddleware``, add ``'reversion.middleware.RevisionMiddleware
 ``RevisionMiddleware.atomic = True``
 
     .. include:: /_include/create-revision-atomic.rst
+
+``RevisionMiddleware.request_creates_revision(request)``
+
+    By default, any request that isn't ``GET``, ``HEAD`` or ``OPTIONS`` will be wrapped in a revision block. Override this method if you need to apply a custom rule.
+
+    For example:
+
+    .. code:: python
+
+          from reversion.middleware import RevisionMiddleware
+
+          class BypassRevisionMiddleware(RevisionMiddleware):
+
+              def request_creates_revision(self, request):
+                  # Bypass the revision according to some header
+                  silent = request.META.get("HTTP_X_NOREVISION", "false")
+                  return super().request_creates_revision(request) and \
+                      silent != "true"
