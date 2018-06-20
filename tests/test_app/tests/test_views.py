@@ -33,6 +33,10 @@ class RevisionMixinTest(TestModelMixin, TestBase):
         self.client.get("/test-app/revision-mixin/")
         self.assertNoRevision()
 
+    def testRevisionMixinCustomPredicate(self):
+        self.client.post("/test-app/revision-mixin/", HTTP_X_NOREVISION="true")
+        self.assertNoRevision()
+
 
 class RevisionMixinUserTest(LoginMixin, TestModelMixin, TestBase):
 
