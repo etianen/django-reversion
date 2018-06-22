@@ -20,11 +20,15 @@ class RevisionMiddleware(object):
             self.get_response = create_revision(
                 manage_manually=self.manage_manually,
                 using=self.using,
-                atomic=self.atomic
+                atomic=self.atomic,
+                request_creates_revision=self.request_creates_revision
             )(get_response)
 
+    def request_creates_revision(self, request):
+        return _request_creates_revision(request)
+
     def process_request(self, request):
-        if _request_creates_revision(request):
+        if self.request_creates_revision(request):
             context = create_revision_base(
                 manage_manually=self.manage_manually,
                 using=self.using,

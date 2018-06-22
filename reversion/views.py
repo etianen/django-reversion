@@ -19,16 +19,18 @@ def _set_user_from_request(request):
         set_user(request.user)
 
 
-def create_revision(manage_manually=False, using=None, atomic=True):
+def create_revision(manage_manually=False, using=None, atomic=True, request_creates_revision=None):
     """
     View decorator that wraps the request in a revision.
 
     The revision will have it's user set from the request automatically.
     """
+    request_creates_revision = request_creates_revision or _request_creates_revision
+
     def decorator(func):
         @wraps(func)
         def do_revision_view(request, *args, **kwargs):
-            if _request_creates_revision(request):
+            if request_creates_revision(request):
                 try:
                     with create_revision_base(manage_manually=manage_manually, using=using, atomic=atomic):
                         response = func(request, *args, **kwargs)
@@ -64,5 +66,9 @@ class RevisionMixin(object):
         self.dispatch = create_revision(
             manage_manually=self.revision_manage_manually,
             using=self.revision_using,
-            atomic=self.revision_atomic
+            atomic=self.revision_atomic,
+            request_creates_revision=self.revision_request_creates_revision
         )(self.dispatch)
+
+    def revision_request_creates_revision(self, request):
+        return _request_creates_revision(request)
