@@ -1,11 +1,13 @@
 from datetime import timedelta
 from django.contrib.auth.models import User
-from django.db import models
+from django.db import models, router
 from django.db.transaction import get_connection
 from django.utils import timezone
 import reversion
 from test_app.models import TestModel, TestModelRelated, TestModelThrough, TestModelParent, TestMeta
 from test_app.tests.base import TestBase, TestBaseTransaction, TestModelMixin, UserMixin
+
+from reversion.revisions import _ContextWrapper, _create_revision_context
 
 try:
     from unittest.mock import MagicMock
@@ -86,12 +88,26 @@ class UnregisterUnregisteredTest(TestBase):
 class CreateRevisionTest(TestModelMixin, TestBase):
 
     def testCreateRevision(self):
+        with reversion.create_revision():
+            obj = TestModel.objects.create()
+        self.assertSingleRevision((obj,))
+
+    def testCustomCreateRevision(self):
+        def create_revision_for_test_model(user, comment, **kwargs):
+            from reversion.models import Revision
+            using = router.db_for_write(Revision)
+            kwargs_ = {'user': user, 'comment': comment, 'meta': TestMeta}
+            kwargs_.update(kwargs)
+            return _ContextWrapper(_create_revision_context, (False, using, True), **kwargs_)
+
         meta_name = 'meta name'
         kwargs = {'name': meta_name}
         user = User.objects.create()
-        with reversion.create_revision(meta=TestMeta, user=user, comment='hello world!', **kwargs):
+        comment = 'hello world!'
+        with create_revision_for_test_model(user, comment, **kwargs):
             obj = TestModel.objects.create()
-        self.assertSingleRevision((obj,), meta_names=(meta_name, ), user=user, comment='hello world!')
+
+        self.assertSingleRevision((obj,), meta_names=(meta_name,), user=user, comment='hello world!')
 
     def testCreateRevisionNested(self):
         with reversion.create_revision():
