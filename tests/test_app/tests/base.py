@@ -72,6 +72,17 @@ class TestBaseMixin(object):
     def assertNoRevision(self, using=None):
         self.assertEqual(Revision.objects.using(using).all().count(), 0)
 
+    def assertRevisionCount(self, model, pk, count, using=None, model_db=None):
+        self.assertEqual(
+            len(set(Version.objects.using(using).get_for_model(
+                model,
+                model_db=model_db
+            ).filter(
+                object_id=pk
+            ).values_list("revision", flat=True))),
+            count
+        )
+
 
 class TestBase(TestBaseMixin, TestCase):
     pass
@@ -93,6 +104,13 @@ class TestModelParentMixin(TestModelMixin):
     def setUp(self):
         super(TestModelParentMixin, self).setUp()
         reversion.register(TestModelParent, follow=("testmodel_ptr",))
+
+
+class TestModelDeletedMixin(object):
+
+    def setUp(self):
+        super(TestModelDeletedMixin, self).setUp()
+        reversion.register(TestModel, ignore_deletes=False)
 
 
 @override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])

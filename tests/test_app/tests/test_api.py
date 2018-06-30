@@ -5,7 +5,7 @@ from django.db.transaction import get_connection
 from django.utils import timezone
 import reversion
 from test_app.models import TestModel, TestModelRelated, TestModelThrough, TestModelParent, TestMeta
-from test_app.tests.base import TestBase, TestBaseTransaction, TestModelMixin, UserMixin
+from test_app.tests.base import TestBase, TestBaseTransaction, TestModelMixin, TestModelDeletedMixin, UserMixin
 
 try:
     from unittest.mock import MagicMock
@@ -216,6 +216,29 @@ class CreateRevisionInheritanceTest(TestModelMixin, TestBase):
         with reversion.create_revision():
             obj = TestModelParent.objects.create()
         self.assertSingleRevision((obj, obj.testmodel_ptr))
+
+
+class CreateRevisionOnDeleteTest(TestModelDeletedMixin, TestBase):
+
+    def testCreateRevisionOnDelete(self):
+        with reversion.create_revision():
+            obj = TestModel.objects.create()
+        pk = obj.pk
+        with reversion.create_revision():
+            obj.delete()
+        self.assertRevisionCount(TestModel, pk, 2)
+
+    def testOmitRevisionNoop(self):
+        with reversion.create_revision():
+            obj = TestModel.objects.create()
+            obj.delete()
+        self.assertNoRevision()
+
+    def testOmitRevisionNoHistory(self):
+        obj = TestModel.objects.create()
+        with reversion.create_revision():
+            obj.delete()
+        self.assertNoRevision()
 
 
 class SetCommentTest(TestModelMixin, TestBase):
