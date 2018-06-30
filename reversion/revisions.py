@@ -8,7 +8,7 @@ from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction, router
 from django.db.models.query import QuerySet
-from django.db.models.signals import post_save, m2m_changed
+from django.db.models.signals import post_save, pre_delete, m2m_changed
 from django.utils.encoding import force_text
 from django.utils import timezone, six
 from reversion.compat import remote_field
@@ -22,6 +22,7 @@ _VersionOptions = namedtuple("VersionOptions", (
     "format",
     "for_concrete_model",
     "ignore_duplicates",
+    "ignore_deletes",
 ))
 
 
@@ -195,11 +196,14 @@ def _add_to_revision(obj, using, model_db, explicit):
         ),
         object_repr=force_text(obj),
     )
+    # Store the previous version if deletes are to be tracked, or if duplicates should be omitted
+    version._previous = None
+    if explicit and (not version_options.ignore_deletes or version_options.ignore_duplicates):
+        version._previous = Version.objects.using(using).get_for_object(obj, model_db=model_db).first()
     # If the version is a duplicate, stop now.
-    if version_options.ignore_duplicates and explicit:
-        previous_version = Version.objects.using(using).get_for_object(obj, model_db=model_db).first()
-        if previous_version and previous_version._local_field_dict == version._local_field_dict:
-            return
+    if version_options.ignore_duplicates and explicit and \
+       version._previous and version._previous._local_field_dict == version._local_field_dict:
+        return
     # Store the version.
     db_versions = _copy_db_versions(db_versions)
     db_versions[using][version_key] = version
@@ -215,9 +219,20 @@ def add_to_revision(obj, model_db=None):
         _add_to_revision(obj, db, model_db, True)
 
 
+def _copy_version(version):
+    return type(version)(
+        content_type=version.content_type,
+        object_id=version.object_id,
+        db=version.db,
+        format=version.format,
+        serialized_data=version.serialized_data,
+        object_repr=version.object_repr
+    )
+
+
 def _save_revision(versions, user=None, comment="", meta=(), date_created=None, using=None):
     from reversion.models import Revision
-    # Only save versions that exist in the database.
+    # Directly save versions that exist in the database, and re-save the previous state for those that were deleted
     # Use _base_manager so we don't have problems when _default_manager is overriden
     model_db_pks = defaultdict(lambda: defaultdict(set))
     for version in versions:
@@ -232,10 +247,17 @@ def _save_revision(versions, user=None, comment="", meta=(), date_created=None, 
         }
         for model, db_pks in model_db_pks.items()
     }
+    deleted = [
+        _copy_version(version._previous)
+        for version in versions
+        if version._previous
+        if version.object_id not in model_db_existing_pks[version._model][version.db]
+    ]
     versions = [
         version for version in versions
         if version.object_id in model_db_existing_pks[version._model][version.db]
     ]
+    versions.extend(deleted)
     # Bail early if there are no objects to save.
     if not versions:
         return
@@ -330,6 +352,12 @@ def _post_save_receiver(sender, instance, using, **kwargs):
         add_to_revision(instance, model_db=using)
 
 
+def _pre_delete_receiver(sender, instance, using, **kwargs):
+    # The same as _post_save_receiver, duplicated for clarity.
+    if is_registered(sender) and is_active() and not is_manage_manually():
+        add_to_revision(instance, model_db=using)
+
+
 def _m2m_changed_receiver(instance, using, action, model, reverse, **kwargs):
     if action.startswith("post_") and not reverse:
         if is_registered(instance) and is_active() and not is_manage_manually():
@@ -351,8 +379,10 @@ def get_registered_models():
     return (apps.get_model(*key) for key in _registered_models.keys())
 
 
-def _get_senders_and_signals(model):
+def _get_senders_and_signals(model, options):
     yield model, post_save, _post_save_receiver
+    if not options.ignore_deletes:
+        yield model, pre_delete, _pre_delete_receiver
     opts = model._meta.concrete_model._meta
     for field in opts.local_many_to_many:
         m2m_model = remote_field(field).through
@@ -366,7 +396,7 @@ def _get_senders_and_signals(model):
 
 
 def register(model=None, fields=None, exclude=(), follow=(), format="json",
-             for_concrete_model=True, ignore_duplicates=False):
+             for_concrete_model=True, ignore_duplicates=False, ignore_deletes=True):
     def register(model):
         # Prevent multiple registration.
         if is_registered(model):
@@ -390,11 +420,12 @@ def register(model=None, fields=None, exclude=(), follow=(), format="json",
             format=format,
             for_concrete_model=for_concrete_model,
             ignore_duplicates=ignore_duplicates,
+            ignore_deletes=ignore_deletes,
         )
         # Register the model.
         _registered_models[_get_registration_key(model)] = version_options
         # Connect signals.
-        for sender, signal, signal_receiver in _get_senders_and_signals(model):
+        for sender, signal, signal_receiver in _get_senders_and_signals(model, version_options):
             signal.connect(signal_receiver, sender=sender)
         # All done!
         return model
@@ -418,10 +449,10 @@ def _get_options(model):
 
 
 def unregister(model):
-    _assert_registered(model)
+    version_options = _get_options(model)
     del _registered_models[_get_registration_key(model)]
     # Disconnect signals.
-    for sender, signal, signal_receiver in _get_senders_and_signals(model):
+    for sender, signal, signal_receiver in _get_senders_and_signals(model, version_options):
         signal.disconnect(signal_receiver, sender=sender)
 
 
