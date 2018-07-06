@@ -187,15 +187,17 @@ class VersionAdmin(admin.ModelAdmin):
         try:
             with transaction.atomic(using=version.db):
                 # Revert the revision.
-                version.revision.revert(delete=True)
+                with self.create_revision(request):
+                    version.revision.revert(delete=True)
+                    set_comment(_("Reverted to previous version, saved on %(datetime)s") % {
+                        "datetime": localize(template_localtime(version.revision.date_created)),
+                    })
                 # Run the normal changeform view.
                 with self.create_revision(request):
                     response = self.changeform_view(request, quote(version.object_id), request.path, extra_context)
                     # Decide on whether the keep the changes.
                     if request.method == "POST" and response.status_code == 302:
-                        set_comment(_("Reverted to previous version, saved on %(datetime)s") % {
-                            "datetime": localize(template_localtime(version.revision.date_created)),
-                        })
+                        pass
                     else:
                         response.template_name = template_name  # Set the template name to the correct template.
                         response.render()  # Eagerly render the response, so it's using the latest version.
