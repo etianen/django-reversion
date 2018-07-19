@@ -462,7 +462,7 @@ Contains metadata about a revision, and groups together all :ref:`Version` insta
     The ``User`` that created the revision, or None.
 
 
-``Revision.comment``
+``Revision.get_comment()``
 
     A text comment on the revision.
 
