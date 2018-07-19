@@ -277,7 +277,7 @@ def _dummy_context():
 
 
 @contextmanager
-def _create_revision_context(manage_manually, using, atomic, user=None, comment=None, meta=None, **kwargs):
+def _create_revision_context(manage_manually, using, atomic):
     _push_frame(manage_manually, using)
     try:
         context = transaction.atomic(using=using) if atomic else _dummy_context()
@@ -285,12 +285,6 @@ def _create_revision_context(manage_manually, using, atomic, user=None, comment=
             yield
             # Only save for a db if that's the last stack frame for that db.
             if not any(using in frame.db_versions for frame in _local.stack[:-1]):
-                if user:
-                    set_user(user)
-                if comment:
-                    set_comment(comment)
-                if meta:
-                    add_meta(meta, **kwargs)
                 current_frame = _current_frame()
                 _save_revision(
                     versions=current_frame.db_versions[using].values(),
@@ -312,11 +306,10 @@ def create_revision(manage_manually=False, using=None, atomic=True):
 
 class _ContextWrapper(object):
 
-    def __init__(self, func, args, **kwargs):
+    def __init__(self, func, args):
         self._func = func
         self._args = args
-        self._kwargs = kwargs
-        self._context = func(*args, **kwargs)
+        self._context = func(*args)
 
     def __enter__(self):
         return self._context.__enter__()
@@ -327,7 +320,7 @@ class _ContextWrapper(object):
     def __call__(self, func):
         @wraps(func)
         def do_revision_context(*args, **kwargs):
-            with self._func(*self._args, **self._kwargs):
+            with self._func(*self._args):
                 return func(*args, **kwargs)
         return do_revision_context
 
