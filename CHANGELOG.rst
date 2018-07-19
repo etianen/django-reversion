@@ -6,9 +6,12 @@ django-reversion changelog
 3.0.0 - 19/07/2018
 ------------------
 
-- Fixed bug when reverting deleted nested inlines (Primož Kariž).
 - **BREAKING:** django-reversion now uses ``_base_manager`` to calculate deleted models, not ``_default_manager``. This
   change will only affect models that perform default filtering in their ``_default_manager`` (@ivissani).
+- Added ``request_creates_revision`` hook to ``RevisionMiddleware`` and ``views.create_revision``. (@kklingenberg).
+- Added ``revision_request_creates_revision`` hook to ``views.RevisionMixinView``. (@kklingenberg).
+- Added ``--meta`` flag to ``./manage.py createrevisions`` (@massover).
+- Fixed bug when reverting deleted nested inlines (Primož Kariž).
 - Added tests for django 2.1 (@claudep).
 
 
