@@ -146,6 +146,22 @@ Reverting a :ref:`Revision` will restore any serialized model instances that hav
     assert obj.name == "version 2"
 
 
+Custom create revision context managers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Create a `create_revision` context manager that is specific to your application and models.
+
+.. code:: python
+
+    def create_revision_for_your_obj(user, status):
+        # Assuming YourObjMeta has a field called 'status' that needs to be
+        # set on every revision
+        return create_revision(user=User, meta=YourObjMeta, status=status)
+
+    with create_revision_for_your_obj(request.user, 'draft'):
+        obj.save()
+
+
 .. _registration-api:
 
 Registration API
@@ -216,7 +232,7 @@ Registration API
 Revision API
 ------------
 
-``reversion.create_revision(manage_manually=False, using=None, atomic=True)``
+``reversion.create_revision(manage_manually=False, using=None, atomic=True, user=None, comment=None, meta=None, **kwargs)``
 
     Marks a block of code as a *revision block*. Can also be used as a decorator.
 

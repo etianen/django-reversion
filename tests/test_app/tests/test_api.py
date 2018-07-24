@@ -4,8 +4,10 @@ from django.db import models
 from django.db.transaction import get_connection
 from django.utils import timezone
 import reversion
+from reversion.revisions import create_revision
 from test_app.models import TestModel, TestModelRelated, TestModelThrough, TestModelParent, TestMeta
 from test_app.tests.base import TestBase, TestBaseTransaction, TestModelMixin, UserMixin
+
 
 try:
     from unittest.mock import MagicMock
@@ -89,6 +91,18 @@ class CreateRevisionTest(TestModelMixin, TestBase):
         with reversion.create_revision():
             obj = TestModel.objects.create()
         self.assertSingleRevision((obj,))
+
+    def testCustomCreateRevision(self):
+        def create_revision_for_test_model(user, comment, name):
+            return create_revision(user=user, comment=comment, meta=TestMeta, name=name)
+
+        meta_name = 'meta name'
+        user = User.objects.create()
+        comment = 'hello world!'
+        with create_revision_for_test_model(user, comment, meta_name):
+            obj = TestModel.objects.create()
+
+        self.assertSingleRevision((obj,), meta_names=(meta_name,), user=user, comment='hello world!')
 
     def testCreateRevisionNested(self):
         with reversion.create_revision():
