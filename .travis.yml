@@ -3,7 +3,6 @@ language: python
 python:
   - 3.6
   - 3.5
-  - 2.7
 cache: pip
 env:
   global:
@@ -16,11 +15,11 @@ env:
     - DJANGO='>=1.11,<1.12'
 matrix:
   fast_finish: true
-  exclude:
-    - python: 2.7
-      env: DJANGO='>=2.0,<2.1'
-    - python: 2.7
-      env: DJANGO='>=2.1,<2.2'
+  include:
+    - { python: "2.7", env: DJANGO="==1.11.*" }
+
+    - { python: "3.7", env: DJANGO="==2.0.*", dist: xenial, sudo: true }
+    - { python: "3.7", env: DJANGO="==2.1.*", dist: xenial, sudo: true }
 addons:
   apt:
     packages:
