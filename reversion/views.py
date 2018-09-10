@@ -1,6 +1,5 @@
 from functools import wraps
 
-from reversion.compat import is_authenticated
 from reversion.revisions import create_revision as create_revision_base, set_user, get_user
 
 
@@ -15,7 +14,7 @@ def _request_creates_revision(request):
 
 
 def _set_user_from_request(request):
-    if getattr(request, "user", None) and is_authenticated(request.user) and get_user() is None:
+    if getattr(request, "user", None) and request.user.is_authenticated and get_user() is None:
         set_user(request.user)
 
 

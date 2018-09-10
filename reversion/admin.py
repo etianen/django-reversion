@@ -6,34 +6,20 @@ from django.conf.urls import url
 from django.contrib import admin, messages
 from django.contrib.admin import options
 from django.contrib.admin.utils import unquote, quote
-try:
-    from django.contrib.contenttypes.admin import GenericInlineModelAdmin
-    from django.contrib.contenttypes.fields import GenericRelation
-except ImportError:  # Django < 1.9 pragma: no cover
-    from django.contrib.contenttypes.generic import GenericInlineModelAdmin, GenericRelation
-try:
-    from django.urls import reverse
-except ImportError:  # Django < 1.10 pragma: no cover
-    from django.core.urlresolvers import reverse
+from django.contrib.contenttypes.admin import GenericInlineModelAdmin
+from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import PermissionDenied, ImproperlyConfigured
 from django.shortcuts import get_object_or_404, render, redirect
+from django.urls import reverse
 from django.utils.text import capfirst
 from django.utils.timezone import template_localtime
 from django.utils.translation import ugettext as _
 from django.utils.encoding import force_text
 from django.utils.formats import localize
-from reversion.compat import remote_field, remote_model
 from reversion.errors import RevertError
 from reversion.models import Version
 from reversion.revisions import is_active, register, is_registered, set_comment, create_revision, set_user
 from reversion.views import _RollBackRevisionView
-
-
-def private_fields(meta):
-    try:
-        return meta.private_fields
-    except AttributeError:  # Django < 1.10 pragma: no cover
-        return meta.virtual_fields
 
 
 class VersionAdmin(admin.ModelAdmin):
@@ -88,10 +74,7 @@ class VersionAdmin(admin.ModelAdmin):
                 set_comment(json.dumps(change_message))
             else:
                 set_comment(change_message)
-        try:
-            super(VersionAdmin, self).log_addition(request, object, change_message)
-        except TypeError:  # Django < 1.9 pragma: no cover
-            super(VersionAdmin, self).log_addition(request, object)
+        super(VersionAdmin, self).log_addition(request, object, change_message)
 
     def log_change(self, request, object, message):
         if is_active():
@@ -118,10 +101,10 @@ class VersionAdmin(admin.ModelAdmin):
             inline_model = inline.model
             ct_field = inline.ct_field
             fk_name = inline.ct_fk_field
-            for field in private_fields(self.model._meta):
+            for field in self.model._meta.private_fields:
                 if (
                     isinstance(field, GenericRelation) and
-                    remote_model(field) == inline_model and
+                    field.remote_field.model == inline_model and
                     field.object_id_field_name == fk_name and
                     field.content_type_field_name == ct_field
                 ):
@@ -134,13 +117,13 @@ class VersionAdmin(admin.ModelAdmin):
                 for field in inline_model._meta.get_fields():
                     if (
                         isinstance(field, (models.ForeignKey, models.OneToOneField)) and
-                        issubclass(self.model, remote_model(field))
+                        issubclass(self.model, field.remote_field.model)
                     ):
                         fk_name = field.name
                         break
-            if fk_name and not remote_field(inline_model._meta.get_field(fk_name)).is_hidden():
+            if fk_name and not inline_model._meta.get_field(fk_name).remote_field.is_hidden():
                 field = inline_model._meta.get_field(fk_name)
-                accessor = remote_field(field).get_accessor_name()
+                accessor = field.remote_field.get_accessor_name()
                 follow_field = accessor
         return inline_model, follow_field
 

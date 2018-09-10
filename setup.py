@@ -28,7 +28,7 @@ setup(
         "reversion": ["locale/*/LC_MESSAGES/django.*", "templates/reversion/*.html"]},
     cmdclass=cmdclass,
     install_requires=[
-        "django>=1.8",
+        "django>=1.11",
     ],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
