@@ -1,9 +1,6 @@
 from django.db import models
+from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
-try:
-    from django.contrib.contenttypes.fields import GenericRelation
-except ImportError:  # Django < 1.9 pragma: no cover
-    from django.contrib.contenttypes.generic import GenericRelation
 from reversion.models import Revision
 
 

@@ -11,7 +11,6 @@ from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, m2m_changed
 from django.utils.encoding import force_text
 from django.utils import timezone, six
-from reversion.compat import remote_field
 from reversion.errors import RevisionManagementError, RegistrationError
 from reversion.signals import pre_revision_commit, post_revision_commit
 
@@ -355,7 +354,7 @@ def _get_senders_and_signals(model):
     yield model, post_save, _post_save_receiver
     opts = model._meta.concrete_model._meta
     for field in opts.local_many_to_many:
-        m2m_model = remote_field(field).through
+        m2m_model = field.remote_field.through
         if isinstance(m2m_model, six.string_types):
             if "." not in m2m_model:
                 m2m_model = "{app_label}.{m2m_model}".format(

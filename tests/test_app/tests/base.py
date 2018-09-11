@@ -2,10 +2,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.management import call_command
-try:
-    from django.urls import clear_url_caches
-except ImportError:  # Django < 1.10 pragma: no cover
-    from django.core.urlresolvers import clear_url_caches
+from django.urls import clear_url_caches
 from django.test import TestCase, TransactionTestCase
 from django.test.utils import override_settings
 from django.utils import timezone

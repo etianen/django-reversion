@@ -1,9 +1,6 @@
 import re
 from django.contrib import admin
-try:
-    from django.contrib.contenttypes.admin import GenericTabularInline
-except ImportError:  # Django < 1.9 pragma: no cover
-    from django.contrib.contenttypes.generic import GenericTabularInline
+from django.contrib.contenttypes.admin import GenericTabularInline
 from django.shortcuts import resolve_url
 import reversion
 from reversion.admin import VersionAdmin

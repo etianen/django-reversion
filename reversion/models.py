@@ -1,11 +1,8 @@
 from __future__ import unicode_literals
 from collections import defaultdict
 from itertools import chain, groupby
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-try:
-    from django.contrib.contenttypes.fields import GenericForeignKey
-except ImportError:  # Django < 1.9 pragma: no cover
-    from django.contrib.contenttypes.generic import GenericForeignKey
 from django.conf import settings
 from django.contrib.admin.models import LogEntry
 from django.core import serializers
@@ -64,12 +61,7 @@ class Revision(models.Model):
     )
 
     def get_comment(self):
-        try:
-            return LogEntry(change_message=self.comment).get_change_message()
-        except AttributeError:
-            # Django < 1.10
-            # LogEntry dont have `.get_change_message()`
-            return self.comment
+        return LogEntry(change_message=self.comment).get_change_message()
 
     def revert(self, delete=False):
         # Group the models by the database of the serialized model.
