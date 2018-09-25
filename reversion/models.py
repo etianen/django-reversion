@@ -270,7 +270,7 @@ class Version(models.Model):
             field = model._meta.get_field(field_name)
             if isinstance(field, models.ManyToManyField):
                 # M2M fields with a custom through are not stored in m2m_data, but as a separate model.
-                if field.attname in object_version.m2m_data:
+                if object_version.m2m_data and field.attname in object_version.m2m_data:
                     field_dict[field.attname] = object_version.m2m_data[field.attname]
             else:
                 field_dict[field.attname] = getattr(obj, field.attname)
