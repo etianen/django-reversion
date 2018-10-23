@@ -3,6 +3,14 @@
 django-reversion changelog
 ==========================
 
+3.0.1 - 23/10/2018
+------------------
+
+- Added squashed migrations back in to allow older installations to upgrade (Christopher Thorne).
+- Fixed TypeError exception when accessing m2m_data attribute from a field that points to Django’s User model
+  (@denisroldan).
+
+
 3.0.0 - 19/07/2018
 ------------------
 
