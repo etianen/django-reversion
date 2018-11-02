@@ -23,8 +23,15 @@
                                 <th scope="row"><a href="{{action.url}}">{{action.revision.date_created|date:"DATETIME_FORMAT"}}</a></th>
                                 <td>
                                     {% if action.revision.user %}
-                                        {{action.revision.user.get_username}}
-                                        {% if action.revision.user.get_full_name %} ({{action.revision.user.get_full_name}}){% endif %}
+                                        {% url admin_user_view action.revision.user.id as admin_user_url %}
+                                        {% if admin_user_url %}
+                                            <a href="{{ admin_user_url }}">{{action.revision.user.get_username}}
+                                                {% if action.revision.user.get_full_name %} ({{action.revision.user.get_full_name}}){% endif %}
+                                            </a>
+                                        {% else %}
+                                            {{action.revision.user.get_username}}
+                                            {% if action.revision.user.get_full_name %} ({{action.revision.user.get_full_name}}){% endif %}
+                                        {% endif %}
                                     {% else %}
                                         &mdash;
                                     {% endif %}

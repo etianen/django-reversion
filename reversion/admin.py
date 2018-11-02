@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 import json
 from contextlib import contextmanager
+from django.conf import settings
 from django.db import models, transaction, connection
 from django.conf.urls import url
 from django.contrib import admin, messages
@@ -8,6 +9,7 @@ from django.contrib.admin import options
 from django.contrib.admin.utils import unquote, quote
 from django.contrib.contenttypes.admin import GenericInlineModelAdmin
 from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import PermissionDenied, ImproperlyConfigured
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
@@ -21,6 +23,8 @@ from reversion.models import Version
 from reversion.revisions import is_active, register, is_registered, set_comment, create_revision, set_user
 from reversion.views import _RollBackRevisionView
 
+AUTH_USER_NATURAL_KEY = tuple(
+    key.lower() for key in settings.AUTH_USER_MODEL.split('.', 1))
 
 class VersionAdmin(admin.ModelAdmin):
 
@@ -267,6 +271,9 @@ class VersionAdmin(admin.ModelAdmin):
         if not self.has_change_permission(request):
             raise PermissionDenied
         opts = self.model._meta
+        content_type_admin = ContentType.objects.get_by_natural_key(
+            *AUTH_USER_NATURAL_KEY)
+
         action_list = [
             {
                 "revision": version.revision,
@@ -274,6 +281,8 @@ class VersionAdmin(admin.ModelAdmin):
                     "%s:%s_%s_revision" % (self.admin_site.name, opts.app_label, opts.model_name),
                     args=(quote(version.object_id), version.id)
                 ),
+                "admin_user_view": 'admin:%s_%s_change' % (content_type_admin.app_label,
+                                   content_type_admin.model),
             }
             for version
             in self._reversion_order_version_queryset(Version.objects.get_for_object_reference(
