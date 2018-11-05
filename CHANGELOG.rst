@@ -3,6 +3,12 @@
 django-reversion changelog
 ==========================
 
+3.0.2 - 05/11/2018
+------------------
+
+- Removed squashed migrations, as they subtly messed up the Django migrations framework (@etianen).
+
+
 3.0.1 - 23/10/2018
 ------------------
 
