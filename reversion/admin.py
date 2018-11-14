@@ -264,7 +264,7 @@ class VersionAdmin(admin.ModelAdmin):
     def history_view(self, request, object_id, extra_context=None):
         """Renders the history view."""
         # Check if user has change permissions for model
-        if not self.has_change_permission(request):
+        if not self.has_view_or_change_permission(request):
             raise PermissionDenied
         opts = self.model._meta
         action_list = [
