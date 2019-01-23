@@ -354,6 +354,12 @@ def _safe_subquery(method, left_query, left_field_name, right_subquery, right_fi
             right_subquery = right_subquery.annotate(**{
                 right_field_name_str: _Str(right_field_name),
             }).values_list(right_field_name_str, flat=True)
+            right_field_name = right_field_name_str
+        # Use Exists if running on the same DB, it is much much faster
+        exist_annotation_name = "{}_annotation_str".format(right_subquery.model._meta.db_table)
+        right_subquery = right_subquery.filter(**{right_field_name: models.OuterRef(left_field_name)})
+        left_query = left_query.annotate(**{exist_annotation_name: models.Exists(right_subquery)})
+        return getattr(left_query, method)(**{exist_annotation_name: True})
     # All done!
     return getattr(left_query, method)(**{
         "{}__in".format(left_field_name): right_subquery,
