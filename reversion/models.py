@@ -339,7 +339,9 @@ def _safe_subquery(method, left_query, left_field_name, right_subquery, right_fi
             connections[left_query.db].vendor in ("sqlite", "postgresql")
         )
     ):
-        right_subquery = list(right_subquery.iterator())
+        return getattr(left_query, method)(**{
+            "{}__in".format(left_field_name): list(right_subquery.iterator()),
+        })
     else:
         # If the left hand side is not a text field, we need to cast it.
         if not isinstance(left_field, (models.CharField, models.TextField)):
@@ -360,7 +362,3 @@ def _safe_subquery(method, left_query, left_field_name, right_subquery, right_fi
         right_subquery = right_subquery.filter(**{right_field_name: models.OuterRef(left_field_name)})
         left_query = left_query.annotate(**{exist_annotation_name: models.Exists(right_subquery)})
         return getattr(left_query, method)(**{exist_annotation_name: True})
-    # All done!
-    return getattr(left_query, method)(**{
-        "{}__in".format(left_field_name): right_subquery,
-    })
