@@ -3,6 +3,13 @@
 django-reversion changelog
 ==========================
 
+3.0.3 - 24/01/2019
+------------------
+
+- Improved performance of many reversion database queries using `EXISTS` subquery (@MRigal).
+- Added support for Django 2.1 `view` permission (@ofw).
+
+
 3.0.2 - 05/11/2018
 ------------------
 
