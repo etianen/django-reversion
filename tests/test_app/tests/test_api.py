@@ -5,7 +5,7 @@ from django.db.transaction import get_connection
 from django.utils import timezone
 import reversion
 from test_app.models import TestModel, TestModelRelated, TestModelThrough, TestModelParent, TestMeta
-from test_app.tests.base import TestBase, TestBaseTransaction, TestModelMixin, UserMixin
+from test_app.tests.base import TestBase, TestBaseTransaction, TestModelMixin, UserMixin, requiresDatabase
 
 try:
     from unittest.mock import MagicMock
@@ -159,6 +159,8 @@ class CreateRevisionManageManuallyTest(TestModelMixin, TestBase):
 
 class CreateRevisionDbTest(TestModelMixin, TestBase):
 
+    @requiresDatabase("mysql")
+    @requiresDatabase("postgres")
     def testCreateRevisionMultiDb(self):
         with reversion.create_revision(using="mysql"), reversion.create_revision(using="postgres"):
             obj = TestModel.objects.create()
@@ -319,6 +321,8 @@ class AddMetaTest(TestModelMixin, TestBase):
         with self.assertRaises(reversion.RevisionManagementError):
             reversion.add_meta(TestMeta, name="meta v1")
 
+    @requiresDatabase("mysql")
+    @requiresDatabase("postgres")
     def testAddMetaMultDb(self):
         with reversion.create_revision(using="mysql"), reversion.create_revision(using="postgres"):
             obj = TestModel.objects.create()

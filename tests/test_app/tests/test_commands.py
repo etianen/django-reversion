@@ -4,7 +4,7 @@ from django.core.management import CommandError
 from django.utils import timezone
 import reversion
 from test_app.models import TestModel
-from test_app.tests.base import TestBase, TestModelMixin
+from test_app.tests.base import TestBase, TestModelMixin, requiresDatabase
 
 
 class CreateInitialRevisionsTest(TestModelMixin, TestBase):
@@ -53,12 +53,14 @@ class CreateInitialRevisionsAppLabelTest(TestModelMixin, TestBase):
 
 class CreateInitialRevisionsDbTest(TestModelMixin, TestBase):
 
+    @requiresDatabase("postgres")
     def testCreateInitialRevisionsDb(self):
         obj = TestModel.objects.create()
         self.callCommand("createinitialrevisions", using="postgres")
         self.assertNoRevision()
         self.assertSingleRevision((obj,), comment="Initial version.", using="postgres")
 
+    @requiresDatabase("mysql")
     def testCreateInitialRevisionsDbMySql(self):
         obj = TestModel.objects.create()
         self.callCommand("createinitialrevisions", using="mysql")
@@ -68,6 +70,7 @@ class CreateInitialRevisionsDbTest(TestModelMixin, TestBase):
 
 class CreateInitialRevisionsModelDbTest(TestModelMixin, TestBase):
 
+    @requiresDatabase("postgres")
     def testCreateInitialRevisionsModelDb(self):
         obj = TestModel.objects.db_manager("postgres").create()
         self.callCommand("createinitialrevisions", model_db="postgres")
@@ -135,18 +138,21 @@ class DeleteRevisionsAppLabelTest(TestModelMixin, TestBase):
 
 class DeleteRevisionsDbTest(TestModelMixin, TestBase):
 
+    @requiresDatabase("postgres")
     def testDeleteRevisionsDb(self):
         with reversion.create_revision(using="postgres"):
             TestModel.objects.create()
         self.callCommand("deleterevisions", using="postgres")
         self.assertNoRevision(using="postgres")
 
+    @requiresDatabase("mysql")
     def testDeleteRevisionsDbMySql(self):
         with reversion.create_revision(using="mysql"):
             TestModel.objects.create()
         self.callCommand("deleterevisions", using="mysql")
         self.assertNoRevision(using="mysql")
 
+    @requiresDatabase("postgres")
     def testDeleteRevisionsDbNoMatch(self):
         with reversion.create_revision():
             obj = TestModel.objects.create()
@@ -156,6 +162,7 @@ class DeleteRevisionsDbTest(TestModelMixin, TestBase):
 
 class DeleteRevisionsModelDbTest(TestModelMixin, TestBase):
 
+    @requiresDatabase("postgres")
     def testDeleteRevisionsModelDb(self):
         with reversion.create_revision():
             TestModel.objects.db_manager("postgres").create()

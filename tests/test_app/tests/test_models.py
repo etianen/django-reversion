@@ -5,7 +5,7 @@ from test_app.models import (
     TestModel, TestModelRelated, TestModelParent, TestModelInline,
     TestModelNestedInline,
 )
-from test_app.tests.base import TestBase, TestModelMixin, TestModelParentMixin
+from test_app.tests.base import TestBase, TestModelMixin, TestModelParentMixin, requiresDatabase
 
 
 class GetForModelTest(TestModelMixin, TestBase):
@@ -18,11 +18,13 @@ class GetForModelTest(TestModelMixin, TestBase):
 
 class GetForModelDbTest(TestModelMixin, TestBase):
 
+    @requiresDatabase("postgres")
     def testGetForModelDb(self):
         with reversion.create_revision(using="postgres"):
             obj = TestModel.objects.create()
         self.assertEqual(Version.objects.using("postgres").get_for_model(obj.__class__).count(), 1)
 
+    @requiresDatabase("mysql")
     def testGetForModelDbMySql(self):
         with reversion.create_revision(using="mysql"):
             obj = TestModel.objects.create()
@@ -60,12 +62,14 @@ class GetForObjectTest(TestModelMixin, TestBase):
 
 class GetForObjectDbTest(TestModelMixin, TestBase):
 
+    @requiresDatabase("postgres")
     def testGetForObjectDb(self):
         with reversion.create_revision(using="postgres"):
             obj = TestModel.objects.create()
         self.assertEqual(Version.objects.get_for_object(obj).count(), 0)
         self.assertEqual(Version.objects.using("postgres").get_for_object(obj).count(), 1)
 
+    @requiresDatabase("mysql")
     def testGetForObjectDbMySql(self):
         with reversion.create_revision(using="mysql"):
             obj = TestModel.objects.create()
@@ -75,6 +79,7 @@ class GetForObjectDbTest(TestModelMixin, TestBase):
 
 class GetForObjectModelDbTest(TestModelMixin, TestBase):
 
+    @requiresDatabase("postgres")
     def testGetForObjectModelDb(self):
         with reversion.create_revision():
             obj = TestModel.objects.db_manager("postgres").create()
@@ -131,6 +136,7 @@ class GetForObjectReferenceTest(TestModelMixin, TestBase):
 
 class GetForObjectReferenceDbTest(TestModelMixin, TestBase):
 
+    @requiresDatabase("postgres")
     def testGetForObjectReferenceModelDb(self):
         with reversion.create_revision(using="postgres"):
             obj = TestModel.objects.create()
@@ -140,12 +146,14 @@ class GetForObjectReferenceDbTest(TestModelMixin, TestBase):
 
 class GetForObjectReferenceModelDbTest(TestModelMixin, TestBase):
 
+    @requiresDatabase("postgres")
     def testGetForObjectReferenceModelDb(self):
         with reversion.create_revision():
             obj = TestModel.objects.db_manager("postgres").create()
         self.assertEqual(Version.objects.get_for_object_reference(TestModel, obj.pk).count(), 0)
         self.assertEqual(Version.objects.get_for_object_reference(TestModel, obj.pk, model_db="postgres").count(), 1)
 
+    @requiresDatabase("mysql")
     def testGetForObjectReferenceModelDbMySql(self):
         with reversion.create_revision():
             obj = TestModel.objects.db_manager("mysql").create()
@@ -180,6 +188,7 @@ class GetDeletedTest(TestModelMixin, TestBase):
         self.assertEqual(Version.objects.get_deleted(TestModel)[0].object_id, force_text(pk_2))
         self.assertEqual(Version.objects.get_deleted(TestModel)[1].object_id, force_text(pk_1))
 
+    @requiresDatabase("postgres")
     def testGetDeletedPostgres(self):
         with reversion.create_revision(using="postgres"):
             obj = TestModel.objects.using("postgres").create()
@@ -188,6 +197,7 @@ class GetDeletedTest(TestModelMixin, TestBase):
         obj.delete()
         self.assertEqual(Version.objects.using("postgres").get_deleted(TestModel, model_db="postgres").count(), 1)
 
+    @requiresDatabase("mysql")
     def testGetDeletedMySQL(self):
         with reversion.create_revision(using="mysql"):
             obj = TestModel.objects.using("mysql").create()
@@ -199,6 +209,7 @@ class GetDeletedTest(TestModelMixin, TestBase):
 
 class GetDeletedDbTest(TestModelMixin, TestBase):
 
+    @requiresDatabase("postgres")
     def testGetDeletedDb(self):
         with reversion.create_revision(using="postgres"):
             obj = TestModel.objects.create()
@@ -206,6 +217,7 @@ class GetDeletedDbTest(TestModelMixin, TestBase):
         self.assertEqual(Version.objects.get_deleted(TestModel).count(), 0)
         self.assertEqual(Version.objects.using("postgres").get_deleted(TestModel).count(), 1)
 
+    @requiresDatabase("mysql")
     def testGetDeletedDbMySql(self):
         with reversion.create_revision(using="mysql"):
             obj = TestModel.objects.create()
@@ -216,6 +228,7 @@ class GetDeletedDbTest(TestModelMixin, TestBase):
 
 class GetDeletedModelDbTest(TestModelMixin, TestBase):
 
+    @requiresDatabase("postgres")
     def testGetDeletedModelDb(self):
         with reversion.create_revision():
             obj = TestModel.objects.db_manager("postgres").create()

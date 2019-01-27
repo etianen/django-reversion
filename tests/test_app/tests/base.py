@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest import skipIf
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.management import call_command
@@ -107,3 +108,7 @@ class LoginMixin(UserMixin):
     def setUp(self):
         super(LoginMixin, self).setUp()
         self.client.login(username="test", password="password")
+
+
+def requiresDatabase(db_name):
+    return skipIf(db_name not in settings.DATABASES, "Database {} not available".format(db_name))
