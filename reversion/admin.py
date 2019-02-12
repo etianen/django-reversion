@@ -170,7 +170,7 @@ class VersionAdmin(admin.ModelAdmin):
         try:
             with transaction.atomic(using=version.db):
                 # Revert the revision.
-                version.revision.revert(delete=True)
+                version.revision.revert(delete=False)
                 # Run the normal changeform view.
                 with self.create_revision(request):
                     response = self.changeform_view(request, quote(version.object_id), request.path, extra_context)
