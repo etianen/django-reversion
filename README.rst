@@ -8,6 +8,12 @@ django-reversion
 **django-reversion** is an extension to the Django web framework that provides
 version control for model instances.
 
+Requirements
+============
+
+- Python 2.7 or later
+- Django 1.11 or later
+
 Features
 ========
 
@@ -18,8 +24,8 @@ Features
 Documentation
 =============
 
-Please read the `Getting Started <https://django-reversion.readthedocs.io/>`_
-guide for more information.
+Check out the latest ``django-reversion`` documentation at `Getting Started <http://django-reversion.readthedocs.io/>`_
+
 
 Issue tracking and source code can be found at the
 `main project website <http://github.com/etianen/django-reversion>`_.
@@ -40,19 +46,24 @@ Bug reports, bug fixes, and new features are always welcome. Please raise issues
 `django-reversion project site <http://github.com/etianen/django-reversion>`_, and submit
 pull requests for any new code.
 
-You can run the test suite yourself from within a virtual environment with the following
-commands. The test suite requires that both MySQL and PostgreSQL be installed.
+1. Fork the `repository <http://github.com/etianen/django-reversion>`_ on GitHub.
+2. Make a branch off of master and commit your changes to it.
+3. Install requirements.
 
 .. code:: bash
 
-    $ pip install psycopg2 mysqlclient -e .
+    $ pip install django psycopg2 mysqlclient -e .
+
+4. Run the tests
+
+.. code:: bash
+
     $ tests/manage.py test tests
 
-The django-reversion project is built on every push with `Travis CI <https://travis-ci.org/etianen/django-reversion>`_.
-
+5. Create a Pull Request with your contribution
 
 Contributors
-------------
+============
 
 The django-reversion project was developed by `Dave Hall <http://www.etianen.com/>`_ and contributed
 to by `many other people <https://github.com/etianen/django-reversion/graphs/contributors>`_.
