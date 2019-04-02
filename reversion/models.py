@@ -1,21 +1,26 @@
 from __future__ import unicode_literals
+
 from collections import defaultdict
 from itertools import chain, groupby
+
+from django.apps import apps
+from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.conf import settings
-from django.contrib.admin.models import LogEntry
 from django.core import serializers
-from django.core.serializers.base import DeserializationError
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import models, IntegrityError, transaction, router, connections
+from django.core.serializers.base import DeserializationError
+from django.db import IntegrityError, connections, models, router, transaction
 from django.db.models.deletion import Collector
 from django.db.models.expressions import RawSQL
-from django.utils.functional import cached_property
-from django.utils.translation import ugettext_lazy as _, ugettext
 from django.utils.encoding import force_text, python_2_unicode_compatible
+from django.utils.functional import cached_property
+from django.utils.translation import ugettext
+from django.utils.translation import ugettext_lazy as _
+
 from reversion.errors import RevertError
-from reversion.revisions import _get_options, _get_content_type, _follow_relations_recursive
+from reversion.revisions import (_follow_relations_recursive,
+                                 _get_content_type, _get_options)
 
 
 def _safe_revert(versions):
@@ -61,7 +66,11 @@ class Revision(models.Model):
     )
 
     def get_comment(self):
-        return LogEntry(change_message=self.comment).get_change_message()
+        try:
+            LogEntry = apps.get_model('admin.LogEntry')
+            return LogEntry(change_message=self.comment).get_change_message()
+        except LookupError:
+            return self.comment
 
     def revert(self, delete=False):
         # Group the models by the database of the serialized model.
