@@ -1,5 +1,6 @@
 sudo: false
 language: python
+dist: xenial
 python:
   - 3.6
   - 3.5
@@ -10,6 +11,7 @@ env:
     - DJANGO_DATABASE_USER_POSTGRES=postgres
     - DJANGO_DATABASE_USER_MYSQL=travis
   matrix:
+    - DJANGO='>=2.2,<3.0'
     - DJANGO='>=2.1,<2.2'
     - DJANGO='>=2.0,<2.1'
     - DJANGO='>=1.11,<1.12'
@@ -18,8 +20,9 @@ matrix:
   include:
     - { python: "2.7", env: DJANGO="==1.11.*" }
 
-    - { python: "3.7", env: DJANGO="==2.0.*", dist: xenial, sudo: true }
-    - { python: "3.7", env: DJANGO="==2.1.*", dist: xenial, sudo: true }
+    - { python: "3.7", env: DJANGO="==2.0.*", sudo: true }
+    - { python: "3.7", env: DJANGO="==2.1.*", sudo: true }
+    - { python: "3.7", env: DJANGO="==2.2.*", sudo: true }
 addons:
   apt:
     packages:
