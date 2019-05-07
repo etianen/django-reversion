@@ -10,7 +10,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.serializers.base import DeserializationError
-from django.db import IntegrityError, connections, models, router, transaction
+from django.db import IntegrityError, connection, connections, models, router, transaction
 from django.db.models.deletion import Collector
 from django.db.models.expressions import RawSQL
 from django.utils.encoding import force_text, python_2_unicode_compatible
@@ -238,7 +238,7 @@ class Version(models.Model):
         help_text="The serialization format used by this model.",
     )
 
-    serialized_data = models.TextField(
+    serialized_data = (models.JSONField if connection.vendor == 'postgresql' else models.TextField)(
         help_text="The serialized form of this version of the model.",
     )
 
