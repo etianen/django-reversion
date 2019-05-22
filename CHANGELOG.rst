@@ -3,6 +3,14 @@
 django-reversion changelog
 ==========================
 
+3.0.4 - 22/05/2019
+------------------
+
+- Remove `django.contrib.admin` dependency from django-reversion (Aitor Ruano).
+- README refactor (@rhenter).
+- Testing against Django 2.2 (@claudep).
+
+
 3.0.3 - 24/01/2019
 ------------------
 
