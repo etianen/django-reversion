@@ -134,20 +134,32 @@ class VersionQuerySet(models.QuerySet):
 
     def get_deleted(self, model, model_db=None):
         model_db = model_db or router.db_for_write(model)
-        model_qs = (
-            model._default_manager
-            .using(model_db)
-            .annotate(_pk_to_object_id=Cast("pk", Version._meta.get_field("object_id")))
-            .filter(_pk_to_object_id=models.OuterRef("object_id"))
-        )
-        subquery = (
-            self.get_for_model(model, model_db=model_db)
-            .annotate(pk_not_exists=~models.Exists(model_qs))
-            .filter(pk_not_exists=True)
-            .values("object_id")
-            .annotate(latest_pk=models.Max("pk"))
-            .values("latest_pk")
-        )
+        connection = connections[self.db]
+        if self.db == model_db and connection.vendor in ("sqlite", "postgresql", "oracle"):
+            model_qs = (
+                model._default_manager
+                .using(model_db)
+                .annotate(_pk_to_object_id=Cast("pk", Version._meta.get_field("object_id")))
+                .filter(_pk_to_object_id=models.OuterRef("object_id"))
+            )
+            subquery = (
+                self.get_for_model(model, model_db=model_db)
+                .annotate(pk_not_exists=~models.Exists(model_qs))
+                .filter(pk_not_exists=True)
+                .values("object_id")
+                .annotate(latest_pk=models.Max("pk"))
+                .values("latest_pk")
+            )
+        else:
+            # We have to use a slow subquery.
+            subquery = self.get_for_model(model, model_db=model_db).exclude(
+                object_id__in=list(
+                    model._default_manager.using(model_db).values_list("pk", flat=True).order_by().iterator()
+                ),
+            ).values_list("object_id").annotate(
+                latest_pk=models.Max("pk")
+            ).order_by().values_list("latest_pk", flat=True)
+        # Perform the subquery.
         return self.filter(pk__in=subquery)
 
     def get_unique(self):
