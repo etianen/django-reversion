@@ -81,10 +81,10 @@ You can load a :ref:`VersionQuerySet` of versions from the database. Versions ar
     assert len(versions) == 2
 
     # Check the serialized data for the first version.
-    assert versions[1].field_dict["name"] = "obj v1"
+    assert versions[1].field_dict["name"] == "obj v1"
 
     # Check the serialized data for the second version.
-    assert versions[0].field_dict["name"] = "obj v2"
+    assert versions[0].field_dict["name"] == "obj v2"
 
 
 Revision metadata
@@ -95,13 +95,13 @@ Revision metadata
 .. code:: python
 
     # Check the revision metadata for the first revision.
-    assert versions[1].revision.comment = "Created revision 1"
-    assert versions[1].revision.user = request.user
+    assert versions[1].revision.comment == "Created revision 1"
+    assert versions[1].revision.user == request.user
     assert isinstance(versions[1].revision.date_created, datetime.datetime)
 
     # Check the revision metadata for the second revision.
-    assert versions[0].revision.comment = "Created revision 2"
-    assert versions[0].revision.user = request.user
+    assert versions[0].revision.comment == "Created revision 2"
+    assert versions[0].revision.user == request.user
     assert isinstance(versions[0].revision.date_created, datetime.datetime)
 
 
