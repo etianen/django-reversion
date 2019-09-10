@@ -1,4 +1,3 @@
-from __future__ import unicode_literals
 from datetime import timedelta
 from django.db import transaction, models, router
 from django.utils import timezone
@@ -11,7 +10,7 @@ class Command(BaseRevisionCommand):
     help = "Deletes revisions for a given app [and model]."
 
     def add_arguments(self, parser):
-        super(Command, self).add_arguments(parser)
+        super().add_arguments(parser)
         parser.add_argument(
             "--days",
             default=0,

@@ -14,7 +14,7 @@ class RevisionMiddleware(object):
     atomic = True
 
     def __init__(self, get_response=None):
-        super(RevisionMiddleware, self).__init__()
+        super().__init__()
         # Support Django 1.10 middleware.
         if get_response is not None:
             self.get_response = create_revision(

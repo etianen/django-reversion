@@ -1,4 +1,3 @@
-from __future__ import unicode_literals
 from django.apps import apps
 from django.conf import settings
 from django.contrib import admin
@@ -9,7 +8,7 @@ from reversion.revisions import is_registered
 class BaseRevisionCommand(BaseCommand):
 
     def add_arguments(self, parser):
-        super(BaseRevisionCommand, self).add_arguments(parser)
+        super().add_arguments(parser)
         parser.add_argument(
             "app_label",
             metavar="app_label",

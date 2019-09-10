@@ -12,12 +12,12 @@ from test_app.tests.base import TestBase, LoginMixin
 class AdminMixin(TestBase):
 
     def setUp(self):
-        super(AdminMixin, self).setUp()
+        super().setUp()
         admin.site.register(TestModelParent, VersionAdmin)
         self.reloadUrls()
 
     def tearDown(self):
-        super(AdminMixin, self).tearDown()
+        super().tearDown()
         admin.site.unregister(TestModelParent)
         self.reloadUrls()
 
@@ -71,7 +71,7 @@ class AdminChangelistView(LoginMixin, AdminMixin, TestBase):
 class AdminRevisionViewTest(LoginMixin, AdminMixin, TestBase):
 
     def setUp(self):
-        super(AdminRevisionViewTest, self).setUp()
+        super().setUp()
         with reversion.create_revision():
             self.obj = TestModelParent.objects.create()
         with reversion.create_revision():
@@ -132,7 +132,7 @@ class AdminRevisionViewTest(LoginMixin, AdminMixin, TestBase):
 class AdminRecoverViewTest(LoginMixin, AdminMixin, TestBase):
 
     def setUp(self):
-        super(AdminRecoverViewTest, self).setUp()
+        super().setUp()
         with reversion.create_revision():
             obj = TestModelParent.objects.create()
         obj.delete()
@@ -189,12 +189,12 @@ class AdminHistoryViewTest(LoginMixin, AdminMixin, TestBase):
 class AdminQuotingTest(LoginMixin, AdminMixin, TestBase):
 
     def setUp(self):
-        super(AdminQuotingTest, self).setUp()
+        super().setUp()
         admin.site.register(TestModelEscapePK, VersionAdmin)
         self.reloadUrls()
 
     def tearDown(self):
-        super(AdminQuotingTest, self).tearDown()
+        super().tearDown()
         admin.site.unregister(TestModelEscapePK)
         self.reloadUrls()
 
@@ -240,12 +240,12 @@ class TestModelParentAdmin(VersionAdmin):
 class AdminRegisterInlineTest(TestBase):
 
     def setUp(self):
-        super(AdminRegisterInlineTest, self).setUp()
+        super().setUp()
         admin.site.register(TestModelParent, TestModelParentAdmin)
         self.reloadUrls()
 
     def tearDown(self):
-        super(AdminRegisterInlineTest, self).tearDown()
+        super().tearDown()
         admin.site.unregister(TestModelParent)
         self.reloadUrls()
 
