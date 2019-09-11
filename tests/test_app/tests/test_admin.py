@@ -40,9 +40,7 @@ class AdminAddViewTest(LoginMixin, AdminMixin, TestBase):
         })
         obj = TestModelParent.objects.get()
         self.assertSingleRevision(
-            (obj, obj.testmodel_ptr), user=self.user,
-            # Django 1.8 gives "Initial version.", Django > 1.8 "Added."
-            comment=re.compile(r"(Initial version\.|Added\.)")
+            (obj, obj.testmodel_ptr), user=self.user, comment="Added."
         )
 
 
@@ -56,7 +54,8 @@ class AdminUpdateViewTest(LoginMixin, AdminMixin, TestBase):
         })
         self.assertSingleRevision(
             (obj, obj.testmodel_ptr), user=self.user,
-            comment="Changed name and parent_name."
+            # Django 3.0 changed formatting a bit.
+            comment=re.compile(r"Changed [nN]ame and [pP]arent[ _]name\.")
         )
 
 
