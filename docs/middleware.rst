@@ -13,7 +13,7 @@ Wrap every request in a revision block.
 
 The request user will also be added to the revision metadata.
 
-To enable ``RevisionMiddleware``, add ``'reversion.middleware.RevisionMiddleware'`` to your ``MIDDLEWARE_CLASSES`` setting. For Django >= 1.10, add it to your ``MIDDLEWARE`` setting.
+To enable ``RevisionMiddleware``, add ``'reversion.middleware.RevisionMiddleware'`` to your ``MIDDLEWARE_CLASSES`` setting.
 
 .. Warning::
     This will wrap every request that meets the specified criterion in a database transaction. For best performance, consider marking individual views instead.
