@@ -1,4 +1,3 @@
-import json
 from contextlib import contextmanager
 from django.db import models, transaction, connection
 from django.conf.urls import url
@@ -63,25 +62,18 @@ class VersionAdmin(admin.ModelAdmin):
 
     # Messages.
 
-    def log_addition(self, request, object, change_message=None):
-        change_message = change_message or _("Initial version.")
+    def log_addition(self, request, object, message):
+        change_message = message or _("Initial version.")
+        entry = super().log_addition(request, object, change_message)
         if is_active():
-            # If https://code.djangoproject.com/ticket/27218 is implemented, we
-            # could first call super() and get the change_message from the returned
-            # LogEntry.
-            if isinstance(change_message, list):
-                set_comment(json.dumps(change_message))
-            else:
-                set_comment(change_message)
-        super().log_addition(request, object, change_message)
+            set_comment(entry.get_change_message())
+        return entry
 
     def log_change(self, request, object, message):
+        entry = super().log_change(request, object, message)
         if is_active():
-            if isinstance(message, list):
-                set_comment(json.dumps(message))
-            else:
-                set_comment(message)
-        super().log_change(request, object, message)
+            set_comment(entry.get_change_message())
+        return entry
 
     # Auto-registration.
 
