@@ -1,4 +1,3 @@
-from __future__ import unicode_literals
 import json
 from contextlib import contextmanager
 from django.db import models, transaction, connection
@@ -74,7 +73,7 @@ class VersionAdmin(admin.ModelAdmin):
                 set_comment(json.dumps(change_message))
             else:
                 set_comment(change_message)
-        super(VersionAdmin, self).log_addition(request, object, change_message)
+        super().log_addition(request, object, change_message)
 
     def log_change(self, request, object, message):
         if is_active():
@@ -82,7 +81,7 @@ class VersionAdmin(admin.ModelAdmin):
                 set_comment(json.dumps(message))
             else:
                 set_comment(message)
-        super(VersionAdmin, self).log_change(request, object, message)
+        super().log_change(request, object, message)
 
     # Auto-registration.
 
@@ -128,7 +127,7 @@ class VersionAdmin(admin.ModelAdmin):
         return inline_model, follow_field
 
     def __init__(self, *args, **kwargs):
-        super(VersionAdmin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         # Automatically register models if required.
         if not is_registered(self.model):
             inline_fields = ()
@@ -141,7 +140,7 @@ class VersionAdmin(admin.ModelAdmin):
             self._reversion_autoregister(self.model, inline_fields)
 
     def get_urls(self):
-        urls = super(VersionAdmin, self).get_urls()
+        urls = super().get_urls()
         admin_site = self.admin_site
         opts = self.model._meta
         info = opts.app_label, opts.model_name,
@@ -156,11 +155,11 @@ class VersionAdmin(admin.ModelAdmin):
 
     def add_view(self, request, form_url='', extra_context=None):
         with self.create_revision(request):
-            return super(VersionAdmin, self).add_view(request, form_url, extra_context)
+            return super().add_view(request, form_url, extra_context)
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         with self.create_revision(request):
-            return super(VersionAdmin, self).change_view(request, object_id, form_url, extra_context)
+            return super().change_view(request, object_id, form_url, extra_context)
 
     def _reversion_revisionform_view(self, request, version, template_name, extra_context=None):
         # Check that database transactions are supported.
@@ -233,7 +232,7 @@ class VersionAdmin(admin.ModelAdmin):
                 "has_change_permission": self.has_change_permission(request),
             }
             context.update(extra_context or {})
-            return super(VersionAdmin, self).changelist_view(request, context)
+            return super().changelist_view(request, context)
 
     def recoverlist_view(self, request, extra_context=None):
         """Displays a deleted model to allow recovery."""
@@ -289,4 +288,4 @@ class VersionAdmin(admin.ModelAdmin):
         # Compile the context.
         context = {"action_list": action_list}
         context.update(extra_context or {})
-        return super(VersionAdmin, self).history_view(request, object_id, context)
+        return super().history_view(request, object_id, context)

@@ -1,4 +1,7 @@
 from datetime import timedelta
+from importlib import import_module, reload
+from io import StringIO
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.management import call_command
@@ -6,15 +9,10 @@ from django.urls import clear_url_caches
 from django.test import TestCase, TransactionTestCase
 from django.test.utils import override_settings
 from django.utils import timezone
-from django.utils.six import StringIO, assertRegex
+
 import reversion
 from reversion.models import Revision, Version
 from test_app.models import TestModel, TestModelParent
-from importlib import import_module
-try:
-    from importlib import reload
-except ImportError:  # Python 2.7
-    pass
 
 
 # Test helpers.
@@ -28,12 +26,12 @@ class TestBaseMixin(object):
         clear_url_caches()
 
     def setUp(self):
-        super(TestBaseMixin, self).setUp()
+        super().setUp()
         for model in list(reversion.get_registered_models()):
             reversion.unregister(model)
 
     def tearDown(self):
-        super(TestBaseMixin, self).tearDown()
+        super().tearDown()
         for model in list(reversion.get_registered_models()):
             reversion.unregister(model)
 
@@ -48,7 +46,7 @@ class TestBaseMixin(object):
         revision = Version.objects.using(using).get_for_object(objects[0], model_db=model_db).get().revision
         self.assertEqual(revision.user, user)
         if hasattr(comment, 'pattern'):
-            assertRegex(self, revision.get_comment(), comment)
+            self.assertRegex(revision.get_comment(), comment)
         elif comment is not None:  # Allow a wildcard comment.
             self.assertEqual(revision.get_comment(), comment)
         self.assertAlmostEqual(revision.date_created, date_created or timezone.now(), delta=timedelta(seconds=1))
@@ -81,14 +79,14 @@ class TestBaseTransaction(TestBaseMixin, TransactionTestCase):
 class TestModelMixin(object):
 
     def setUp(self):
-        super(TestModelMixin, self).setUp()
+        super().setUp()
         reversion.register(TestModel)
 
 
 class TestModelParentMixin(TestModelMixin):
 
     def setUp(self):
-        super(TestModelParentMixin, self).setUp()
+        super().setUp()
         reversion.register(TestModelParent, follow=("testmodel_ptr",))
 
 
@@ -96,7 +94,7 @@ class TestModelParentMixin(TestModelMixin):
 class UserMixin(TestBase):
 
     def setUp(self):
-        super(UserMixin, self).setUp()
+        super().setUp()
         self.user = User(username="test", is_staff=True, is_superuser=True)
         self.user.set_password("password")
         self.user.save()
@@ -105,5 +103,5 @@ class UserMixin(TestBase):
 class LoginMixin(UserMixin):
 
     def setUp(self):
-        super(LoginMixin, self).setUp()
+        super().setUp()
         self.client.login(username="test", password="password")

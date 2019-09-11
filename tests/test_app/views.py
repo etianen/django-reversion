@@ -22,7 +22,7 @@ class RevisionMixinView(RevisionMixin, View):
 
     def revision_request_creates_revision(self, request):
         silent = request.META.get("HTTP_X_NOREVISION", "false") == "true"
-        return super(RevisionMixinView, self).revision_request_creates_revision(request) and not silent
+        return super().revision_request_creates_revision(request) and not silent
 
     def dispatch(self, request):
         return save_obj_view(request)

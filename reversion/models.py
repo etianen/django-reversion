@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from collections import defaultdict
 from itertools import chain, groupby
 
@@ -13,7 +11,7 @@ from django.core.serializers.base import DeserializationError
 from django.db import IntegrityError, connections, models, router, transaction
 from django.db.models.deletion import Collector
 from django.db.models.functions import Cast
-from django.utils.encoding import force_text, python_2_unicode_compatible
+from django.utils.encoding import force_text
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext
 from django.utils.translation import ugettext_lazy as _
@@ -39,7 +37,6 @@ def _safe_revert(versions):
         _safe_revert(unreverted_versions)
 
 
-@python_2_unicode_compatible
 class Revision(models.Model):
 
     """A group of related serialized versions."""
@@ -171,7 +168,6 @@ class VersionQuerySet(models.QuerySet):
             last_key = key
 
 
-@python_2_unicode_compatible
 class Version(models.Model):
 
     """A saved version of a database model."""
@@ -309,11 +305,11 @@ class _Str(models.Func):
     template = "%(function)s(%(expressions)s as %(db_type)s)"
 
     def __init__(self, expression):
-        super(_Str, self).__init__(expression, output_field=models.TextField())
+        super().__init__(expression, output_field=models.TextField())
 
     def as_sql(self, compiler, connection):
         self.extra["db_type"] = self.output_field.db_type(connection)
-        return super(_Str, self).as_sql(compiler, connection)
+        return super().as_sql(compiler, connection)
 
 
 def _safe_subquery(method, left_query, left_field_name, right_subquery, right_field_name):

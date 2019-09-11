@@ -1,4 +1,3 @@
-from django.utils.encoding import force_text
 import reversion
 from reversion.models import Version
 from test_app.models import (
@@ -177,8 +176,8 @@ class GetDeletedTest(TestModelMixin, TestBase):
         obj_1.delete()
         pk_2 = obj_2.pk
         obj_2.delete()
-        self.assertEqual(Version.objects.get_deleted(TestModel)[0].object_id, force_text(pk_2))
-        self.assertEqual(Version.objects.get_deleted(TestModel)[1].object_id, force_text(pk_1))
+        self.assertEqual(Version.objects.get_deleted(TestModel)[0].object_id, str(pk_2))
+        self.assertEqual(Version.objects.get_deleted(TestModel)[1].object_id, str(pk_1))
 
     def testGetDeletedPostgres(self):
         with reversion.create_revision(using="postgres"):

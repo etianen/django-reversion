@@ -100,7 +100,7 @@ A subclass of ``django.contrib.ModelAdmin`` providing rollback and recovery.
 
         def reversion_register(self, model, **options):
             options["exclude"] = ("some_field",)
-            super(YourModelAdmin, self).reversion_register(model, **options)
+            super().reversion_register(model, **options)
 
     ``model``
         The model that will be registered with django-reversion.

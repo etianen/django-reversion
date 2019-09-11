@@ -1,4 +1,3 @@
-from __future__ import unicode_literals
 from collections import namedtuple, defaultdict
 from contextlib import contextmanager
 from functools import wraps
@@ -10,7 +9,7 @@ from django.db import models, transaction, router
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, m2m_changed
 from django.utils.encoding import force_text
-from django.utils import timezone, six
+from django.utils import timezone
 from reversion.errors import RevisionManagementError, RegistrationError
 from reversion.signals import pre_revision_commit, post_revision_commit
 
@@ -355,7 +354,7 @@ def _get_senders_and_signals(model):
     opts = model._meta.concrete_model._meta
     for field in opts.local_many_to_many:
         m2m_model = field.remote_field.through
-        if isinstance(m2m_model, six.string_types):
+        if isinstance(m2m_model, str):
             if "." not in m2m_model:
                 m2m_model = "{app_label}.{m2m_model}".format(
                     app_label=opts.app_label,
