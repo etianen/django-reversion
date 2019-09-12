@@ -2,6 +2,7 @@ sudo: false
 language: python
 dist: xenial
 python:
+  - 3.7
   - 3.6
   - 3.5
 cache: pip
@@ -11,16 +12,18 @@ env:
     - DJANGO_DATABASE_USER_POSTGRES=postgres
     - DJANGO_DATABASE_USER_MYSQL=travis
   matrix:
+    - DJANGO='>=3.0a,<3.1'
     - DJANGO='>=2.2,<3.0'
     - DJANGO='>=2.1,<2.2'
     - DJANGO='>=2.0,<2.1'
     - DJANGO='>=1.11,<1.12'
 matrix:
   fast_finish: true
-  include:
-    - { python: "3.7", env: DJANGO="==2.0.*", sudo: true }
-    - { python: "3.7", env: DJANGO="==2.1.*", sudo: true }
-    - { python: "3.7", env: DJANGO="==2.2.*", sudo: true }
+  exclude:
+    - python: 3.7
+      env: DJANGO='>=1.11,<1.12'
+    - python: 3.5
+      env: DJANGO='>=3.0a,<3.1'
 addons:
   apt:
     packages:
@@ -29,8 +32,9 @@ services:
   - postgresql
   - mysql
 install:
+  - pip install --pre django$DJANGO
   # mysqlclient 1.4 is not compatible with Django 1.11
-  - pip install flake8 coverage sphinx django$DJANGO psycopg2 mysqlclient==1.3.14 -e .
+  - pip install flake8 coverage sphinx psycopg2 mysqlclient==1.3.14 -e .
 before_script:
   - mysql -e 'create database test_project'
   - psql -c 'create database test_project;' -U postgres;
