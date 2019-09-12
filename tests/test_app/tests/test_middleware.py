@@ -6,7 +6,6 @@ from test_app.tests.base import TestBase, TestModelMixin, LoginMixin
 
 use_middleware = override_settings(
     MIDDLEWARE=settings.MIDDLEWARE + ["reversion.middleware.RevisionMiddleware"],
-    MIDDLEWARE_CLASSES=settings.MIDDLEWARE_CLASSES + ["reversion.middleware.RevisionMiddleware"],
 )
 
 
