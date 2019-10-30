@@ -61,7 +61,7 @@ class VersionAdmin(admin.ModelAdmin):
         return queryset
 
     # Messages.
-    
+
     def log_entry_to_comment(self, entry):
         return entry.get_change_message()
 
