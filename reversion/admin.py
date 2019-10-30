@@ -61,18 +61,21 @@ class VersionAdmin(admin.ModelAdmin):
         return queryset
 
     # Messages.
+    
+    def log_entry_to_comment(self, entry):
+        return entry.get_change_message()
 
     def log_addition(self, request, object, message):
         change_message = message or _("Initial version.")
         entry = super().log_addition(request, object, change_message)
         if is_active():
-            set_comment(entry.get_change_message())
+            set_comment(self.log_entry_to_comment(entry))
         return entry
 
     def log_change(self, request, object, message):
         entry = super().log_change(request, object, message)
         if is_active():
-            set_comment(entry.get_change_message())
+            set_comment(self.log_entry_to_comment(entry))
         return entry
 
     # Auto-registration.
