@@ -50,7 +50,6 @@ Installation
 .. toctree::
    :maxdepth: 1
 
-   django-versions
    common-problems
    changelog
 
