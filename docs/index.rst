@@ -24,9 +24,6 @@ To install django-reversion:
 2.  Add ``'reversion'`` to ``INSTALLED_APPS``.
 3.  Run ``manage.py migrate``.
 
-.. Important::
-    See :ref:`django-versions` if you're not using the latest release of Django.
-
 
 Admin integration
 -----------------
