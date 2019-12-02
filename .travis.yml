@@ -2,9 +2,9 @@ sudo: false
 language: python
 dist: xenial
 python:
+  - 3.8
   - 3.7
   - 3.6
-  - 3.5
 cache: pip
 env:
   global:
@@ -12,7 +12,7 @@ env:
     - DJANGO_DATABASE_USER_POSTGRES=postgres
     - DJANGO_DATABASE_USER_MYSQL=travis
   matrix:
-    - DJANGO='>=3.0a,<3.1'
+    - DJANGO='>=3.0,<3.1'
     - DJANGO='>=2.2,<3.0'
     - DJANGO='>=2.1,<2.2'
     - DJANGO='>=2.0,<2.1'
@@ -20,10 +20,10 @@ env:
 matrix:
   fast_finish: true
   exclude:
+    - python: 3.8
+      env: DJANGO='>=1.11,<1.12'
     - python: 3.7
       env: DJANGO='>=1.11,<1.12'
-    - python: 3.5
-      env: DJANGO='>=3.0a,<3.1'
 addons:
   apt:
     packages:
@@ -51,7 +51,7 @@ deploy:
     secure: XW4/9HiChbPJSJe4d/MRcO+ViPGhW1iQ8kVi814KJh7mCxOAKijpW5hfdc9oSKB6d8iYB3OzZ7naIUU9GMce40bpeTgPDLVBLCSYKRNLuVoJdh+Q6ItGUiFf8kAJz5jgopG80QnCpLA9JvYxKVJ4amfYWWm204eQmIEnRRAd+Jk=
   on:
     tags: true
-    condition: $DJANGO = '>=2.0,<2.1'
+    condition: $DJANGO = '>=3.0,<3.1'
     python: 3.6
     repo: etianen/django-reversion
   distributions: sdist bdist_wheel

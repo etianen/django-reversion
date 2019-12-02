@@ -3,6 +3,14 @@
 django-reversion changelog
 ==========================
 
+3.0.5 - 02/12/2019
+
+- Improved performance of `get_deleted` for large datasets (@jeremy-engel).
+- Django 3.0 compatibility (@claudep).
+- Drops Django <= 1.11 compatibility (@claudep).
+- Fixed errors in manageement commands when `django.contrib.admin` is not in `INSTALLED_APPS` (@irtimir).
+
+
 3.0.4 - 22/05/2019
 ------------------
 
