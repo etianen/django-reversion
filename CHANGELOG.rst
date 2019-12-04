@@ -4,6 +4,7 @@ django-reversion changelog
 ==========================
 
 3.0.5 - 02/12/2019
+------------------
 
 - Improved performance of `get_deleted` for large datasets (@jeremy-engel).
 - Django 3.0 compatibility (@claudep).
