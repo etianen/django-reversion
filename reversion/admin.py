@@ -174,7 +174,7 @@ class VersionAdmin(admin.ModelAdmin):
                         response.template_name = template_name  # Set the template name to the correct template.
                         response.render()  # Eagerly render the response, so it's using the latest version.
                         raise _RollBackRevisionView(response)  # Raise exception to undo the transaction and revision.
-        except RevertError as ex:
+        except (RevertError, models.ProtectedError) as ex:
             opts = self.model._meta
             messages.error(request, force_str(ex))
             return redirect("{}:{}_{}_changelist".format(self.admin_site.name, opts.app_label, opts.model_name))
