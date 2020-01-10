@@ -11,7 +11,7 @@ from django.core.serializers.base import DeserializationError
 from django.db import IntegrityError, connections, models, router, transaction
 from django.db.models.deletion import Collector
 from django.db.models.functions import Cast
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext
 from django.utils.translation import ugettext_lazy as _
@@ -104,7 +104,7 @@ class Revision(models.Model):
                 _safe_revert(versions)
 
     def __str__(self):
-        return ", ".join(force_text(version) for version in self.version_set.all())
+        return ", ".join(force_str(version) for version in self.version_set.all())
 
     class Meta:
         app_label = "reversion"
@@ -226,7 +226,7 @@ class Version(models.Model):
     @cached_property
     def _object_version(self):
         data = self.serialized_data
-        data = force_text(data.encode("utf8"))
+        data = force_str(data.encode("utf8"))
         try:
             return list(serializers.deserialize(self.format, data, ignorenonexistent=True))[0]
         except DeserializationError:

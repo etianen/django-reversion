@@ -12,7 +12,7 @@ from django.urls import reverse
 from django.utils.text import capfirst
 from django.utils.timezone import template_localtime
 from django.utils.translation import ugettext as _
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.formats import localize
 from reversion.errors import RevertError
 from reversion.models import Version
@@ -176,7 +176,7 @@ class VersionAdmin(admin.ModelAdmin):
                         raise _RollBackRevisionView(response)  # Raise exception to undo the transaction and revision.
         except RevertError as ex:
             opts = self.model._meta
-            messages.error(request, force_text(ex))
+            messages.error(request, force_str(ex))
             return redirect("{}:{}_{}_changelist".format(self.admin_site.name, opts.app_label, opts.model_name))
         except _RollBackRevisionView as ex:
             return ex.response
@@ -242,7 +242,7 @@ class VersionAdmin(admin.ModelAdmin):
             opts=opts,
             app_label=opts.app_label,
             module_name=capfirst(opts.verbose_name),
-            title=_("Recover deleted %(name)s") % {"name": force_text(opts.verbose_name_plural)},
+            title=_("Recover deleted %(name)s") % {"name": force_str(opts.verbose_name_plural)},
             deleted=deleted,
         )
         context.update(extra_context or {})

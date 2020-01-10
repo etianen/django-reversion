@@ -8,7 +8,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction, router
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, m2m_changed
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils import timezone
 from reversion.errors import RevisionManagementError, RegistrationError
 from reversion.signals import pre_revision_commit, post_revision_commit
@@ -173,7 +173,7 @@ def _add_to_revision(obj, using, model_db, explicit):
         return
     version_options = _get_options(obj.__class__)
     content_type = _get_content_type(obj.__class__, using)
-    object_id = force_text(obj.pk)
+    object_id = force_str(obj.pk)
     version_key = (content_type, object_id)
     # If the obj is already in the revision, stop now.
     db_versions = _current_frame().db_versions
@@ -191,7 +191,7 @@ def _add_to_revision(obj, using, model_db, explicit):
             (obj,),
             fields=version_options.fields,
         ),
-        object_repr=force_text(obj),
+        object_repr=force_str(obj),
     )
     # If the version is a duplicate, stop now.
     if version_options.ignore_duplicates and explicit:
@@ -223,7 +223,7 @@ def _save_revision(versions, user=None, comment="", meta=(), date_created=None, 
     model_db_existing_pks = {
         model: {
             db: frozenset(map(
-                force_text,
+                force_str,
                 model._base_manager.using(db).filter(pk__in=pks).values_list("pk", flat=True),
             ))
             for db, pks in db_pks.items()
