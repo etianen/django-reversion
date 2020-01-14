@@ -30,6 +30,7 @@ setup(
     install_requires=[
         "django>=1.11",
     ],
+    python_requires='>=3.6',
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Web Environment",
