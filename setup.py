@@ -14,11 +14,18 @@ try:
 except ImportError:
     cmdclass = {}
 
+
+def read(filepath):
+    with open(filepath, "r", encoding="utf-8") as f:
+        return f.read()
+
+
 setup(
     name="django-reversion",
     version='.'.join(str(x) for x in __version__),
     license="BSD",
     description="An extension to the Django web framework that provides version control for model instances.",
+    long_description=read('README.rst'),
     author="Dave Hall",
     author_email="dave@etianen.com",
     url="http://github.com/etianen/django-reversion",
@@ -30,6 +37,7 @@ setup(
     install_requires=[
         "django>=1.11",
     ],
+    python_requires='>=3.6',
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Web Environment",
