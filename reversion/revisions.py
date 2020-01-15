@@ -276,10 +276,10 @@ def _dummy_context():
 
 @contextmanager
 def _create_revision_context(manage_manually, using, atomic):
-    _push_frame(manage_manually, using)
-    try:
-        context = transaction.atomic(using=using) if atomic else _dummy_context()
-        with context:
+    context = transaction.atomic(using=using) if atomic else _dummy_context()
+    with context:
+        _push_frame(manage_manually, using)
+        try:
             yield
             # Only save for a db if that's the last stack frame for that db.
             if not any(using in frame.db_versions for frame in _local.stack[:-1]):
@@ -292,8 +292,8 @@ def _create_revision_context(manage_manually, using, atomic):
                     date_created=current_frame.date_created,
                     using=using,
                 )
-    finally:
-        _pop_frame()
+        finally:
+            _pop_frame()
 
 
 def create_revision(manage_manually=False, using=None, atomic=True):
