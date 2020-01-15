@@ -277,6 +277,7 @@ def _dummy_context():
 @contextmanager
 def _create_revision_context(manage_manually, using, atomic):
     _push_frame(manage_manually, using)
+    expected_stack_length_after_pop = None
     try:
         context = transaction.atomic(using=using) if atomic else _dummy_context()
         with context:
@@ -292,8 +293,16 @@ def _create_revision_context(manage_manually, using, atomic):
                     date_created=current_frame.date_created,
                     using=using,
                 )
+            # It is important that we try to pop the frame before the context
+            # (aka the with block) exits, so that the stack has already been
+            # popped by the time any transaction.on_commit handlers are run.
+            # The finally block below picks up in case of crashes.
+            expected_stack_length_after_pop = len(_local.stack) - 1
+            _pop_frame()
     finally:
-        _pop_frame()
+        if (expected_stack_length_after_pop is None or
+                expected_stack_length_after_pop != len(_local.stack)):
+            _pop_frame()
 
 
 def create_revision(manage_manually=False, using=None, atomic=True):

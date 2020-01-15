@@ -139,6 +139,24 @@ class CreateRevisionAtomicTest(TestModelMixin, TestBaseTransaction):
         with reversion.create_revision(atomic=False):
             self.assertFalse(get_connection().in_atomic_block)
 
+    def testCreateRevisionInOnCommitHandler(self):
+        from django.db import transaction
+        from reversion.models import Revision
+
+        self.assertEqual(Revision.objects.all().count(), 0)
+
+        with reversion.create_revision(atomic=True):
+            model = TestModel.objects.create()
+
+            def on_commit():
+                with reversion.create_revision(atomic=True):
+                    model.name = 'oncommit'
+                    model.save()
+
+            transaction.on_commit(on_commit)
+
+        self.assertEqual(Revision.objects.all().count(), 2)
+
 
 class CreateRevisionManageManuallyTest(TestModelMixin, TestBase):
 
