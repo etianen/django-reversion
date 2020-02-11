@@ -14,7 +14,7 @@ from django.db.models.functions import Cast
 from django.utils.encoding import force_str
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from reversion.errors import RevertError
 from reversion.revisions import (_follow_relations_recursive,
