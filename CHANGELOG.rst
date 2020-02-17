@@ -3,6 +3,16 @@
 django-reversion changelog
 ==========================
 
+3.0.6 - 17/02/2020
+------------------
+
+- Removing deprecated usages of `ugettest_lazy` (@François GUÉRIN).
+- Slovenian translation (@Bor Plestenjak).
+- Packaging improvements (@michael-k).
+- Removing deprecated usages of `force_text` (@Tenzer).
+- Documentation fixes (@chicheng).
+
+
 3.0.5 - 02/12/2019
 ------------------
 
