@@ -6,7 +6,7 @@ django-reversion changelog
 3.0.7 - 17/02/2010
 ------------------
 
-- Removing deprecated usages of `ugettest_lazy` (@François GUÉRIN).
+- Removing deprecated usages of `ugettext_lazy` (@François GUÉRIN).
 - Slovenian translation (@Bor Plestenjak).
 
 
