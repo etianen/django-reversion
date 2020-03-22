@@ -3,7 +3,7 @@
 django-reversion changelog
 ==========================
 
-3.0.7 - 17/02/2010
+3.0.7 - 17/02/2020
 ------------------
 
 - Removing deprecated usages of `ugettext_lazy` (@François GUÉRIN).
