@@ -86,12 +86,16 @@ DATABASES = {
         "NAME": os.environ.get("DJANGO_DATABASE_NAME_POSTGRES", "test_project"),
         "USER": os.environ.get("DJANGO_DATABASE_USER_POSTGRES", getpass.getuser()),
         "PASSWORD": os.environ.get("DJANGO_DATABASE_PASSWORD_POSTGRES", ""),
+        'HOST': os.environ.get("DJANGO_DATABASE_HOST_POSTGRES", ""),
+        'PORT': os.environ.get("DJANGO_DATABASE_PORT_POSTGRES", ""),
     },
     "mysql": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": os.environ.get("DJANGO_DATABASE_NAME_MYSQL", "test_project"),
         "USER": os.environ.get("DJANGO_DATABASE_USER_MYSQL", getpass.getuser()),
         "PASSWORD": os.environ.get("DJANGO_DATABASE_PASSWORD_MYSQL", ""),
+        'HOST': os.environ.get("DJANGO_DATABASE_HOST_MYSQL", ""),
+        'PORT': os.environ.get("DJANGO_DATABASE_PORT_MYSQL", ""),
     },
 }
 

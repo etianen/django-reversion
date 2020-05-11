@@ -1,0 +1,40 @@
+version: "3.7"
+services:
+
+  as:
+    build: .
+    ports:
+      - "80:80"
+    env_file:
+      - ./docker-compose.env
+    depends_on:
+      - postgres
+      - mysql
+
+  postgres:
+    image : postgres:12.1-alpine
+    expose:
+      - "5432"
+    env_file:
+      - ./docker-compose.env
+    volumes:
+      - type: volume
+        source: postgres-data
+        target: /var/lib/postgresql/data
+        consistency: cached
+
+  mysql:
+    image: mysql:5.7
+    expose:
+      - "3306"
+    env_file:
+      - ./docker-compose.env
+    volumes:
+      - type: volume
+        source: mysql-data
+        target: /var/lib/mysql
+        consistency: cached
+
+volumes:
+  postgres-data:
+  mysql-data:
