@@ -2,6 +2,7 @@ version: "3.7"
 services:
 
   as:
+    image: django-reversion_as:latest
     build: .
     ports:
       - "80:80"
