@@ -62,6 +62,33 @@ pull requests for any new code.
 
 5. Create a Pull Request with your contribution
 
+Docker
+======
+
+It's possible to utilize Docker (Docker Engine 18.06.0+) to execute tests and run the dev web-server to showcase the functionality added in the django-admin web UI.
+
+The script "docker-run.sh" wraps a docker-compose call that mounts the current work directory in a temporary container, allowing to refresh the project files every time. The script accepts arguments and they are passed direcly to the container; if none is passed, the container defaults to "run-tests".
+
+Following are some examples, showcasing also the two ad hoc commands "run-tests" and "run-server":
+
+- Run tests
+.. code:: bash
+
+    $ cd django-revision/  # its necessary to be in the root dir of the project, in order to make the script work
+    $ ./docker-run.sh  # same as ./docker-run.sh run-tests
+
+- Create django superuser to access the django-admin panel
+.. code:: bash
+
+    $ cd django-revision/  # its necessary to be in the root dir of the project, in order to make the script work
+    $ ./docker-run.sh tests/manage.py createsuperuser
+
+- Run django devepment server (by default is localhost:80/admin/)
+.. code:: bash
+
+    $ cd django-revision/  # its necessary to be in the root dir of the project, in order to make the script work
+    $ ./docker-run.sh run-server
+
 Contributors
 ============
 
