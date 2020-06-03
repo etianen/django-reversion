@@ -1,4 +1,4 @@
-from reversion.views import _request_creates_revision, create_revision
+from reversion.views import _request_creates_revision, create_revision, get_rollback_condition_func
 
 
 class RevisionMiddleware:
@@ -16,7 +16,8 @@ class RevisionMiddleware:
             manage_manually=self.manage_manually,
             using=self.using,
             atomic=self.atomic,
-            request_creates_revision=self.request_creates_revision
+            request_creates_revision=self.request_creates_revision,
+            rollback_condition=get_rollback_condition_func()
         )(get_response)
 
     def request_creates_revision(self, request):

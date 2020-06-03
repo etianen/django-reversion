@@ -13,6 +13,12 @@ def save_obj_error_view(request):
     raise Exception("Boom!")
 
 
+def save_obj_but_send_403(request):
+    # it can be some log model
+    TestModel.objects.create()
+    return HttpResponse(status=403)
+
+
 @create_revision()
 def create_revision_view(request):
     return save_obj_view(request)

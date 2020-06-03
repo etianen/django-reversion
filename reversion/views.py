@@ -1,5 +1,5 @@
 from functools import wraps
-
+from django.conf import settings
 from reversion.revisions import create_revision as create_revision_base, set_user, get_user
 
 
@@ -18,7 +18,18 @@ def _set_user_from_request(request):
         set_user(request.user)
 
 
-def create_revision(manage_manually=False, using=None, atomic=True, request_creates_revision=None):
+def default_rollback_condition(response) -> bool:
+    return response.status_code >= 400
+
+
+def get_rollback_condition_func():
+    func = getattr(settings, 'REVERSION_ROLLBACK_COND_FUNC', default_rollback_condition)
+    assert callable(func), 'REVERSION_ROLLBACK_COND_FUNC should be a callable that requires response as arg'
+    return func
+
+
+def create_revision(manage_manually=False, using=None, atomic=True, request_creates_revision=None,
+                    rollback_condition=default_rollback_condition):
     """
     View decorator that wraps the request in a revision.
 
@@ -34,7 +45,7 @@ def create_revision(manage_manually=False, using=None, atomic=True, request_crea
                     with create_revision_base(manage_manually=manage_manually, using=using, atomic=atomic):
                         response = func(request, *args, **kwargs)
                         # Check for an error response.
-                        if response.status_code >= 400:
+                        if rollback_condition(response):
                             raise _RollBackRevisionView(response)
                         # Otherwise, we're good.
                         _set_user_from_request(request)
@@ -66,7 +77,8 @@ class RevisionMixin(object):
             manage_manually=self.revision_manage_manually,
             using=self.revision_using,
             atomic=self.revision_atomic,
-            request_creates_revision=self.revision_request_creates_revision
+            request_creates_revision=self.revision_request_creates_revision,
+            rollback_condition=get_rollback_condition_func()
         )(self.dispatch)
 
     def revision_request_creates_revision(self, request):
