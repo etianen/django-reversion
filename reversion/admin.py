@@ -1,6 +1,5 @@
 from contextlib import contextmanager
 from django.db import models, transaction, connection
-from django.conf.urls import url
 from django.contrib import admin, messages
 from django.contrib.admin import options
 from django.contrib.admin.utils import unquote, quote
@@ -8,7 +7,7 @@ from django.contrib.contenttypes.admin import GenericInlineModelAdmin
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import PermissionDenied, ImproperlyConfigured
 from django.shortcuts import get_object_or_404, render, redirect
-from django.urls import reverse
+from django.urls import reverse, re_path
 from django.utils.text import capfirst
 from django.utils.timezone import template_localtime
 from django.utils.translation import ugettext as _
@@ -137,9 +136,9 @@ class VersionAdmin(admin.ModelAdmin):
         opts = self.model._meta
         info = opts.app_label, opts.model_name,
         reversion_urls = [
-            url(r"^recover/$", admin_site.admin_view(self.recoverlist_view), name='%s_%s_recoverlist' % info),
-            url(r"^recover/(\d+)/$", admin_site.admin_view(self.recover_view), name='%s_%s_recover' % info),
-            url(r"^([^/]+)/history/(\d+)/$", admin_site.admin_view(self.revision_view), name='%s_%s_revision' % info),
+            re_path(r"^recover/$", admin_site.admin_view(self.recoverlist_view), name='%s_%s_recoverlist' % info),
+            re_path(r"^recover/(\d+)/$", admin_site.admin_view(self.recover_view), name='%s_%s_recover' % info),
+            re_path(r"^([^/]+)/history/(\d+)/$", admin_site.admin_view(self.revision_view), name='%s_%s_revision' % info),
         ]
         return reversion_urls + urls
 

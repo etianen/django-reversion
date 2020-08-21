@@ -1,10 +1,10 @@
-from django.conf.urls import url
+from django.urls import path
 from test_app import views
 
 
 urlpatterns = [
-    url("^save-obj/", views.save_obj_view),
-    url("^save-obj-error/", views.save_obj_error_view),
-    url("^create-revision/", views.create_revision_view),
-    url("^revision-mixin/", views.RevisionMixinView.as_view()),
+    path("save-obj/", views.save_obj_view),
+    path("save-obj-error/", views.save_obj_error_view),
+    path("create-revision/", views.create_revision_view),
+    path("revision-mixin/", views.RevisionMixinView.as_view()),
 ]
