@@ -225,10 +225,12 @@ class Version(models.Model):
 
     @cached_property
     def _object_version(self):
+        version_options = _get_options(self._model)
         data = self.serialized_data
         data = force_str(data.encode("utf8"))
         try:
-            return list(serializers.deserialize(self.format, data, ignorenonexistent=True))[0]
+            return list(serializers.deserialize(self.format, data, ignorenonexistent=True,
+                        use_natural_foreign_keys=version_options.use_natural_foreign_keys))[0]
         except DeserializationError:
             raise RevertError(ugettext("Could not load %(object_repr)s version - incompatible version data.") % {
                 "object_repr": self.object_repr,

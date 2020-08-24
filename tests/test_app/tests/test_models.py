@@ -3,8 +3,10 @@ from reversion.models import Version
 from test_app.models import (
     TestModel, TestModelRelated, TestModelParent, TestModelInline,
     TestModelNestedInline,
+    TestModelInlineByNaturalKey, TestModelWithNaturalKey,
 )
 from test_app.tests.base import TestBase, TestModelMixin, TestModelParentMixin
+import json
 
 
 class GetForModelTest(TestModelMixin, TestBase):
@@ -412,3 +414,24 @@ class RevisionRevertDeleteTest(TestBase):
         self.assertEqual(
             list(child_a.testmodelnestedinline_set.all()), [grandchild_a]
         )
+
+
+class NaturalKeyTest(TestBase):
+
+    def setUp(self):
+        reversion.register(TestModelInlineByNaturalKey, use_natural_foreign_keys=True)
+        reversion.register(TestModelWithNaturalKey)
+
+    def testNaturalKeyInline(self):
+        with reversion.create_revision():
+            inline = TestModelWithNaturalKey.objects.create()
+            obj = TestModelInlineByNaturalKey.objects.create(test_model=inline)
+        self.assertEqual(json.loads(Version.objects.get_for_object(obj).get().serialized_data), [{
+            'fields': {'test_model': ['v1']},
+            'model': 'test_app.testmodelinlinebynaturalkey',
+            'pk': 1
+        }])
+        self.assertEqual(Version.objects.get_for_object(obj).get().field_dict, {
+            'test_model_id': 1,
+            'id': 1,
+        })

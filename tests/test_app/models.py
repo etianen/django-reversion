@@ -118,3 +118,27 @@ class TestMeta(models.Model):
     name = models.CharField(
         max_length=191,
     )
+
+
+class TestModelWithNaturalKeyManager(models.Manager):
+    def get_by_natural_key(self, name):
+        return self.get(name=name)
+
+
+class TestModelWithNaturalKey(models.Model):
+    name = models.CharField(
+        max_length=191,
+        default="v1",
+    )
+
+    objects = TestModelWithNaturalKeyManager()
+
+    def natural_key(self):
+        return (self.name,)
+
+
+class TestModelInlineByNaturalKey(models.Model):
+    test_model = models.ForeignKey(
+        TestModelWithNaturalKey,
+        on_delete=models.CASCADE,
+    )
