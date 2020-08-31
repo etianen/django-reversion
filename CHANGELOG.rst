@@ -3,6 +3,13 @@
 django-reversion changelog
 ==========================
 
+3.0.8 - 2020-08-31
+------------------
+
+- Added ``use_natural_foreign_keys`` option to ``reversion.register()`` (@matwey).
+- Documentation improvments and minor fixes (@ad-m, @martey, @annainfo, @etianen, @m4rk3r, @adityakrgupta25, @ekinertac).
+
+
 3.0.7 - 2020-02-17
 ------------------
 
@@ -46,16 +53,16 @@ django-reversion changelog
 ------------------
 
 - Removed squashed migrations, as they subtly messed up the Django migrations framework (@etianen).
-  
+
   To upgrade to ``>= 3.0.2`` from ``< 3.0.1``:
-  
+
   .. code::
-  
+
     pip install django-reversion==3.0.1
     python manage.py migrate reversion
     pip install --upgrade django-reversion
     python manage.py migrate reversion
- 
+
 
 3.0.1 - 2018-10-23
 ------------------
