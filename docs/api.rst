@@ -182,6 +182,11 @@ Registration API
 
         Checking for duplicate revisions adds significant overhead to the process of creating a revision. Don't enable it unless you really need it!
 
+    ``use_natural_foreign_keys=False``
+        If ``True``, the the model will be serialized using natural keys.
+
+        See `Serialization of natural keys <https://docs.djangoproject.com/en/3.1/topics/serialization/#serialization-of-natural-keys>`_
+
     .. Hint::
         By default, django-reversion will not register any parent classes of a model that uses multi-table inheritance. If you wish to also add parent models to your revision, you must explicitly add their ``parent_ptr`` fields to the ``follow`` parameter when you register the model.
 
