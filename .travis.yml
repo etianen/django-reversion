@@ -16,14 +16,8 @@ env:
     - DJANGO='>=2.2,<3.0'
     - DJANGO='>=2.1,<2.2'
     - DJANGO='>=2.0,<2.1'
-    - DJANGO='>=1.11,<1.12'
 matrix:
   fast_finish: true
-  exclude:
-    - python: 3.8
-      env: DJANGO='>=1.11,<1.12'
-    - python: 3.7
-      env: DJANGO='>=1.11,<1.12'
 addons:
   apt:
     packages:
@@ -33,8 +27,7 @@ services:
   - mysql
 install:
   - pip install --pre django$DJANGO
-  # mysqlclient 1.4 is not compatible with Django 1.11
-  - pip install flake8 coverage sphinx psycopg2 mysqlclient==1.3.14 -e .
+  - pip install flake8 coverage sphinx psycopg2 mysqlclient -e .
 before_script:
   - mysql -e 'create database test_project'
   - psql -c 'create database test_project;' -U postgres;

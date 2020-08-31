@@ -8,6 +8,7 @@ django-reversion changelog
 
 - Added ``use_natural_foreign_keys`` option to ``reversion.register()`` (@matwey).
 - Documentation improvments and minor fixes (@ad-m, @martey, @annainfo, @etianen, @m4rk3r, @adityakrgupta25, @ekinertac).
+- Dropped support for Django 1.11 LTS.
 
 
 3.0.7 - 2020-02-17
