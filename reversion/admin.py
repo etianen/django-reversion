@@ -138,7 +138,11 @@ class VersionAdmin(admin.ModelAdmin):
         reversion_urls = [
             re_path(r"^recover/$", admin_site.admin_view(self.recoverlist_view), name='%s_%s_recoverlist' % info),
             re_path(r"^recover/(\d+)/$", admin_site.admin_view(self.recover_view), name='%s_%s_recover' % info),
-            re_path(r"^([^/]+)/history/(\d+)/$", admin_site.admin_view(self.revision_view), name='%s_%s_revision' % info),
+            re_path(
+                r"^([^/]+)/history/(\d+)/$",
+                admin_site.admin_view(self.revision_view),
+                name='%s_%s_revision' % info,
+            ),
         ]
         return reversion_urls + urls
 
