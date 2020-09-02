@@ -18,6 +18,7 @@ class GetForModelTest(TestModelMixin, TestBase):
 
 
 class GetForModelDbTest(TestModelMixin, TestBase):
+    databases = {"default", "mysql", "postgres"}
 
     def testGetForModelDb(self):
         with reversion.create_revision(using="postgres"):
@@ -60,6 +61,7 @@ class GetForObjectTest(TestModelMixin, TestBase):
 
 
 class GetForObjectDbTest(TestModelMixin, TestBase):
+    databases = {"default", "mysql", "postgres"}
 
     def testGetForObjectDb(self):
         with reversion.create_revision(using="postgres"):
@@ -75,6 +77,7 @@ class GetForObjectDbTest(TestModelMixin, TestBase):
 
 
 class GetForObjectModelDbTest(TestModelMixin, TestBase):
+    databases = {"default", "postgres"}
 
     def testGetForObjectModelDb(self):
         with reversion.create_revision():
@@ -131,6 +134,7 @@ class GetForObjectReferenceTest(TestModelMixin, TestBase):
 
 
 class GetForObjectReferenceDbTest(TestModelMixin, TestBase):
+    databases = {"default", "postgres"}
 
     def testGetForObjectReferenceModelDb(self):
         with reversion.create_revision(using="postgres"):
@@ -140,6 +144,7 @@ class GetForObjectReferenceDbTest(TestModelMixin, TestBase):
 
 
 class GetForObjectReferenceModelDbTest(TestModelMixin, TestBase):
+    databases = {"default", "mysql", "postgres"}
 
     def testGetForObjectReferenceModelDb(self):
         with reversion.create_revision():
@@ -155,6 +160,7 @@ class GetForObjectReferenceModelDbTest(TestModelMixin, TestBase):
 
 
 class GetDeletedTest(TestModelMixin, TestBase):
+    databases = {"default", "mysql", "postgres"}
 
     def testGetDeleted(self):
         with reversion.create_revision():
@@ -199,6 +205,7 @@ class GetDeletedTest(TestModelMixin, TestBase):
 
 
 class GetDeletedDbTest(TestModelMixin, TestBase):
+    databases = {"default", "mysql", "postgres"}
 
     def testGetDeletedDb(self):
         with reversion.create_revision(using="postgres"):
@@ -216,6 +223,7 @@ class GetDeletedDbTest(TestModelMixin, TestBase):
 
 
 class GetDeletedModelDbTest(TestModelMixin, TestBase):
+    databases = {"default", "postgres"}
 
     def testGetDeletedModelDb(self):
         with reversion.create_revision():
