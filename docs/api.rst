@@ -291,17 +291,82 @@ Revision API
     .. include:: /_include/throws-revision-error.rst
 
 
-``reversion.add_meta(model, **values)``
+``reversion.add_meta(model_or_instance, **values)``
 
     Adds custom metadata to a revision.
 
     .. include:: /_include/throws-revision-error.rst
 
-    ``model``
-        A Django model to store the custom metadata. The model must have a ``ForeignKey`` or ``OneToOneField`` to :ref:`Revision`.
+    ``model or instance``
+        A Django model or model instance to store the custom metadata. The model must have a ``ForeignKey`` or ``OneToOneField`` to :ref:`Revision`. This field can optionally be nullable.
 
     ``**values``
         Values to be stored on ``model`` when it is saved.
+
+    Example:
+
+    .. code:: python
+
+       // model
+
+       class RevisionMeta(models.Model):
+
+           revision = models.OneToOneField(
+               Revision,
+               on_delete=models.CASCADE
+           )
+
+           version_label = models.CharField(max_length=200)
+
+
+       // Creating reversion with meta data
+
+       with reversion.create_revision():
+
+           # Save a new model instance.
+           obj = YourModel()
+           obj.name = "obj v1"
+           obj.save()
+
+           reversion.add_meta(RevisionMeta, version_label='Object Version #1')
+
+
+    If you need to create meta data before you create a revision, you can make the ``revision`` field nullable
+
+    .. code:: python
+
+       class RevisionMeta(models.Model):
+
+           revision = models.OneToOneField(
+               Revision,
+               on_delete=models.CASCADE,
+               null=True
+           )
+
+           version_label = models.CharField(max_length=200)
+
+
+    Then you can supply the ``instance`` to ``add_meta``
+
+    .. code:: python
+
+       RevisionMeta.objects.create(version_label='Object Version #1')
+
+       // ...
+
+       with reversion.create_revision():
+
+           # Save a new model instance.
+           obj = YourModel()
+           obj.name = "obj v1"
+           obj.save()
+
+           reversion.add_meta(
+               RevisionMeta.objects.get(...)
+           )
+
+    When an instance is supplied, an update is performed, which will attach the current revision to it. This
+    also will update any extra fields supplied.
 
 
 ``reversion.add_to_revision(obj, model_db=None)``

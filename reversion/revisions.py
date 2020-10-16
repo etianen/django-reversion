@@ -133,8 +133,8 @@ def get_date_created():
     return _current_frame().date_created
 
 
-def add_meta(model, **values):
-    _update_frame(meta=_current_frame().meta + ((model, values),))
+def add_meta(model_or_instance, **values):
+    _update_frame(meta=_current_frame().meta + ((model_or_instance, values),))
 
 
 def _follow_relations(obj):

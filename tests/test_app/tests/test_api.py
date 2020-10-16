@@ -350,9 +350,14 @@ class AddMetaTest(TestModelMixin, TestBase):
         self.assertSingleRevision((obj,), meta_names=("meta v1",), using="postgres")
 
     def testAddMetaInstance(self):
+        # Create an meta instance manually
         inst = TestMetaWithNullRevision.objects.create(
             name='meta v1 pre'
         )
+        # Sanity check to make sure revision is null
+        self.assertEqual(inst.revision, None)
+
+        # Create the revision given it our meta instance
         with reversion.create_revision():
             reversion.add_meta(inst)
             obj = TestModel.objects.create()
@@ -362,3 +367,6 @@ class AddMetaTest(TestModelMixin, TestBase):
             meta_names=("meta v1 pre", ),
             meta_attr='testmetawithnullrevision_set'
         )
+        # After refreshing the inst, ensure revision is now set
+        inst.refresh_from_db()
+        self.assertNotEqual(inst.revision, None)
