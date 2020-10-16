@@ -259,23 +259,27 @@ def _save_revision(versions, user=None, comment="", meta=(), date_created=None, 
         version.save(using=using)
     # Save the meta information.
     for meta_model, meta_fields in meta:
-        query, cls = {}, meta_model
+
+        # Default meta class and primary key
+        meta_class = meta_inst_or_model
+        pk = None
+
         # Add the revision to the fields that will be added/updated
         meta_fields['revision'] = revision
 
         # If the supplied meta_model is an instance, we need to ensure the
-        # correct class is used when updating
-        if isinstance(meta_model, (models.Model, )):
-            # Fetch the class used to make the update later
-            cls = meta_model.__class__
-            # Set a query dict to ensure the data is fetched correctly
-            # for updating
-            query = {'pk': meta_model.pk}
+        # correct class is used when updating as well has be able to query
+        # the meta instance properly
+        if isinstance(meta_inst_or_model, (models.Model, )):
+            # Fetch the class used to make the update
+            meta_class = meta_inst_or_model.__class__
+            pk = meta_inst_or_model.pk
 
         # Call update or create
-        cls._base_manager.db_manager(
+        meta_class._base_manager.db_manager(
             using=using
-        ).filter(**query).update_or_create(
+        ).update_or_create(
+            pk=pk,
             defaults=meta_fields
         )
 
