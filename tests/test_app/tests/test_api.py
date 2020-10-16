@@ -6,8 +6,13 @@ from django.db import models
 from django.db.transaction import get_connection
 from django.utils import timezone
 import reversion
-from test_app.models import TestModel, TestModelRelated, TestModelThrough, TestModelParent, TestMeta
-from test_app.tests.base import TestBase, TestBaseTransaction, TestModelMixin, UserMixin
+from test_app.models import (
+    TestModel, TestModelRelated, TestModelThrough, TestModelParent, TestMeta,
+    TestMetaWithNullRevision
+)
+from test_app.tests.base import (
+    TestBase, TestBaseTransaction, TestModelMixin, UserMixin
+)
 
 
 class SaveTest(TestModelMixin, TestBase):
@@ -343,3 +348,17 @@ class AddMetaTest(TestModelMixin, TestBase):
         self.assertNoRevision()
         self.assertSingleRevision((obj,), meta_names=("meta v1",), using="mysql")
         self.assertSingleRevision((obj,), meta_names=("meta v1",), using="postgres")
+
+    def testAddMetaInstance(self):
+        inst = TestMetaWithNullRevision.objects.create(
+            name='meta v1 pre'
+        )
+        with reversion.create_revision():
+            reversion.add_meta(inst)
+            obj = TestModel.objects.create()
+
+        self.assertSingleRevision(
+            (obj,),
+            meta_names=("meta v1 pre", ),
+            meta_attr='testmetawithnullrevision_set'
+        )

@@ -41,7 +41,8 @@ class TestBaseMixin(object):
         kwargs.setdefault("verbosity", 2)
         return call_command(command, *args, **kwargs)
 
-    def assertSingleRevision(self, objects, user=None, comment="", meta_names=(), date_created=None,
+    def assertSingleRevision(self, objects, user=None, comment="", meta_names=(),
+                             meta_attr='testmeta_set', date_created=None,
                              using=None, model_db=None):
         revision = Version.objects.using(using).get_for_object(objects[0], model_db=model_db).get().revision
         self.assertEqual(revision.user, user)
@@ -51,9 +52,9 @@ class TestBaseMixin(object):
             self.assertEqual(revision.get_comment(), comment)
         self.assertAlmostEqual(revision.date_created, date_created or timezone.now(), delta=timedelta(seconds=1))
         # Check meta.
-        self.assertEqual(revision.testmeta_set.count(), len(meta_names))
+        self.assertEqual(getattr(revision, meta_attr).count(), len(meta_names))
         for meta_name in meta_names:
-            self.assertTrue(revision.testmeta_set.filter(name=meta_name).exists())
+            self.assertTrue(getattr(revision, meta_attr).filter(name=meta_name).exists())
         # Check objects.
         self.assertEqual(revision.version_set.count(), len(objects))
         for obj in objects:
