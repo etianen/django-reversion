@@ -307,7 +307,7 @@ Revision API
 
     .. code:: python
 
-       // model
+       # model
 
        class RevisionMeta(models.Model):
 
@@ -319,7 +319,7 @@ Revision API
            version_label = models.CharField(max_length=200)
 
 
-       // Creating reversion with meta data
+       # Creating reversion with meta data
 
        with reversion.create_revision():
 
@@ -352,7 +352,7 @@ Revision API
 
        RevisionMeta.objects.create(version_label='Object Version #1')
 
-       // ...
+       # ...
 
        with reversion.create_revision():
 
