@@ -258,7 +258,7 @@ def _save_revision(versions, user=None, comment="", meta=(), date_created=None, 
         version.revision = revision
         version.save(using=using)
     # Save the meta information.
-    for meta_model, meta_fields in meta:
+    for meta_inst_or_model, meta_fields in meta:
 
         # Default meta class and primary key
         meta_class = meta_inst_or_model
@@ -268,7 +268,7 @@ def _save_revision(versions, user=None, comment="", meta=(), date_created=None, 
         meta_fields['revision'] = revision
 
         # If the supplied meta_model is an instance, we need to ensure the
-        # correct class is used when updating as well has be able to query
+        # correct class is used when updating as well as be able to query
         # the meta instance properly
         if isinstance(meta_inst_or_model, (models.Model, )):
             # Fetch the class used to make the update
