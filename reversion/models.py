@@ -1,6 +1,7 @@
 from collections import defaultdict
 from itertools import chain, groupby
 
+import django
 from django.apps import apps
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -159,14 +160,25 @@ class VersionQuerySet(models.QuerySet):
                     .annotate(_pk_to_object_id=Cast("pk", Version._meta.get_field("object_id")))
                     .filter(_pk_to_object_id=models.OuterRef("object_id"))
                 )
-            subquery = (
-                self.get_for_model(model, model_db=model_db)
-                .annotate(pk_not_exists=~models.Exists(model_qs))
-                .filter(pk_not_exists=True)
-                .values("object_id")
-                .annotate(latest_pk=models.Max("pk"))
-                .values("latest_pk")
-            )
+            # conditional expressions are being supported since django 3.0
+            # DISTINCT ON works only for Postgres DB
+            if connection.vendor == "postgresql" and django.VERSION >= (3, 0):
+                subquery = (
+                    self.get_for_model(model, model_db=model_db)
+                    .filter(~models.Exists(model_qs))
+                    .order_by("object_id", "-pk")
+                    .distinct("object_id")
+                    .values("pk")
+                )
+            else:
+                subquery = (
+                    self.get_for_model(model, model_db=model_db)
+                    .annotate(pk_not_exists=~models.Exists(model_qs))
+                    .filter(pk_not_exists=True)
+                    .values("object_id")
+                    .annotate(latest_pk=models.Max("pk"))
+                    .values("latest_pk")
+                )
         else:
             # We have to use a slow subquery.
             subquery = self.get_for_model(model, model_db=model_db).exclude(
