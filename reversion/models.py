@@ -133,12 +133,32 @@ class VersionQuerySet(models.QuerySet):
         model_db = model_db or router.db_for_write(model)
         connection = connections[self.db]
         if self.db == model_db and connection.vendor in ("sqlite", "postgresql", "oracle"):
-            model_qs = (
-                model._default_manager
-                .using(model_db)
-                .annotate(_pk_to_object_id=Cast("pk", Version._meta.get_field("object_id")))
-                .filter(_pk_to_object_id=models.OuterRef("object_id"))
-            )
+            pk_field_name = model._meta.pk.name
+            object_id_cast_target = model._meta.get_field(pk_field_name)
+            if django.VERSION >= (2, 1):
+                # django 2.0 contains a critical bug that doesn't allow the code below to work,
+                # fallback to casting primary keys then
+                # see https://code.djangoproject.com/ticket/29142
+                if django.VERSION < (2, 2):
+                    # properly cast autofields for django before 2.2 as it was fixed in django itself later
+                    # see https://github.com/django/django/commit/ac25dd1f8d48accc765c05aebb47c427e51f3255
+                    object_id_cast_target = {
+                        "AutoField": models.IntegerField(),
+                        "BigAutoField": models.BigIntegerField(),
+                    }.get(object_id_cast_target.__class__.__name__, object_id_cast_target)
+                casted_object_id = Cast(models.OuterRef("object_id"), object_id_cast_target)
+                model_qs = (
+                    model._default_manager
+                    .using(model_db)
+                    .filter(**{pk_field_name: casted_object_id})
+                )
+            else:
+                model_qs = (
+                    model._default_manager
+                    .using(model_db)
+                    .annotate(_pk_to_object_id=Cast("pk", Version._meta.get_field("object_id")))
+                    .filter(_pk_to_object_id=models.OuterRef("object_id"))
+                )
             subquery = (
                 self.get_for_model(model, model_db=model_db)
                 .annotate(pk_not_exists=~models.Exists(model_qs))
