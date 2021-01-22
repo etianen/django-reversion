@@ -3,6 +3,14 @@
 django-reversion changelog
 ==========================
 
+3.0.9 - 2021-01-22
+------------------
+
+- Significant speedup to ``Version.objects.get_deleted(...)`` database query for PostgreSQL (@GeyseR).
+- Testing against Django 3.1 (@michael-k).
+- Django 4.0 compatibility improvements (@GitRon).
+
+
 3.0.8 - 2020-08-31
 ------------------
 
