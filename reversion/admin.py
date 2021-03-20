@@ -16,7 +16,12 @@ from django.utils.formats import localize
 from reversion.errors import RevertError
 from reversion.models import Version
 from reversion.revisions import is_active, register, is_registered, set_comment, create_revision, set_user
-from reversion.views import _RollBackRevisionView
+
+
+class _RollBackRevisionView(Exception):
+
+    def __init__(self, response):
+        self.response = response
 
 
 class VersionAdmin(admin.ModelAdmin):
