@@ -3,6 +3,18 @@
 Common problems
 ===============
 
+incompatible version data
+-------------------------
+
+Django-reversion stores the versions of a model as JSON. If a model changes, the migrations are not applied to the stored JSON data. Therefore it can happen that an old version can no longer be restored. In this case the following error occurs:
+
+.. code:: python
+
+    reversion.errors.RevertError: Could not load <Foo: bar> - incompatible version data.
+
+See also: `"incompatible version data" -> migrate versions JSON, too ? #859 <https://github.com/etianen/django-reversion/issues/859>`_
+
+
 
 RegistrationError: class 'myapp.MyModel' has already been registered with Reversion
 -----------------------------------------------------------------------------------
