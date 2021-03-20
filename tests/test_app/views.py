@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.http import HttpResponse
 from django.views.generic.base import View
 from reversion.views import create_revision, RevisionMixin
@@ -9,8 +10,9 @@ def save_obj_view(request):
 
 
 def save_obj_error_view(request):
-    TestModel.objects.create()
-    raise Exception("Boom!")
+    with transaction.atomic():
+        TestModel.objects.create()
+        raise Exception("Boom!")
 
 
 @create_revision()
