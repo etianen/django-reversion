@@ -2,7 +2,7 @@
 django-reversion
 ================
 
-|PyPI latest| |PyPI Version| |PyPI License| |TravisCI| |Docs|
+|PyPI latest| |PyPI Version| |PyPI License| |Github actions| |Docs|
 
 
 **django-reversion** is an extension to the Django web framework that provides
@@ -77,5 +77,5 @@ to by `many other people <https://github.com/etianen/django-reversion/graphs/con
    :target: https://github.com/rhenter/django-reversion/blob/master/LICENSE
 .. |PyPI latest| image:: https://img.shields.io/pypi/v/django-reversion.svg?maxAge=120
    :target: https://pypi.python.org/pypi/django-reversion
-.. |TravisCI| image:: https://travis-ci.org/etianen/django-reversion.svg?branch=master
-   :target: https://travis-ci.org/etianen/django-reversion
+.. |Github actions| image:: https://github.com/etianen/django-reversion/workflows/Python%20package/badge.svg
+   :target: https://github.com/etianen/django-reversion
