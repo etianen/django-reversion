@@ -15,9 +15,11 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 5432:5432
     env:
       PYTHONDEVMODE: 1
-      DJANGO_DATABASE_HOST_POSTGRES: postgres
+      DJANGO_DATABASE_HOST_POSTGRES: localhost
       DJANGO_DATABASE_USER_POSTGRES: postgres
       DJANGO_DATABASE_NAME_POSTGRES: postgres
       DJANGO_DATABASE_PASSWORD_POSTGRES: postgres
