@@ -23,7 +23,7 @@ jobs:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: root
         options: >-
-          --health-cmd mysqladmin -uroot -proot ping
+          --health-cmd 'mysqladmin -uroot -proot ping'
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5

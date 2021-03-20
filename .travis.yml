@@ -1,24 +1,7 @@
-sudo: false
-language: python
-dist: xenial
-python:
-  - 3.8
-  - 3.7
-  - 3.6
-cache: pip
-env:
-  global:
-    - DJANGO_DATABASE_USER_MYSQL=travis
 addons:
   apt:
     packages:
       - libmysqlclient-dev
-services:
-  - postgresql
-  - mysql
-before_script:
-  - mysql -e 'create database test_project'
-  - psql -c 'create database test_project;' -U postgres;
 after_success:
   - coverage report
 deploy:
