@@ -83,12 +83,14 @@ DATABASES = {
     },
     "postgres": {
         "ENGINE": "django.db.backends.postgresql_psycopg2",
+        "HOST": os.environ.get("DJANGO_DATABASE_HOST_POSTGRES", ""),
         "NAME": os.environ.get("DJANGO_DATABASE_NAME_POSTGRES", "test_project"),
         "USER": os.environ.get("DJANGO_DATABASE_USER_POSTGRES", getpass.getuser()),
         "PASSWORD": os.environ.get("DJANGO_DATABASE_PASSWORD_POSTGRES", ""),
     },
     "mysql": {
         "ENGINE": "django.db.backends.mysql",
+        "HOST": os.environ.get("DJANGO_DATABASE_HOST_MYSQL", ""),
         "NAME": os.environ.get("DJANGO_DATABASE_NAME_MYSQL", "test_project"),
         "USER": os.environ.get("DJANGO_DATABASE_USER_MYSQL", getpass.getuser()),
         "PASSWORD": os.environ.get("DJANGO_DATABASE_PASSWORD_MYSQL", ""),
