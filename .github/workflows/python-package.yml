@@ -17,12 +17,28 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+      mysql:
+        image: mysql
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: root
+        options: >-
+          --health-cmd mysqladmin -uroot -proot ping
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 3306:3306
     env:
       PYTHONDEVMODE: 1
       DJANGO_DATABASE_HOST_POSTGRES: localhost
       DJANGO_DATABASE_USER_POSTGRES: postgres
       DJANGO_DATABASE_NAME_POSTGRES: postgres
       DJANGO_DATABASE_PASSWORD_POSTGRES: postgres
+      DJANGO_DATABASE_HOST_MYSQL: localhost
+      DJANGO_DATABASE_USER_MYSQL: root
+      DJANGO_DATABASE_NAME_MYSQL: root
+      DJANGO_DATABASE_PASSWORD_MYSQL: root
     strategy:
       matrix:
         python-version: [3.6, 3.7, 3.8, 3.9]

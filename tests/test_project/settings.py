@@ -90,6 +90,7 @@ DATABASES = {
     },
     "mysql": {
         "ENGINE": "django.db.backends.mysql",
+        "HOST": os.environ.get("DJANGO_DATABASE_NAME_MYSQL", ""),
         "NAME": os.environ.get("DJANGO_DATABASE_NAME_MYSQL", "test_project"),
         "USER": os.environ.get("DJANGO_DATABASE_USER_MYSQL", getpass.getuser()),
         "PASSWORD": os.environ.get("DJANGO_DATABASE_PASSWORD_MYSQL", ""),
