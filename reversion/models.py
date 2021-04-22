@@ -14,7 +14,7 @@ from django.db.models.deletion import Collector
 from django.db.models.functions import Cast
 from django.utils.encoding import force_str
 from django.utils.functional import cached_property
-from django.utils.translation import ugettext
+from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 
 from reversion.errors import RevertError
@@ -31,7 +31,7 @@ def _safe_revert(versions):
         except (IntegrityError, ObjectDoesNotExist):
             unreverted_versions.append(version)
     if len(unreverted_versions) == len(versions):
-        raise RevertError(ugettext("Could not save %(object_repr)s version - missing dependency.") % {
+        raise RevertError(gettext("Could not save %(object_repr)s version - missing dependency.") % {
             "object_repr": unreverted_versions[0],
         })
     if unreverted_versions:
@@ -264,11 +264,11 @@ class Version(models.Model):
             return list(serializers.deserialize(self.format, data, ignorenonexistent=True,
                         use_natural_foreign_keys=version_options.use_natural_foreign_keys))[0]
         except DeserializationError:
-            raise RevertError(ugettext("Could not load %(object_repr)s version - incompatible version data.") % {
+            raise RevertError(gettext("Could not load %(object_repr)s version - incompatible version data.") % {
                 "object_repr": self.object_repr,
             })
         except serializers.SerializerDoesNotExist:
-            raise RevertError(ugettext("Could not load %(object_repr)s version - unknown serializer %(format)s.") % {
+            raise RevertError(gettext("Could not load %(object_repr)s version - unknown serializer %(format)s.") % {
                 "object_repr": self.object_repr,
                 "format": self.format,
             })
