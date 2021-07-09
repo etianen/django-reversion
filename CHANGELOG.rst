@@ -3,14 +3,19 @@
 django-reversion changelog
 ==========================
 
-4.0.0 - IN DEVELOPMENT
-----------------------
+4.0.0 - 2021-07-09
+------------------
 
 - **Breaking:** The ``create_revision`` view decorator and ``RevisionMiddleware`` no longer roll back the revision and
   database transaction on response status code >= 400. It's the responsibility of the view to use `transaction.atomic()`
-  to roll back any invalid data. This can be enabled globally by setting ``ATOMIC_REQUESTS=True``.
+  to roll back any invalid data. This can be enabled globally by setting ``ATOMIC_REQUESTS=True``. (@etianen)
 
   https://docs.djangoproject.com/en/3.1/ref/settings/#std:setting-DATABASE-ATOMIC_REQUESTS
+
+- Fixing gettext plural forms with Django (@martinsvoboda).
+- Deprecation removals (@lociii, @Peter-van-Tol).
+- CI testing improvements (@etianen, @michael-k).
+- Documentation fixes (@erikrw, @jedie, @michael-k).
 
 
 3.0.9 - 2021-01-22
