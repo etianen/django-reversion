@@ -331,7 +331,7 @@ class Version(models.Model):
         )
         indexes = (
             models.Index(
-                fields=("content_type", "db")
+                fields=["content_type", "db"]
             ),
         )
         ordering = ("-pk",)
