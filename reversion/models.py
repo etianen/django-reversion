@@ -189,7 +189,8 @@ class VersionQuerySet(models.QuerySet):
                 latest_pk=models.Max("pk")
             ).order_by().values_list("latest_pk", flat=True)
         # Perform the subquery.
-        return self.filter(pk__in=subquery)
+        # Filter by model to reduce query execution time.
+        return self.get_for_model(model, model_db=model_db).filter(pk__in=subquery)
 
     def get_unique(self):
         last_key = None
@@ -327,6 +328,11 @@ class Version(models.Model):
         app_label = 'reversion'
         unique_together = (
             ("db", "content_type", "object_id", "revision"),
+        )
+        indexes = (
+            models.Index(
+                fields=["content_type", "db"]
+            ),
         )
         ordering = ("-pk",)
 
