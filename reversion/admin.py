@@ -10,7 +10,7 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse, re_path
 from django.utils.text import capfirst
 from django.utils.timezone import template_localtime
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.utils.encoding import force_str
 from django.utils.formats import localize
 from reversion.errors import RevertError
