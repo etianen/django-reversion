@@ -3,6 +3,13 @@
 django-reversion changelog
 ==========================
 
+4.0.1 - 2021-11-04
+------------------
+
+- Django 4.0b support (@smithdc1, @kevinmarsh).
+- Optimized ``VersionQuerySet.get_deleted``.
+
+
 4.0.0 - 2021-07-09
 ------------------
 
