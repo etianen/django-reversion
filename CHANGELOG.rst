@@ -3,6 +3,12 @@
 django-reversion changelog
 ==========================
 
+4.0.2 - 2022-02-30
+------------------
+
+- Improved performance of `createinitialrevisions` management command (@philipstarkey).
+
+
 4.0.1 - 2021-11-04
 ------------------
 
