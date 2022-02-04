@@ -1,7 +1,7 @@
+from contextvars import ContextVar
 from collections import namedtuple, defaultdict
 from contextlib import contextmanager
 from functools import wraps
-from threading import local
 from django.apps import apps
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
@@ -34,23 +34,17 @@ _StackFrame = namedtuple("StackFrame", (
 ))
 
 
-class _Local(local):
-
-    def __init__(self):
-        self.stack = ()
-
-
-_local = _Local()
+_stack = ContextVar("reversion-stack", default=[])
 
 
 def is_active():
-    return bool(_local.stack)
+    return bool(_stack.get())
 
 
 def _current_frame():
     if not is_active():
         raise RevisionManagementError("There is no active revision for this thread")
-    return _local.stack[-1]
+    return _stack.get()[-1]
 
 
 def _copy_db_versions(db_versions):
@@ -79,16 +73,17 @@ def _push_frame(manage_manually, using):
             db_versions={using: {}},
             meta=(),
         )
-    _local.stack += (stack_frame,)
+    _stack.set(_stack.get() + [stack_frame])
 
 
 def _update_frame(**kwargs):
-    _local.stack = _local.stack[:-1] + (_current_frame()._replace(**kwargs),)
+    _stack.get()[-1] = _current_frame()._replace(**kwargs)
 
 
 def _pop_frame():
     prev_frame = _current_frame()
-    _local.stack = _local.stack[:-1]
+    stack = _stack.get()
+    del stack[-1]
     if is_active():
         current_frame = _current_frame()
         db_versions = {
@@ -284,7 +279,7 @@ def _create_revision_context(manage_manually, using, atomic):
         try:
             yield
             # Only save for a db if that's the last stack frame for that db.
-            if not any(using in frame.db_versions for frame in _local.stack[:-1]):
+            if not any(using in frame.db_versions for frame in _stack.get()[:-1]):
                 current_frame = _current_frame()
                 _save_revision(
                     versions=current_frame.db_versions[using].values(),
