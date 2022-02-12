@@ -11,7 +11,7 @@ version control for model instances.
 Requirements
 ============
 
-- Python 3.6 or later
+- Python 3.7 or later
 - Django 2.0 or later
 
 Features
