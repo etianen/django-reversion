@@ -41,7 +41,7 @@ jobs:
       DJANGO_DATABASE_PASSWORD_MYSQL: root
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9, '3.10']
+        python-version: [3.7, 3.8, 3.9, '3.10']
         django-version:
           - '>=4.0a1,<4.1'
           - '>=3.2,<4.0'
@@ -51,8 +51,6 @@ jobs:
           - '>=2.1,<2.2'
           - '>=2.0,<2.1'
         exclude:
-          - python-version: 3.6
-            django-version: '>=4.0a1,<4.1'
           - python-version: 3.7
             django-version: '>=4.0a1,<4.1'
           - python-version: '3.10'
