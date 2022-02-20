@@ -3,7 +3,14 @@
 django-reversion changelog
 ==========================
 
-4.0.2 - 2022-02-30
+5.0.0 - 2022-02-20
+------------------
+
+- Added support for using django-reversion contexts in ``asyncio`` tasks (@bellini666).
+- **Breaking:** Dropped support for Python 3.6.
+
+
+4.0.2 - 2022-01-30
 ------------------
 
 - Improved performance of `createinitialrevisions` management command (@philipstarkey).
