@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from django.db import models, transaction, connection
+from django.db import models, transaction, connections
 from django.contrib import admin, messages
 from django.contrib.admin import options
 from django.contrib.admin.utils import unquote, quote
@@ -163,7 +163,7 @@ class VersionAdmin(admin.ModelAdmin):
 
     def _reversion_revisionform_view(self, request, version, template_name, extra_context=None):
         # Check that database transactions are supported.
-        if not connection.features.uses_savepoints:
+        if not connections[version.db].features.uses_savepoints:
             raise ImproperlyConfigured("Cannot use VersionAdmin with a database that does not support savepoints.")
         # Run the view.
         try:
