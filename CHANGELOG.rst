@@ -3,6 +3,12 @@
 django-reversion changelog
 ==========================
 
+5.0.1 - 2022-06-18
+------------------
+
+- Fix admin detail view in multi-database configuration (@atten).
+
+
 5.0.0 - 2022-02-20
 ------------------
 
