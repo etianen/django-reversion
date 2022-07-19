@@ -214,24 +214,7 @@ def add_to_revision(obj, model_db=None):
 def _save_revision(versions, user=None, comment="", meta=(), date_created=None, using=None):
     from reversion.models import Revision
 
-    if not settings.REVERSION_SAVE_DELETE_EVENTS:
-        model_db_pks = defaultdict(lambda: defaultdict(set))
-        for version in versions:
-            model_db_pks[version._model][version.db].add(version.object_id)
-        model_db_existing_pks = {
-            model: {
-                db: frozenset(map(
-                    force_str,
-                    model._base_manager.using(db).filter(pk__in=pks).values_list("pk", flat=True),
-                ))
-                for db, pks in db_pks.items()
-            }
-            for model, db_pks in model_db_pks.items()
-        }
-        versions = [
-            version for version in versions
-            if version.object_id in model_db_existing_pks[version._model][version.db]
-        ]
+    # @override Deleted code that prevents saving deleted events.
 
     # Bail early if there are no objects to save.
     if not versions:

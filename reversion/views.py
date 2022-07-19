@@ -14,15 +14,12 @@ def _set_user_from_request(request):
         set_user(request.user)
 
 
-def create_revision(
-    manage_manually=False,
-    using=None,
-    atomic=True,
-    request_creates_revision=None,
-):
-    request_creates_revision = (
-        request_creates_revision or _request_creates_revision
-    )
+def create_revision(manage_manually=False, using=None, atomic=True, request_creates_revision=None):
+    """
+    View decorator that wraps the request in a revision.
+    The revision will have it's user set from the request automatically.
+    """
+    request_creates_revision = request_creates_revision or _request_creates_revision
 
     def decorator(func):
         @wraps(func)
@@ -35,13 +32,17 @@ def create_revision(
                         atomic=atomic,
                     ):
                         response = func(request, *args, **kwargs)
-                        # Check for an error response.
+
+                        # @override
+                        # Rollback revision if response is an error
                         if response.status_code >= 400:
                             raise _RollBackRevisionView(response)
+
                         # Otherwise, we're good.
                         _set_user_from_request(request)
 
-                        # Additional calls
+                        # @override
+                        # Set request path in the revision comment
                         reversion.set_comment(request.path)
 
                         return response
