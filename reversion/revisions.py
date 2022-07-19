@@ -12,6 +12,7 @@ from django.utils.encoding import force_str
 from django.utils import timezone
 from reversion.errors import RevisionManagementError, RegistrationError
 from reversion.signals import pre_revision_commit, post_revision_commit
+from reversion.conf import settings
 
 
 _VersionOptions = namedtuple("VersionOptions", (
@@ -211,29 +212,26 @@ def add_to_revision(obj, model_db=None):
 
 
 def _save_revision(versions, user=None, comment="", meta=(), date_created=None, using=None):
-    """
-    REIMPLEMENTATION THAT JUST DELETES THE COMMENTED PART, SO THAT WE CAN SAVE
-    DELETION EVENTS
-    """
     from reversion.models import Revision
 
-    # model_db_pks = defaultdict(lambda: defaultdict(set))
-    # for version in versions:
-    #     model_db_pks[version._model][version.db].add(version.object_id)
-    # model_db_existing_pks = {
-    #     model: {
-    #         db: frozenset(map(
-    #             force_str,
-    #             model._base_manager.using(db).filter(pk__in=pks).values_list("pk", flat=True),
-    #         ))
-    #         for db, pks in db_pks.items()
-    #     }
-    #     for model, db_pks in model_db_pks.items()
-    # }
-    # versions = [
-    #     version for version in versions
-    #     if version.object_id in model_db_existing_pks[version._model][version.db]
-    # ]
+    if not settings.REVERSION_SAVE_DELETE_EVENTS:
+        model_db_pks = defaultdict(lambda: defaultdict(set))
+        for version in versions:
+            model_db_pks[version._model][version.db].add(version.object_id)
+        model_db_existing_pks = {
+            model: {
+                db: frozenset(map(
+                    force_str,
+                    model._base_manager.using(db).filter(pk__in=pks).values_list("pk", flat=True),
+                ))
+                for db, pks in db_pks.items()
+            }
+            for model, db_pks in model_db_pks.items()
+        }
+        versions = [
+            version for version in versions
+            if version.object_id in model_db_existing_pks[version._model][version.db]
+        ]
 
     # Bail early if there are no objects to save.
     if not versions:

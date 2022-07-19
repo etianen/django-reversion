@@ -1,4 +1,5 @@
-from reversion.views import _request_creates_revision, create_revision
+from reversion.views import create_revision
+from reversion.conf import settings
 
 
 class RevisionMiddleware:
@@ -20,12 +21,7 @@ class RevisionMiddleware:
         )(get_response)
 
     def request_creates_revision(self, request):
-        return _request_creates_revision(request)
+        return request.method in settings.REVERSION_REQUEST_METHODS
 
     def __call__(self, request):
         return self.get_response(request)
-
-
-class StrictRevisionMiddleware(RevisionMiddleware):
-    def request_creates_revision(self, request):
-        return request.method not in ("OPTIONS", "HEAD", "TRACE")
