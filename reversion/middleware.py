@@ -24,3 +24,8 @@ class RevisionMiddleware:
 
     def __call__(self, request):
         return self.get_response(request)
+
+
+class StrictRevisionMiddleware(RevisionMiddleware):
+    def request_creates_revision(self, request):
+        return request.method not in ("OPTIONS", "HEAD", "TRACE")
