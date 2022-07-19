@@ -176,6 +176,10 @@ def _add_to_revision(obj, using, model_db, explicit):
     content_type = _get_content_type(obj.__class__, using)
     object_id = force_str(obj.pk)
     version_key = (content_type, object_id)
+
+    # @override Refresh from db when there are multiple instances
+    # saving in the same transaction to prevent saving inconsistent
+    # data due to .save(update_fields=[])
     frame = _current_frame()
 
     if version_key not in frame.saves:
