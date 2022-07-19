@@ -12,7 +12,6 @@ from django.utils.encoding import force_str
 from django.utils import timezone
 from reversion.errors import RevisionManagementError, RegistrationError
 from reversion.signals import pre_revision_commit, post_revision_commit
-from reversion.conf import settings
 
 
 _VersionOptions = namedtuple("VersionOptions", (
