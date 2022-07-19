@@ -21,7 +21,7 @@ class RevisionMiddleware:
 
     def request_creates_revision(self, request):
         # @override Updated request methods
-        return request.method in ("OPTIONS", "HEAD", "TRACE")
+        return request.method not in ("OPTIONS", "HEAD", "TRACE")
 
     def __call__(self, request):
         return self.get_response(request)
