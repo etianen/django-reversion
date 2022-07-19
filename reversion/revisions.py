@@ -75,7 +75,7 @@ def _push_frame(manage_manually, using):
             db_versions={using: {}},
             meta=(),
             # @override
-            saves={},
+            saves=defaultdict(set),
         )
     _stack.set(_stack.get() + [stack_frame])
 
@@ -180,10 +180,6 @@ def _add_to_revision(obj, using, model_db, explicit):
     # saving in the same transaction to prevent saving inconsistent
     # data due to .save(update_fields=[])
     frame = _current_frame()
-
-    if version_key not in frame.saves:
-        frame.saves[version_key] = set()
-
     frame.saves[version_key].add(id(obj))
 
     if len(frame.saves[version_key]) > 1:
