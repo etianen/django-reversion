@@ -1,4 +1,4 @@
-from reversion.views import _request_creates_revision, create_revision
+from reversion.views import create_revision
 
 
 class RevisionMiddleware:
@@ -20,7 +20,8 @@ class RevisionMiddleware:
         )(get_response)
 
     def request_creates_revision(self, request):
-        return _request_creates_revision(request)
+        # @override Updated request methods
+        return request.method not in ("OPTIONS", "HEAD", "TRACE")
 
     def __call__(self, request):
         return self.get_response(request)
