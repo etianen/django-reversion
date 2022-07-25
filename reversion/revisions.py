@@ -31,6 +31,8 @@ _StackFrame = namedtuple("StackFrame", (
     "date_created",
     "db_versions",
     "meta",
+    # @override
+    "saves",
 ))
 
 
@@ -72,6 +74,8 @@ def _push_frame(manage_manually, using):
             date_created=timezone.now(),
             db_versions={using: {}},
             meta=(),
+            # @override
+            saves=defaultdict(set),
         )
     _stack.set(_stack.get() + [stack_frame])
 
@@ -171,8 +175,18 @@ def _add_to_revision(obj, using, model_db, explicit):
     content_type = _get_content_type(obj.__class__, using)
     object_id = force_str(obj.pk)
     version_key = (content_type, object_id)
+
+    # @override Refresh from db when there are multiple instances
+    # saving in the same transaction to prevent saving inconsistent
+    # data due to .save(update_fields=[])
+    frame = _current_frame()
+    frame.saves[version_key].add(id(obj))
+
+    if len(frame.saves[version_key]) > 1:
+        obj.refresh_from_db()
+
     # If the obj is already in the revision, stop now.
-    db_versions = _current_frame().db_versions
+    db_versions = frame.db_versions
     versions = db_versions[using]
     if version_key in versions and not explicit:
         return
