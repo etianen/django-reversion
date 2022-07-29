@@ -1,3 +1,4 @@
+import logging
 from contextvars import ContextVar
 from collections import namedtuple, defaultdict
 from contextlib import contextmanager
@@ -12,6 +13,9 @@ from django.utils.encoding import force_str
 from django.utils import timezone
 from reversion.errors import RevisionManagementError, RegistrationError
 from reversion.signals import pre_revision_commit, post_revision_commit
+
+
+logger = logging.getLogger(__name__)
 
 
 _VersionOptions = namedtuple("VersionOptions", (
@@ -176,20 +180,26 @@ def _add_to_revision(obj, using, model_db, explicit):
     object_id = force_str(obj.pk)
     version_key = (content_type, object_id)
 
-    # @override Refresh from db when there are multiple instances
-    # saving in the same transaction to prevent saving inconsistent
-    # data due to .save(update_fields=[])
-    frame = _current_frame()
-    frame.saves[version_key].add(id(obj))
-
-    if len(frame.saves[version_key]) > 1:
-        obj.refresh_from_db()
-
     # If the obj is already in the revision, stop now.
+    frame = _current_frame()
     db_versions = frame.db_versions
     versions = db_versions[using]
     if version_key in versions and not explicit:
         return
+
+    # @override Refreshes from db when there are multiple instances
+    # saving in the same transaction to prevent saving inconsistent
+    # data due to .save(update_fields=[])
+    frame.saves[version_key].add(id(obj))
+
+    if len(frame.saves[version_key]) > 1:
+        logger.warning(
+            "[reversion] Refreshing object from database: %s - %s",
+            content_type.model,
+            object_id
+        )
+        obj.refresh_from_db()
+
     # Get the version data.
     version = Version(
         content_type=content_type,
