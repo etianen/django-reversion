@@ -33,11 +33,6 @@ def create_revision(manage_manually=False, using=None, atomic=True, request_crea
                     ):
                         response = func(request, *args, **kwargs)
 
-                        # @override
-                        # Rollback revision if response is an error
-                        if response.status_code >= 400:
-                            raise _RollBackRevisionView(response)
-
                         # Otherwise, we're good.
                         _set_user_from_request(request)
 
