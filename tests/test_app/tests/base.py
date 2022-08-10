@@ -19,7 +19,7 @@ from test_app.models import TestModel, TestModelParent
 
 class TestBaseMixin:
 
-    multi_db = True
+    databases = "__all__"
 
     def reloadUrls(self):
         reload(import_module(settings.ROOT_URLCONF))
