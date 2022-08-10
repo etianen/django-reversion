@@ -53,8 +53,8 @@ class VersionAdmin(admin.ModelAdmin):
     def _reversion_get_template_list(self, template_name):
         opts = self.model._meta
         return (
-            "reversion/%s/%s/%s" % (opts.app_label, opts.object_name.lower(), template_name),
-            "reversion/%s/%s" % (opts.app_label, template_name),
+            f"reversion/{opts.app_label}/{opts.object_name.lower()}/{template_name}",
+            f"reversion/{opts.app_label}/{template_name}",
             "reversion/%s" % template_name,
         )
 
@@ -185,7 +185,7 @@ class VersionAdmin(admin.ModelAdmin):
         except (RevertError, models.ProtectedError) as ex:
             opts = self.model._meta
             messages.error(request, force_str(ex))
-            return redirect("{}:{}_{}_changelist".format(self.admin_site.name, opts.app_label, opts.model_name))
+            return redirect(f"{self.admin_site.name}:{opts.app_label}_{opts.model_name}_changelist")
         except _RollBackRevisionView as ex:
             return ex.response
         return response
@@ -275,7 +275,7 @@ class VersionAdmin(admin.ModelAdmin):
             {
                 "revision": version.revision,
                 "url": reverse(
-                    "%s:%s_%s_revision" % (self.admin_site.name, opts.app_label, opts.model_name),
+                    f"{self.admin_site.name}:{opts.app_label}_{opts.model_name}_revision",
                     args=(quote(version.object_id), version.id)
                 ),
             }

@@ -218,7 +218,7 @@ class AdminQuotingTest(LoginMixin, AdminMixin, TestBase):
         response = self.client.get(history_url)
         self.assertContains(response, revision_url)
         response = self.client.get(revision_url)
-        self.assertContains(response, 'value="{}"'.format(pk))
+        self.assertContains(response, f'value="{pk}"')
 
 
 class TestModelInlineAdmin(admin.TabularInline):

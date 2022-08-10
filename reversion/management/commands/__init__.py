@@ -43,7 +43,7 @@ class BaseRevisionCommand(BaseCommand):
                     try:
                         model = apps.get_model(label)
                     except LookupError:
-                        raise CommandError("Unknown model: {}".format(label))
+                        raise CommandError(f"Unknown model: {label}")
                     selected_models.add(model)
                 else:
                     # This is just an app - no model qualifier.
@@ -51,7 +51,7 @@ class BaseRevisionCommand(BaseCommand):
                     try:
                         app = apps.get_app_config(app_label)
                     except LookupError:
-                        raise CommandError("Unknown app: {}".format(app_label))
+                        raise CommandError(f"Unknown app: {app_label}")
                     selected_models.update(app.get_models())
         for model in selected_models:
             if is_registered(model):

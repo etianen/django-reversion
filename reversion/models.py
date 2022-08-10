@@ -366,25 +366,25 @@ def _safe_subquery(method, left_query, left_field_name, right_subquery, right_fi
         )
     ):
         return getattr(left_query, method)(**{
-            "{}__in".format(left_field_name): list(right_subquery.iterator()),
+            f"{left_field_name}__in": list(right_subquery.iterator()),
         })
     else:
         # If the left hand side is not a text field, we need to cast it.
         if not isinstance(left_field, (models.CharField, models.TextField)):
-            left_field_name_str = "{}_str".format(left_field_name)
+            left_field_name_str = f"{left_field_name}_str"
             left_query = left_query.annotate(**{
                 left_field_name_str: _Str(left_field_name),
             })
             left_field_name = left_field_name_str
         # If the right hand side is not a text field, we need to cast it.
         if not isinstance(right_field, (models.CharField, models.TextField)):
-            right_field_name_str = "{}_str".format(right_field_name)
+            right_field_name_str = f"{right_field_name}_str"
             right_subquery = right_subquery.annotate(**{
                 right_field_name_str: _Str(right_field_name),
             }).values_list(right_field_name_str, flat=True)
             right_field_name = right_field_name_str
         # Use Exists if running on the same DB, it is much much faster
-        exist_annotation_name = "{}_annotation_str".format(right_subquery.model._meta.db_table)
+        exist_annotation_name = f"{right_subquery.model._meta.db_table}_annotation_str"
         right_subquery = right_subquery.filter(**{right_field_name: models.OuterRef(left_field_name)})
         left_query = left_query.annotate(**{exist_annotation_name: models.Exists(right_subquery)})
         return getattr(left_query, method)(**{exist_annotation_name: True})

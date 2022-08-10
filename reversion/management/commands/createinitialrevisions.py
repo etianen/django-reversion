@@ -48,7 +48,7 @@ class Command(BaseRevisionCommand):
                 model = apps.get_model(label)
                 meta_models.append(model)
             except LookupError:
-                raise CommandError("Unknown model: {}".format(label))
+                raise CommandError(f"Unknown model: {label}")
         meta_values = meta.values()
         # Determine if we should use queryset.iterator()
         using = using or router.db_for_write(Revision)
