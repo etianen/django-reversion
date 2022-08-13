@@ -34,7 +34,7 @@ def create_revision(manage_manually=False, using=None, atomic=True, request_crea
     return decorator
 
 
-class RevisionMixin(object):
+class RevisionMixin:
 
     """
     A class-based view mixin that wraps the request in a revision.

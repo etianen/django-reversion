@@ -317,7 +317,7 @@ class M2MTest(TestModelMixin, TestBase):
             obj.related.add(v1)
             obj.related.add(v2)
         version = Version.objects.get_for_object(obj).first()
-        self.assertEqual(set(version.field_dict["related"]), set((v1.pk, v2.pk,)))
+        self.assertEqual(set(version.field_dict["related"]), {v1.pk, v2.pk})
 
 
 class RevertTest(TestModelMixin, TestBase):

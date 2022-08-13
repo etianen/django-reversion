@@ -142,8 +142,7 @@ def _follow_relations(obj):
         if isinstance(follow_obj, models.Model):
             yield follow_obj
         elif isinstance(follow_obj, (models.Manager, QuerySet)):
-            for follow_obj_instance in follow_obj.all():
-                yield follow_obj_instance
+            yield from follow_obj.all()
         elif follow_obj is not None:
             raise RegistrationError("{name}.{follow_name} should be a Model or QuerySet".format(
                 name=obj.__class__.__name__,
@@ -299,7 +298,7 @@ def create_revision(manage_manually=False, using=None, atomic=True):
     return _ContextWrapper(_create_revision_context, (manage_manually, using, atomic))
 
 
-class _ContextWrapper(object):
+class _ContextWrapper:
 
     def __init__(self, func, args):
         self._func = func

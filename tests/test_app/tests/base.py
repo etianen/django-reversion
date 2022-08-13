@@ -17,9 +17,9 @@ from test_app.models import TestModel, TestModelParent
 
 # Test helpers.
 
-class TestBaseMixin(object):
+class TestBaseMixin:
 
-    multi_db = True
+    databases = "__all__"
 
     def reloadUrls(self):
         reload(import_module(settings.ROOT_URLCONF))
@@ -76,7 +76,7 @@ class TestBaseTransaction(TestBaseMixin, TransactionTestCase):
     pass
 
 
-class TestModelMixin(object):
+class TestModelMixin:
 
     def setUp(self):
         super().setUp()

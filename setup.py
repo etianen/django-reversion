@@ -16,7 +16,7 @@ except ImportError:
 
 
 def read(filepath):
-    with open(filepath, "r", encoding="utf-8") as f:
+    with open(filepath, encoding="utf-8") as f:
         return f.read()
 
 
@@ -35,7 +35,7 @@ setup(
         "reversion": ["locale/*/LC_MESSAGES/django.*", "templates/reversion/*.html"]},
     cmdclass=cmdclass,
     install_requires=[
-        "django>=2.0",
+        "django>=3.2",
     ],
     python_requires='>=3.7',
     classifiers=[

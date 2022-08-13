@@ -32,7 +32,7 @@ class IsRegisterUnregisteredTest(TestBase):
 class GetRegisteredModelsTest(TestModelMixin, TestBase):
 
     def testGetRegisteredModels(self):
-        self.assertEqual(set(reversion.get_registered_models()), set((TestModel,)))
+        self.assertEqual(set(reversion.get_registered_models()), {TestModel})
 
 
 class RegisterTest(TestBase):
