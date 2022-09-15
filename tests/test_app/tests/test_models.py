@@ -4,6 +4,7 @@ from test_app.models import (
     TestModel, TestModelRelated, TestModelParent, TestModelInline,
     TestModelNestedInline,
     TestModelInlineByNaturalKey, TestModelWithNaturalKey,
+    TestModelWithUniqueConstraint,
 )
 from test_app.tests.base import TestBase, TestModelMixin, TestModelParentMixin
 import json
@@ -443,3 +444,17 @@ class NaturalKeyTest(TestBase):
             'test_model_id': 1,
             'id': 1,
         })
+
+
+class TransactionRollbackTest(TestBase):
+
+    def setUp(self):
+        reversion.register(TestModelWithUniqueConstraint)
+
+    def testTransactionInRollbackState(self):
+        with reversion.create_revision():
+            try:
+                TestModelWithUniqueConstraint.objects.create(name='A')
+                TestModelWithUniqueConstraint.objects.create(name='A')
+            except Exception:
+                pass
