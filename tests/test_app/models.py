@@ -142,3 +142,11 @@ class TestModelInlineByNaturalKey(models.Model):
         TestModelWithNaturalKey,
         on_delete=models.CASCADE,
     )
+
+
+class TestModelWithUniqueConstraint(models.Model):
+
+    name = models.CharField(
+        max_length=191,
+        unique=True,
+    )

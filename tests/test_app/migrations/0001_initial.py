@@ -108,4 +108,11 @@ class Migration(migrations.Migration):
                 ('revision', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='reversion.revision')),
             ],
         ),
+        migrations.CreateModel(
+            name='TestModelWithUniqueConstraint',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('name', models.CharField(max_length=191, unique=True)),
+            ],
+        ),
     ]

@@ -277,6 +277,13 @@ def _create_revision_context(manage_manually, using, atomic):
         _push_frame(manage_manually, using)
         try:
             yield
+            if transaction.get_connection(using).in_atomic_block and transaction.get_rollback(using):
+                # Transaction is in invalid state due to catched exception within yield statement.
+                # Do not try to create Revision, otherwise it would lead to the transaction management error.
+                #
+                # Atomic block could be called manually around `create_revision` context manager.
+                # That's why we have to check connection flag instead of `atomic` variable value.
+                return
             # Only save for a db if that's the last stack frame for that db.
             if not any(using in frame.db_versions for frame in _stack.get()[:-1]):
                 current_frame = _current_frame()
