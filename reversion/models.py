@@ -33,7 +33,7 @@ def _safe_revert(versions):
             with transaction.atomic(using=version.db):
                 version.revert()
         except (IntegrityError, ObjectDoesNotExist):
-            logger.exception('Could not revert to {version}')
+            logger.warning('Could not revert to {version}', exc_info=True)
             unreverted_versions.append(version)
     if len(unreverted_versions) == len(versions):
         raise RevertError(gettext("Could not save %(object_repr)s version - missing dependency.") % {
