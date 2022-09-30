@@ -36,6 +36,7 @@ setup(
     cmdclass=cmdclass,
     install_requires=[
         "django>=3.2",
+        "django-mysql==3.8.1",
     ],
     python_requires='>=3.7',
     classifiers=[

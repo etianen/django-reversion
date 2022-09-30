@@ -96,6 +96,7 @@ DATABASES = {
         "PASSWORD": os.environ.get("DJANGO_DATABASE_PASSWORD_MYSQL", ""),
     },
 }
+DJANGO_MYSQL_REWRITE_QUERIES: bool = True
 
 
 # Password validation

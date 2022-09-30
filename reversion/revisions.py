@@ -191,7 +191,14 @@ def _add_to_revision(obj, using, model_db, explicit):
     )
     # If the version is a duplicate, stop now.
     if version_options.ignore_duplicates and explicit:
-        previous_version = Version.objects.using(using).get_for_object(obj, model_db=model_db).first()
+        from django_mysql.models import add_QuerySetMixin
+
+        previous_version = (
+            add_QuerySetMixin(Version.objects.using(using).get_for_object(obj, model_db=model_db))
+            .use_index("reversion_version_db_content_type_id_objec_b2c54f65_uniq")
+            .first()
+        )
+
         if previous_version and previous_version._local_field_dict == version._local_field_dict:
             return
     # Store the version.
