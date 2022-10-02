@@ -3,6 +3,15 @@
 django-reversion changelog
 ==========================
 
+5.0.3 - 2022-10-02
+------------------
+
+- A revision will no longer be created if a transaction is marked as rollback, as this would otherwise cause an
+  additional database error (@proofit404).
+- A warning log is noe emitted if a revert fails due to database integrity errors, making debugging the final
+  ``RevertError`` easier.
+
+
 5.0.2 - 2022-08-06
 ------------------
 
