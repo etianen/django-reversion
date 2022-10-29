@@ -12,7 +12,7 @@ Requirements
 ============
 
 - Python 3.7 or later
-- Django 2.0 or later
+- Django 3.2 or later
 
 Features
 ========
