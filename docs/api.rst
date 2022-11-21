@@ -174,6 +174,8 @@ Registration API
     ``format="json"``
         The name of a Django serialization format to use when saving the model instance.
 
+        Default format for all models could be set via ``REVERSION_DEFAULT_FORMAT`` variable in your settings module.
+
     ``for_concrete_model=True``
         If ``True`` proxy models will be saved under the same content type as their concrete model. If ``False``, proxy models will be saved under their own content type, effectively giving proxy models their own distinct history.
 
