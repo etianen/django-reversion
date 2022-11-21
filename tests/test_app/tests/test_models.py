@@ -7,7 +7,9 @@ from test_app.models import (
     TestModelWithUniqueConstraint,
 )
 from test_app.tests.base import TestBase, TestModelMixin, TestModelParentMixin
+from django.test import override_settings
 import json
+from xml.etree import ElementTree
 
 
 class GetForModelTest(TestModelMixin, TestBase):
@@ -458,3 +460,20 @@ class TransactionRollbackTest(TestBase):
                 TestModelWithUniqueConstraint.objects.create(name='A')
             except Exception:
                 pass
+
+
+@override_settings(REVERSION_DEFAULT_FORMAT="xml")
+class DefaultFormatSettingTest(TestBase):
+
+    def setUp(self):
+        reversion.register(TestModelWithUniqueConstraint)
+
+    def testTransactionInRollbackState(self):
+        with reversion.create_revision():
+            obj = TestModelWithUniqueConstraint.objects.create(name='A')
+
+        version = Version.objects.get_for_object(obj).get()
+        self.assertEqual(version.format, "xml")
+
+        root = ElementTree.fromstring(version.serialized_data)
+        self.assertEqual(root.tag, "django-objects")

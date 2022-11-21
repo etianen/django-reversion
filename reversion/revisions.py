@@ -5,6 +5,7 @@ from functools import wraps
 from django.apps import apps
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
+from django.conf import settings
 from django.db import models, transaction, router
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, m2m_changed
@@ -366,7 +367,7 @@ def _get_senders_and_signals(model):
         yield m2m_model, m2m_changed, _m2m_changed_receiver
 
 
-def register(model=None, fields=None, exclude=(), follow=(), format="json",
+def register(model=None, fields=None, exclude=(), follow=(), format=None,
              for_concrete_model=True, ignore_duplicates=False, use_natural_foreign_keys=False):
     def register(model):
         # Prevent multiple registration.
@@ -388,7 +389,7 @@ def register(model=None, fields=None, exclude=(), follow=(), format="json",
                 if field_name not in exclude
             ),
             follow=tuple(follow),
-            format=format,
+            format=format or getattr(settings, "REVERSION_DEFAULT_FORMAT", "json"),
             for_concrete_model=for_concrete_model,
             ignore_duplicates=ignore_duplicates,
             use_natural_foreign_keys=use_natural_foreign_keys,
