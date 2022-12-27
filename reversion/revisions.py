@@ -5,7 +5,6 @@ from functools import wraps
 from django.apps import apps
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
-from django.conf import settings
 from django.db import models, transaction, router
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, m2m_changed
@@ -13,6 +12,7 @@ from django.utils.encoding import force_str
 from django.utils import timezone
 from reversion.errors import RevisionManagementError, RegistrationError
 from reversion.signals import pre_revision_commit, post_revision_commit
+from reversion.settings import app_settings
 
 
 _VersionOptions = namedtuple("VersionOptions", (
@@ -389,7 +389,7 @@ def register(model=None, fields=None, exclude=(), follow=(), format=None,
                 if field_name not in exclude
             ),
             follow=tuple(follow),
-            format=format or getattr(settings, "REVERSION_DEFAULT_FORMAT", "json"),
+            format=format or app_settings.DEFAULT_FORMAT,
             for_concrete_model=for_concrete_model,
             ignore_duplicates=ignore_duplicates,
             use_natural_foreign_keys=use_natural_foreign_keys,

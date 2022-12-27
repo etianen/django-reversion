@@ -462,7 +462,7 @@ class TransactionRollbackTest(TestBase):
                 pass
 
 
-@override_settings(REVERSION_DEFAULT_FORMAT="xml")
+@override_settings(REVERSION={"DEFAULT_FORMAT": "xml"})
 class DefaultFormatSettingTest(TestBase):
 
     def setUp(self):
