@@ -2,6 +2,7 @@ from contextvars import ContextVar
 from collections import namedtuple, defaultdict
 from contextlib import contextmanager
 from functools import wraps
+from types import SimpleNamespace
 from django.apps import apps
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
@@ -367,8 +368,10 @@ def _get_senders_and_signals(model):
         yield m2m_model, m2m_changed, _m2m_changed_receiver
 
 
-def register(model=None, fields=None, exclude=(), follow=(), format=None,
-             for_concrete_model=True, ignore_duplicates=False, use_natural_foreign_keys=False):
+def register(
+    model=None, fields=None, exclude=None, follow=None, format=None,
+    for_concrete_model=None, ignore_duplicates=None, use_natural_foreign_keys=None
+):
     def register(model):
         # Prevent multiple registration.
         if is_registered(model):
@@ -377,6 +380,9 @@ def register(model=None, fields=None, exclude=(), follow=(), format=None,
             ))
         # Parse fields.
         opts = model._meta.concrete_model._meta
+        args = _parse_register_arguments(
+            fields, exclude, follow, format, for_concrete_model, ignore_duplicates, use_natural_foreign_keys
+        )
         version_options = _VersionOptions(
             fields=tuple(
                 field_name
@@ -385,14 +391,14 @@ def register(model=None, fields=None, exclude=(), follow=(), format=None,
                     field.name
                     for field
                     in opts.local_fields + opts.local_many_to_many
-                ] if fields is None else fields)
-                if field_name not in exclude
+                ] if args.fields is None else args.fields)
+                if field_name not in args.exclude
             ),
-            follow=tuple(follow),
-            format=format or app_settings.DEFAULT_FORMAT,
-            for_concrete_model=for_concrete_model,
-            ignore_duplicates=ignore_duplicates,
-            use_natural_foreign_keys=use_natural_foreign_keys,
+            follow=args.follow,
+            format=args.format,
+            for_concrete_model=args.for_concrete_model,
+            ignore_duplicates=args.ignore_duplicates,
+            use_natural_foreign_keys=args.use_natural_foreign_keys,
         )
         # Register the model.
         _registered_models[_get_registration_key(model)] = version_options
@@ -406,6 +412,24 @@ def register(model=None, fields=None, exclude=(), follow=(), format=None,
         return register
     # Register the model.
     return register(model)
+
+
+def _parse_register_arguments(fields, exclude, follow, format, for_concrete_model, ignore_duplicates,
+                              use_natural_foreign_keys):
+    return SimpleNamespace(
+        fields=fields,
+        exclude=() if exclude is None else exclude,
+        follow=() if follow is None else tuple(follow),
+        format=app_settings.DEFAULT_FORMAT if format is None else format,
+        for_concrete_model=(
+            app_settings.DEFAULT_FOR_CONCRETE_MODEL if for_concrete_model is None else for_concrete_model
+        ),
+        ignore_duplicates=app_settings.DEFAULT_IGNORE_DUPLICATES if ignore_duplicates is None else ignore_duplicates,
+        use_natural_foreign_keys=(
+            app_settings.DEFAULT_USE_NATURAL_FOREIGN_KEYS
+            if use_natural_foreign_keys is None else use_natural_foreign_keys
+        ),
+    )
 
 
 def _assert_registered(model):

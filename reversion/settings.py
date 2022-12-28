@@ -17,6 +17,9 @@ from django.conf import settings
 
 DEFAULTS = {
     "DEFAULT_FORMAT": "json",
+    "DEFAULT_FOR_CONCRETE_MODEL": True,
+    "DEFAULT_IGNORE_DUPLICATES": False,
+    "DEFAULT_USE_NATURAL_FOREIGN_KEYS": False,
 }
 
 
@@ -37,7 +40,7 @@ class AppSettings:
 
     def __getattr__(self, attribute):
         if attribute not in DEFAULTS:
-            raise AttributeError("Invalid Reversion setting: '%s'" % attr)
+            raise AttributeError("Invalid Reversion setting: '%s'" % attribute)
 
         try:
             user_settings = getattr(settings, 'REVERSION', {})
