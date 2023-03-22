@@ -211,6 +211,7 @@ class Version(models.Model):
         Revision,
         on_delete=models.CASCADE,
         help_text="The revision that contains this version.",
+        db_constraint=False,
     )
 
     object_id = models.CharField(
@@ -222,6 +223,7 @@ class Version(models.Model):
         ContentType,
         on_delete=models.CASCADE,
         help_text="Content type of the model under version control.",
+        db_constraint=False,
     )
 
     @property
