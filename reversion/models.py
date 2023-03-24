@@ -53,6 +53,7 @@ class Revision(models.Model):
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
+        db_constraint=False,
         verbose_name=_("user"),
         help_text="The user who created this revision.",
     )
