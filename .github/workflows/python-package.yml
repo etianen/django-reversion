@@ -65,7 +65,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install --pre django'${{ matrix.django-version }}'
-        python -m pip install flake8 coverage sphinx sphinx_rtd_theme 'psycopg2<2.9' mysqlclient -e .
+        python -m pip install flake8 coverage sphinx sphinx_rtd_theme psycopg2 mysqlclient -e .
     - name: Lint with flake8
       run: |
         flake8
