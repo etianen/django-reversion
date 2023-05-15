@@ -41,7 +41,7 @@ jobs:
       DJANGO_DATABASE_PASSWORD_MYSQL: root
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9, '3.10']
+        python-version: [3.7, 3.8, 3.9, '3.10', '3.11']
         django-version:
           - '>=4.1,<4.2'
           - '>=4.0,<4.1'
@@ -50,6 +50,10 @@ jobs:
           - python-version: 3.7
             django-version: '>=4.1,<4.2'
           - python-version: 3.7
+            django-version: '>=4.0,<4.1'
+          - python-version: '3.11'
+            django-version: '>=3.2,<4.0'
+          - python-version: '3.11'
             django-version: '>=4.0,<4.1'
     steps:
     - uses: actions/checkout@v2
