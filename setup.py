@@ -28,7 +28,7 @@ setup(
     long_description=read('README.rst'),
     author="Dave Hall",
     author_email="dave@etianen.com",
-    url="http://github.com/etianen/django-reversion",
+    url="https://github.com/etianen/django-reversion",
     zip_safe=False,
     packages=find_packages(),
     package_data={
