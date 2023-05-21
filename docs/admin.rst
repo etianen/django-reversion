@@ -13,6 +13,8 @@ django-reversion can be used to add rollback and recovery to your admin site.
 
     The ``raw=True`` flag will be set in ``pre_save`` and ``post_save`` signals, allowing you to distinguish preview transactions from regular database transactions and avoid non-transactional side-effects.
 
+    Alternatively, use `transaction.on_commit() <https://docs.djangoproject.com/en/4.2/topics/db/transactions/#django.db.transaction.on_commit>`_ to register side-effects to be carried out only on committed transactions.
+
 .. Warning::
     The admin integration requires that your database engine supports transactions. This is the case for PostgreSQL, SQLite and MySQL InnoDB. If you are using MySQL MyISAM, upgrade your database tables to InnoDB!
 
