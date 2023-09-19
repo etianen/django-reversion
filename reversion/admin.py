@@ -178,10 +178,14 @@ class VersionAdmin(admin.ModelAdmin):
                         set_comment(_("Reverted to previous version, saved on %(datetime)s") % {
                             "datetime": localize(template_localtime(version.revision.date_created)),
                         })
-                    else:
+                    elif response.status_code == 200:
                         response.template_name = template_name  # Set the template name to the correct template.
                         response.render()  # Eagerly render the response, so it's using the latest version.
                         raise _RollBackRevisionView(response)  # Raise exception to undo the transaction and revision.
+                    else:
+                        raise RevertError(_("Could not load %(object_repr)s version - not found") % {
+                            "object_repr": self.object_repr,
+                        })
         except (RevertError, models.ProtectedError) as ex:
             opts = self.model._meta
             messages.error(request, force_str(ex))
