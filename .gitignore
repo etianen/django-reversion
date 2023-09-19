@@ -3,6 +3,7 @@
 .project
 .pydevproject
 .settings
+.venv
 *.pyc
 *.pyo
 dist
