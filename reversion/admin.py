@@ -184,7 +184,7 @@ class VersionAdmin(admin.ModelAdmin):
                         raise _RollBackRevisionView(response)  # Raise exception to undo the transaction and revision.
                     else:
                         raise RevertError(_("Could not load %(object_repr)s version - not found") % {
-                            "object_repr": self.object_repr,
+                            "object_repr": version.object_repr,
                         })
         except (RevertError, models.ProtectedError) as ex:
             opts = self.model._meta
