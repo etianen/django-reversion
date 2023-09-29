@@ -3,6 +3,12 @@
 django-reversion changelog
 ==========================
 
+5.0.6 - 2023-09-29
+------------------
+
+- Fix handling case of missing object in admin revert (@julianklotz)
+
+
 5.0.5 - 2023-09-19
 ------------------
 
