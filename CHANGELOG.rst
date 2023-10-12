@@ -107,7 +107,6 @@ django-reversion changelog
 - Packaging improvements (@michael-k).
 - Removing deprecated usages of `force_text` (@Tenzer).
 - Documentation fixes (@chicheng).
-- Drops Python 2.7 compatibility.
 
 
 3.0.5 - 2019-12-02
@@ -116,6 +115,7 @@ django-reversion changelog
 - Improved performance of `get_deleted` for large datasets (@jeremy-engel).
 - Django 3.0 compatibility (@claudep).
 - Drops Django < 1.11 compatibility (@claudep).
+- Drops Python 2.7 compatibility (@claudep).
 - Fixed errors in management commands when `django.contrib.admin` is not in `INSTALLED_APPS` (@irtimir).
 
 
