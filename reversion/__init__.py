@@ -36,4 +36,4 @@ else:
         get_registered_models,
     )
 
-__version__ = VERSION = (5, 0, 6)
+__version__ = VERSION = (5, 0, 7)
