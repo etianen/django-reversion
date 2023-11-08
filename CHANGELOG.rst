@@ -3,6 +3,12 @@
 django-reversion changelog
 ==========================
 
+5.0.8 - 2023-11-08
+------------------
+
+- Fix ``get_deleted`` (@siddarta-weis, @etianen).
+
+
 5.0.7 - 2023-11-07
 ------------------
 
