@@ -168,11 +168,12 @@ class VersionQuerySet(models.QuerySet):
             # conditional expressions are being supported since django 3.0
             # DISTINCT ON works only for Postgres DB
             if connection.vendor == "postgresql" and django.VERSION >= (3, 0):
-                return (
+                subquery = (
                     self.get_for_model(model, model_db=model_db)
                     .filter(~models.Exists(model_qs))
                     .order_by("object_id", "-pk")
                     .distinct("object_id")
+                    .values("pk")
                 )
             else:
                 subquery = (
