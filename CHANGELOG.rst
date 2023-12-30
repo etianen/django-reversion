@@ -3,10 +3,16 @@
 django-reversion changelog
 ==========================
 
+5.0.10 - 2023-12-30
+-------------------
+
+- Fix N+1 queries while rendering the ``recover_list.html`` template (@armonge).
+
+
 5.0.9 - 2023-12-20
 ------------------
 
-- Fix N+1 queries while rendering the ``recover_list.html`` template (@armonge).
+- Broken release.
 
 
 5.0.8 - 2023-11-08
