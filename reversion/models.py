@@ -113,6 +113,8 @@ class Revision(models.Model):
         return ", ".join(force_str(version) for version in self.version_set.all())
 
     class Meta:
+        verbose_name = _('reversion')
+        verbose_name_plural = _('reversions')
         app_label = "reversion"
         ordering = ("-pk",)
 
@@ -330,6 +332,8 @@ class Version(models.Model):
         return self.object_repr
 
     class Meta:
+        verbose_name = _('version')
+        verbose_name_plural = _('versions')
         app_label = 'reversion'
         unique_together = (
             ("db", "content_type", "object_id", "revision"),
