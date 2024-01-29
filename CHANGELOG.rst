@@ -3,6 +3,12 @@
 django-reversion changelog
 ==========================
 
+5.0.11 - 2024-01-29
+-------------------
+
+- Improved the Chinese translation (@zengqiu).
+
+
 5.0.10 - 2023-12-30
 -------------------
 
