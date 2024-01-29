@@ -50,7 +50,7 @@ msgid "Recover deleted %(name)s"
 msgstr "恢复已删除的 %(name)s"
 
 #: .\apps.py:7
-msgid "Reversions"
+msgid "Reversion"
 msgstr "版本记录"
 
 #: .\models.py:39
@@ -71,12 +71,12 @@ msgid "comment"
 msgstr "评论"
 
 #: .\models.py:116
-msgid "reversion"
-msgstr "版本记录"
+msgid "revision"
+msgstr "修改"
 
 #: .\models.py:117
-msgid "reversions"
-msgstr "版本记录"
+msgid "revisions"
+msgstr "修改"
 
 #: .\models.py:275
 #, python-format
