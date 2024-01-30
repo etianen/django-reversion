@@ -72,6 +72,9 @@ jobs:
     - name: Lint with flake8
       run: |
         flake8
+    - name: Check no missing migrations
+      run: |
+        tests/manage.py makemigrations --check
     - name: Test with unittest
       run: |
         coverage run tests/manage.py test tests
