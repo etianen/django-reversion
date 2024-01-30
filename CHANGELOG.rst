@@ -3,6 +3,12 @@
 django-reversion changelog
 ==========================
 
+5.0.12 - 2024-01-30
+-------------------
+
+- Fix missing migration introduced in v5.0.11.
+
+
 5.0.11 - 2024-01-29
 -------------------
 
