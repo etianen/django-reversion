@@ -23,7 +23,9 @@ class Migration(migrations.Migration):
                 ('user', models.ForeignKey(blank=True, help_text='The user who created this revision.', null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL, verbose_name='user')),
             ],
             options={
-                "ordering": ("-pk",)
+                "ordering": ("-pk",),
+                'verbose_name': 'revision',
+                'verbose_name_plural': 'revisions',
             },
         ),
         migrations.CreateModel(
@@ -39,7 +41,9 @@ class Migration(migrations.Migration):
                 ('db', models.CharField(help_text='The database the model under version control is stored in.', max_length=191)),
             ],
             options={
-                "ordering": ("-pk",)
+                "ordering": ("-pk",),
+                'verbose_name': 'version',
+                'verbose_name_plural': 'versions',
             },
         ),
         migrations.AlterUniqueTogether(
