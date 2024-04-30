@@ -21,6 +21,7 @@ from django.utils.translation import gettext_lazy as _
 from reversion.errors import RevertError
 from reversion.revisions import (_follow_relations_recursive,
                                  _get_content_type, _get_options)
+from reversion import version_file
 
 
 logger = logging.getLogger(__name__)
@@ -263,6 +264,11 @@ class Version(models.Model):
         help_text="A string representation of the object.",
     )
 
+    is_archived = models.BooleanField(
+        null=True,
+        help_text="True when serialized data is stored in file instead of db."
+    )
+
     @cached_property
     def _object_version(self):
         version_options = _get_options(self._model)
@@ -328,8 +334,37 @@ class Version(models.Model):
     def revert(self):
         self._object_version.save(using=self.db)
 
+    def archive(self):
+        version_file.write(self.pk, self.serialized_data)
+        data = version_file.read(self.pk)
+        if data and data == self.serialized_data:
+            self.serialized_data = ''
+            self.is_archived = True
+            self.save()
+        else:
+            logger.info(f"{self.pk} was not archived.")
+
+    def restore(self):
+        data = version_file.read(self.pk)
+        if data:
+            self.serialized_data = data
+            self._db_serialized_data = data
+            self.is_archived = False
+            self.save()
+        else:
+            logger.info(f"{self.pk} was not restored.")
+
     def __str__(self):
         return self.object_repr
+
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        instance = super().from_db(db, field_names, values)
+        data = version_file.read(instance.pk)
+        if data:
+            instance._db_serialized_data= instance.serialized_data
+            instance.serialized_data = data
+        return instance
 
     class Meta:
         verbose_name = _('version')
