@@ -116,7 +116,7 @@ class VersionAdmin(admin.ModelAdmin):
                     ):
                         fk_name = field.name
                         break
-            if fk_name and not inline_model._meta.get_field(fk_name).remote_field.is_hidden():
+            if fk_name and not inline_model._meta.get_field(fk_name).remote_field.hidden:
                 field = inline_model._meta.get_field(fk_name)
                 accessor = field.remote_field.get_accessor_name()
                 follow_field = accessor
