@@ -26,7 +26,6 @@ def create_revision(manage_manually=False, using=None, atomic=True, request_crea
             if request_creates_revision(request):
                 with create_revision_base(manage_manually=manage_manually, using=using, atomic=atomic):
                     response = func(request, *args, **kwargs)
-                    # Otherwise, we're good.
                     _set_user_from_request(request)
                     return response
             return func(request, *args, **kwargs)
