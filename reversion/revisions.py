@@ -5,7 +5,7 @@ from functools import wraps
 from django.apps import apps
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import models, transaction, router
+from django.db import models, transaction, router, connections
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, m2m_changed
 from django.utils.encoding import force_str
@@ -211,6 +211,7 @@ def add_to_revision(obj, model_db=None):
 
 def _save_revision(versions, user=None, comment="", meta=(), date_created=None, using=None):
     from reversion.models import Revision
+    from reversion.models import Version
     # Only save versions that exist in the database.
     # Use _base_manager so we don't have problems when _default_manager is overriden
     model_db_pks = defaultdict(lambda: defaultdict(set))
@@ -248,9 +249,17 @@ def _save_revision(versions, user=None, comment="", meta=(), date_created=None, 
     # Save the revision.
     revision.save(using=using)
     # Save version models.
+
+    can_use_bulk_create = connections[using].features.can_return_rows_from_bulk_insert
+
     for version in versions:
         version.revision = revision
-        version.save(using=using)
+        if not can_use_bulk_create:
+            version.save(using=using)
+
+    if can_use_bulk_create:
+        Version.objects.using(using).bulk_create(versions)
+
     # Save the meta information.
     for meta_model, meta_fields in meta:
         meta_model._base_manager.db_manager(using=using).create(
