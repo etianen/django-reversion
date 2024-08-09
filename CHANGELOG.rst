@@ -3,8 +3,8 @@
 django-reversion changelog
 ==========================
 
-5.0.13 - 2024-08-09
--------------------
+5.1.0 - 2024-08-09
+------------------
 
 - Django 5 support (@jeremy-engel).
 - Use bulk_create`` on supported databases (@stianjensen).
