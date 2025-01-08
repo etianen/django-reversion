@@ -251,7 +251,7 @@ class VersionAdmin(admin.ModelAdmin):
             app_label=opts.app_label,
             module_name=capfirst(opts.verbose_name),
             title=_("Recover deleted %(name)s") % {"name": force_str(opts.verbose_name_plural)},
-            deleted=deleted,
+            deleted=deleted.select_related("revision"),
         )
         context.update(extra_context or {})
         return render(
