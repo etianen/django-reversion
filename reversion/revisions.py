@@ -168,12 +168,6 @@ def _add_to_revision(obj, using, model_db, explicit):
     if obj.pk is None:
         return
 
-    # If we're in a deferred revision management context, defer the object.
-    deferred_stack = _deferred_stack.get()
-    if deferred_stack:
-        deferred_stack._objects.append(obj)
-        return
-
     version_options = _get_options(obj.__class__)
     content_type = _get_content_type(obj.__class__, using)
     object_id = force_str(obj.pk)
@@ -197,6 +191,13 @@ def _add_to_revision(obj, using, model_db, explicit):
         ),
         object_repr=force_str(obj),
     )
+    # If we're in a deferred revision management context, defer the object.
+    deferred_stack = _deferred_stack.get()
+    if deferred_stack:
+        deferred_stack[-1]._objects.setdefault((content_type, using), []).append((version, obj))
+        for follow_obj in _follow_relations(obj):
+            _add_to_revision(follow_obj, using, model_db, False)
+        return
     # If the version is a duplicate, stop now.
     if version_options.ignore_duplicates and explicit:
         previous_version = Version.objects.using(using).get_for_object(obj, model_db=model_db).first()
@@ -209,6 +210,33 @@ def _add_to_revision(obj, using, model_db, explicit):
     # Follow relations.
     for follow_obj in _follow_relations(obj):
         _add_to_revision(follow_obj, using, model_db, False)
+
+
+def _add_to_revision_recursive(content_type, using, objects):
+    from reversion.models import Version
+
+    # If the obj is already in the revision, stop now.
+    db_versions = _current_frame().db_versions
+    versions = db_versions[using]
+    # Store the version.
+    db_versions = _copy_db_versions(db_versions)
+    Version.objects.using(using).get_for_model()
+
+    latest = Version.objects.filter(object_id=models.OuterRef('object_id')).order_by('-id')  # or '-created_at'
+    latest_versions = (
+        Version.objects.using(using)
+        .filter(object_id__in=[obj.pk for _, obj in objects])
+        .annotate(latest_id=models.Subquery(latest.values('id')[:1]))
+        .filter(id=models.F('latest_id'))
+    )
+    previous_versions = {v.object_id for v in latest_versions}
+
+    for version, obj in objects:
+        object_id = force_str(obj.pk)
+        version_key = (content_type, object_id)
+        db_versions[using][version_key] = version
+
+    _update_frame(db_versions=db_versions)
 
 
 def add_to_revision(obj, model_db=None):
@@ -291,33 +319,34 @@ def _dummy_context():
 def _create_revision_context(manage_manually, using, atomic, defer=False):
     context = transaction.atomic(using=using) if atomic else _dummy_context()
     defer_context = _DeferredRevisionContext() if defer else _dummy_context()
-    with context, defer_context:
+    with context:
         _push_frame(manage_manually, using)
-        try:
-            yield
-            if transaction.get_connection(using).in_atomic_block and transaction.get_rollback(using):
-                # Transaction is in invalid state due to catched exception within yield statement.
-                # Do not try to create Revision, otherwise it would lead to the transaction management error.
-                #
-                # Atomic block could be called manually around `create_revision` context manager.
-                # That's why we have to check connection flag instead of `atomic` variable value.
-                return
-            # Only save for a db if that's the last stack frame for that db.
-            if not any(using in frame.db_versions for frame in _stack.get()[:-1]):
-                current_frame = _current_frame()
-                _save_revision(
-                    versions=current_frame.db_versions[using].values(),
-                    user=current_frame.user,
-                    comment=current_frame.comment,
-                    meta=current_frame.meta,
-                    date_created=current_frame.date_created,
-                    using=using,
-                )
-        finally:
-            _pop_frame()
+        with defer_context:
+            try:
+                yield
+                if transaction.get_connection(using).in_atomic_block and transaction.get_rollback(using):
+                    # Transaction is in invalid state due to catched exception within yield statement.
+                    # Do not try to create Revision, otherwise it would lead to the transaction management error.
+                    #
+                    # Atomic block could be called manually around `create_revision` context manager.
+                    # That's why we have to check connection flag instead of `atomic` variable value.
+                    return
+                # Only save for a db if that's the last stack frame for that db.
+                if not any(using in frame.db_versions for frame in _stack.get()[:-1]):
+                    current_frame = _current_frame()
+                    _save_revision(
+                        versions=current_frame.db_versions[using].values(),
+                        user=current_frame.user,
+                        comment=current_frame.comment,
+                        meta=current_frame.meta,
+                        date_created=current_frame.date_created,
+                        using=using,
+                    )
+            finally:
+                _pop_frame()
 
 
-def create_revision(manage_manually=False, using=None, atomic=True, defer=False):
+def create_revision(manage_manually=False, using=None, atomic=True, defer=True):
     from reversion.models import Revision
     using = using or router.db_for_write(Revision)
     return _ContextWrapper(_create_revision_context, (manage_manually, using, atomic, defer))
@@ -347,18 +376,21 @@ class _ContextWrapper:
 class _DeferredRevisionContext:
 
     def __init__(self):
-        self._objects = []
+        self._objects = {}
 
     def __enter__(self):
         if not is_active():
             raise RevertError("Cannot defer the creation of a revision outside of a revision management context")
-        if _deferred_stack.get():
+        deferred_stack = _deferred_stack.get()
+        if deferred_stack:
             raise RevertError("Cannot have more than a single deferred revision management context")
-        _deferred_stack.append(self)
+        deferred_stack.append(self)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        _deferred_stack.pop()
+        import ipdb; print('\a'); ipdb.sset_trace()
+
+        _deferred_stack.get().pop()
 
 
 def _post_save_receiver(sender, instance, using, **kwargs):
