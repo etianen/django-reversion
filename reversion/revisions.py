@@ -10,7 +10,7 @@ from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, m2m_changed
 from django.utils.encoding import force_str
 from django.utils import timezone
-from reversion.errors import RevisionManagementError, RegistrationError
+from reversion.errors import RevisionManagementError, RegistrationError, RevertError
 from reversion.signals import pre_revision_commit, post_revision_commit
 
 
@@ -35,6 +35,7 @@ _StackFrame = namedtuple("StackFrame", (
 
 
 _stack = ContextVar("reversion-stack", default=[])
+_deferred_stack = ContextVar("reversion-deferred-stack", default=[])
 
 
 def is_active():
@@ -166,6 +167,13 @@ def _add_to_revision(obj, using, model_db, explicit):
     # Exit early if the object is not fully-formed.
     if obj.pk is None:
         return
+
+    # If we're in a deferred revision management context, defer the object.
+    deferred_stack = _deferred_stack.get()
+    if deferred_stack:
+        deferred_stack._objects.append(obj)
+        return
+
     version_options = _get_options(obj.__class__)
     content_type = _get_content_type(obj.__class__, using)
     object_id = force_str(obj.pk)
@@ -280,9 +288,10 @@ def _dummy_context():
 
 
 @contextmanager
-def _create_revision_context(manage_manually, using, atomic):
+def _create_revision_context(manage_manually, using, atomic, defer=False):
     context = transaction.atomic(using=using) if atomic else _dummy_context()
-    with context:
+    defer_context = _DeferredRevisionContext() if defer else _dummy_context()
+    with context, defer_context:
         _push_frame(manage_manually, using)
         try:
             yield
@@ -308,10 +317,10 @@ def _create_revision_context(manage_manually, using, atomic):
             _pop_frame()
 
 
-def create_revision(manage_manually=False, using=None, atomic=True):
+def create_revision(manage_manually=False, using=None, atomic=True, defer=False):
     from reversion.models import Revision
     using = using or router.db_for_write(Revision)
-    return _ContextWrapper(_create_revision_context, (manage_manually, using, atomic))
+    return _ContextWrapper(_create_revision_context, (manage_manually, using, atomic, defer))
 
 
 class _ContextWrapper:
@@ -333,6 +342,23 @@ class _ContextWrapper:
             with self._func(*self._args):
                 return func(*args, **kwargs)
         return do_revision_context
+
+
+class _DeferredRevisionContext:
+
+    def __init__(self):
+        self._objects = []
+
+    def __enter__(self):
+        if not is_active():
+            raise RevertError("Cannot defer the creation of a revision outside of a revision management context")
+        if _deferred_stack.get():
+            raise RevertError("Cannot have more than a single deferred revision management context")
+        _deferred_stack.append(self)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        _deferred_stack.pop()
 
 
 def _post_save_receiver(sender, instance, using, **kwargs):
