@@ -1,6 +1,7 @@
 import re
 from django.contrib import admin
 from django.contrib.contenttypes.admin import GenericTabularInline
+from django.db.models.signals import pre_save, post_save, pre_delete, post_delete, m2m_changed
 from django.shortcuts import resolve_url
 import reversion
 from reversion.admin import VersionAdmin
@@ -126,6 +127,69 @@ class AdminRevisionViewTest(LoginMixin, AdminMixin, TestBase):
         self.obj.refresh_from_db()
         self.assertEqual(self.obj.name, "v1")
         self.assertEqual(self.obj.parent_name, "parent v1")
+
+
+class AdminRevisionViewSignalsTest(LoginMixin, AdminMixin, TestBase):
+    """Test that Django model signals are muted during GET requests to revision views."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.signal_fired = None
+
+    def signal_receiver(self, sender, **kwargs):
+        """Receiver that tracks which signal was fired."""
+        self.signal_fired = sender
+        raise RuntimeError(f"Django signal was fired for {sender}!")
+
+    def setUp(self):
+        super().setUp()
+        with reversion.create_revision():
+            self.obj = TestModelParent.objects.create()
+
+        # Connect all the model signals that should be muted
+        self.signals_to_test = [pre_save, post_save, pre_delete, post_delete, m2m_changed]
+        for signal in self.signals_to_test:
+            signal.connect(receiver=self.signal_receiver, sender=TestModelParent)
+
+    def tearDown(self):
+        # Disconnect all signals
+        for signal in self.signals_to_test:
+            signal.disconnect(receiver=self.signal_receiver, sender=TestModelParent)
+        super().tearDown()
+
+    def testGetForRevisionViewDoesntFireDjangoSignals(self):
+        """Test that viewing a revision (GET request) doesn't fire Django model signals."""
+        self.signal_fired = None
+
+        # This should NOT fire any signals since it's a GET request
+        response = self.client.get(resolve_url(
+            "admin:test_app_testmodelparent_revision",
+            self.obj.pk,
+            Version.objects.get_for_object(self.obj)[0].pk,
+        ))
+
+        # The request should succeed (no signal should have been fired)
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(self.signal_fired, "No signals should fire during GET request")
+
+    def testPostForRevisionViewFiresDjangoSignals(self):
+        """Test that reverting a revision (POST request) properly fires Django model signals."""
+        self.signal_fired = None
+
+        # This SHOULD fire signals since it's a POST request (actual revert)
+        with self.assertRaises(RuntimeError) as cm:
+            self.client.post(resolve_url(
+                "admin:test_app_testmodelparent_revision",
+                self.obj.pk,
+                Version.objects.get_for_object(self.obj)[0].pk,
+            ), {
+                "name": "v1",
+                "parent_name": "parent v1",
+            })
+
+        # Verify that signals were indeed fired during POST
+        self.assertIn("Django signal was fired", str(cm.exception))
+        self.assertIsNotNone(self.signal_fired, "Signals should fire during POST request")
 
 
 class AdminRecoverViewTest(LoginMixin, AdminMixin, TestBase):
