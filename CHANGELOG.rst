@@ -3,13 +3,13 @@
 django-reversion changelog
 ==========================
 
-Unreleased
+6.0.0 - 2025-09020
 ------------------
 
-- Fix Django signals firing when viewing historical versions in admin.
-  Django model signals (pre_save, post_save, pre_delete, post_delete, m2m_changed) 
-  are now properly muted during GET requests to revision views, preventing unintended 
-  side effects from signal handlers when users view historical data.
+- Prevent Django signals firing when viewing historical versions in admin.
+  Django model signals (pre_save, post_save, pre_delete, post_delete, m2m_changed)
+  are now muted during GET requests to revision views, preventing unintended
+  side effects from signal handlers when users view historical data. (@romanek-adam-b2c2)
 
 
 5.1.0 - 2024-08-09
