@@ -1,5 +1,6 @@
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from django.db import models, transaction, connections
+from django.db.models.signals import pre_save, post_save, pre_delete, post_delete, m2m_changed
 from django.contrib import admin, messages
 from django.contrib.admin import options
 from django.contrib.admin.utils import unquote, quote
@@ -16,6 +17,7 @@ from django.utils.formats import localize
 from reversion.errors import RevertError
 from reversion.models import Version
 from reversion.revisions import is_active, register, is_registered, set_comment, create_revision, set_user
+from reversion.utils import mute_signals
 
 
 class _RollBackRevisionView(Exception):
@@ -165,9 +167,19 @@ class VersionAdmin(admin.ModelAdmin):
         # Check that database transactions are supported.
         if not connections[version.db].features.uses_savepoints:
             raise ImproperlyConfigured("Cannot use VersionAdmin with a database that does not support savepoints.")
+
+        # Determine whether to mute signals based on request method
+        if request.method == "GET":
+            # For GET requests (viewing revisions), mute all Django model signals
+            # to prevent unintended side effects from signal handlers
+            signal_context = mute_signals(pre_save, post_save, pre_delete, post_delete, m2m_changed)
+        else:
+            # For POST requests (actual reverts), allow signals to fire normally
+            signal_context = nullcontext()
+
         # Run the view.
         try:
-            with transaction.atomic(using=version.db):
+            with transaction.atomic(using=version.db), signal_context:
                 # Revert the revision.
                 version.revision.revert(delete=True)
                 # Run the normal changeform view.
