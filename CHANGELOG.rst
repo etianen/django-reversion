@@ -16,7 +16,7 @@ django-reversion changelog
 ------------------
 
 - Django 5 support (@jeremy-engel).
-- Use bulk_create`` on supported databases (@stianjensen).
+- Use ``bulk_create`` on supported databases (@stianjensen).
 
 
 5.0.12 - 2024-01-30
