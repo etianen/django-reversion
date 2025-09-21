@@ -3,7 +3,7 @@
 django-reversion changelog
 ==========================
 
-6.0.0 - 2025-09020
+6.0.0 - 2025-09-20
 ------------------
 
 - Prevent Django signals firing when viewing historical versions in admin.
