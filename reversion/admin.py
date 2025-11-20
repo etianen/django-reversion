@@ -1,19 +1,21 @@
 from contextlib import contextmanager, nullcontext
-from django.db import models, transaction, connections
-from django.db.models.signals import pre_save, post_save, pre_delete, post_delete, m2m_changed
+
 from django.contrib import admin, messages
 from django.contrib.admin import options
 from django.contrib.admin.utils import unquote, quote
 from django.contrib.contenttypes.admin import GenericInlineModelAdmin
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import PermissionDenied, ImproperlyConfigured
+from django.db import models, transaction, connections
+from django.db.models.signals import pre_save, post_save, pre_delete, post_delete, m2m_changed
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse, re_path
+from django.utils.encoding import force_str
+from django.utils.formats import localize
 from django.utils.text import capfirst
 from django.utils.timezone import template_localtime
 from django.utils.translation import gettext as _
-from django.utils.encoding import force_str
-from django.utils.formats import localize
+
 from reversion.errors import RevertError
 from reversion.models import Version
 from reversion.revisions import is_active, register, is_registered, set_comment, create_revision, set_user
@@ -40,9 +42,24 @@ class VersionAdmin(admin.ModelAdmin):
 
     history_latest_first = False
 
+    history_order_by_date = False
+
     def reversion_register(self, model, **kwargs):
         """Registers the model with reversion."""
         register(model, **kwargs)
+
+    def get_version_ordering(self, request):
+        """Hook for specifying custom field ordering for the version queryset."""
+        # Default ordering logic uses version ID only
+        order_fields = ["pk"]
+        # Setting history_order_by_date causes revision date to be used as the primary sort key
+        # Keep version ID as secondary in case of identical revision dates
+        if self.history_order_by_date:
+            order_fields.insert(0, "revision__date_created")
+        # Setting history_latest_first causes order to be reversed on all fields
+        if self.history_latest_first:
+            order_fields = [f"-{field}" for field in order_fields]
+        return tuple(order_fields)
 
     @contextmanager
     def create_revision(self, request):
@@ -60,11 +77,10 @@ class VersionAdmin(admin.ModelAdmin):
             "reversion/%s" % template_name,
         )
 
-    def _reversion_order_version_queryset(self, queryset):
+    def _reversion_order_version_queryset(self, request, queryset):
         """Applies the correct ordering to the given version queryset."""
-        if not self.history_latest_first:
-            queryset = queryset.order_by("pk")
-        return queryset
+        ordering = self.get_version_ordering(request) or ()
+        return queryset.order_by(*ordering)
 
     # Messages.
 
@@ -258,6 +274,7 @@ class VersionAdmin(admin.ModelAdmin):
         model = self.model
         opts = model._meta
         deleted = self._reversion_order_version_queryset(
+            request,
             Version.objects.get_deleted(self.model).select_related("revision")
         )
         # Set the app name.
@@ -298,10 +315,10 @@ class VersionAdmin(admin.ModelAdmin):
                 ),
             }
             for version
-            in self._reversion_order_version_queryset(Version.objects.get_for_object_reference(
+            in self._reversion_order_version_queryset(request, Version.objects.get_for_object_reference(
                 self.model,
                 unquote(object_id),  # Underscores in primary key get quoted to "_5F"
-            ).select_related("revision__user"))
+            ).select_related("revision", "revision__user"))
         ]
         # Compile the context.
         context = {"action_list": action_list}

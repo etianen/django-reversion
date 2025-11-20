@@ -1,8 +1,11 @@
 import re
+from datetime import datetime, timedelta
+
 from django.contrib import admin
 from django.contrib.contenttypes.admin import GenericTabularInline
 from django.db.models.signals import pre_save, post_save, pre_delete, post_delete, m2m_changed
 from django.shortcuts import resolve_url
+
 import reversion
 from reversion.admin import VersionAdmin
 from reversion.models import Version
@@ -247,6 +250,255 @@ class AdminHistoryViewTest(LoginMixin, AdminMixin, TestBase):
             obj.pk,
             Version.objects.get_for_model(TestModelParent).get().pk,
         ))
+
+    def testHistorylistViewOrderDefault(self):
+        # Create an object and multiple revisions.
+        with reversion.create_revision():
+            obj = TestModelParent.objects.create(name="v1", parent_name="p1")
+        with reversion.create_revision():
+            obj.name = "v2"
+            obj.save()
+        with reversion.create_revision():
+            obj.name = "v3"
+            obj.save()
+
+        # Fetch history page.
+        response = self.client.get(resolve_url("admin:test_app_testmodelparent_history", obj.pk))
+        content = response.content.decode()
+
+        # Compute expected order: default VersionAdmin orders by pk ascending (oldest first).
+        version_ids = list(Version.objects.get_for_object(obj).values_list("pk", flat=True))
+        expected_order = sorted(version_ids)
+
+        # Build the URLs as rendered in the history list and assert their order.
+        urls_in_order = [
+            resolve_url(
+                "admin:test_app_testmodelparent_revision",
+                obj.pk,
+                vid,
+            )
+            for vid in expected_order
+        ]
+
+        # Ensure each subsequent URL appears later in the content than the previous one.
+        last_index = -1
+        for url in urls_in_order:
+            index = content.find(url)
+            self.assertNotEqual(index, -1, f"Expected to find {url} in history page")
+            self.assertGreater(index, last_index, "History list is not ordered by ascending version pk (oldest first)")
+            last_index = index
+
+
+class AdminHistoryViewLatestFirstTest(LoginMixin, TestBase):
+
+    class TestModelParentAdminLatestFirst(VersionAdmin):
+        history_latest_first = True
+
+    def setUp(self):
+        super().setUp()
+        # Register a custom admin with history_latest_first enabled
+        admin.site.register(TestModelParent, self.TestModelParentAdminLatestFirst)
+        self.reloadUrls()
+
+    def tearDown(self):
+        super().tearDown()
+        admin.site.unregister(TestModelParent)
+        self.reloadUrls()
+
+    def testHistorylistViewOrderLatestFirst(self):
+        # Create an object and multiple revisions.
+        with reversion.create_revision():
+            obj = TestModelParent.objects.create(name="v1", parent_name="p1")
+        with reversion.create_revision():
+            obj.name = "v2"
+            obj.save()
+        with reversion.create_revision():
+            obj.name = "v3"
+            obj.save()
+
+        # Fetch history page.
+        response = self.client.get(resolve_url("admin:test_app_testmodelparent_history", obj.pk))
+        content = response.content.decode()
+
+        # Expected order: with history_latest_first=True, versions are ordered by pk descending (newest first).
+        version_ids = list(Version.objects.get_for_object(obj).values_list("pk", flat=True))
+        expected_order = sorted(version_ids, reverse=True)
+
+        urls_in_order = [
+            resolve_url("admin:test_app_testmodelparent_revision", obj.pk, vid)
+            for vid in expected_order
+        ]
+
+        last_index = -1
+        for url in urls_in_order:
+            index = content.find(url)
+            self.assertNotEqual(index, -1, f"Expected to find {url} in history page")
+            self.assertGreater(index, last_index, "History list is not ordered by descending version pk (newest first)")
+            last_index = index
+
+
+class AdminHistoryViewOrderByDateTest(LoginMixin, TestBase):
+
+    class TestModelParentAdminOrderByDate(VersionAdmin):
+        history_order_by_date = True
+
+    def setUp(self):
+        super().setUp()
+        # Register a custom admin with history_order_by_date enabled
+        admin.site.register(TestModelParent, self.TestModelParentAdminOrderByDate)
+        self.reloadUrls()
+
+    def tearDown(self):
+        super().tearDown()
+        admin.site.unregister(TestModelParent)
+        self.reloadUrls()
+
+    def testHistorylistViewOrderByDate(self):
+        # Create an object and multiple revisions with increasing timestamps.
+        with reversion.create_revision():
+            obj = TestModelParent.objects.create(name="v1", parent_name="p1")
+            # Use an out-of-sequence date to verify correct ordering
+            reversion.set_date_created(datetime.now() + timedelta(days=1))
+        with reversion.create_revision():
+            obj.name = "v2"
+            obj.save()
+        with reversion.create_revision():
+            obj.name = "v3"
+            obj.save()
+
+        # Fetch history page.
+        response = self.client.get(resolve_url("admin:test_app_testmodelparent_history", obj.pk))
+        content = response.content.decode()
+
+        # Expected order: ordered by revision creation date ascending (oldest date first).
+        versions = (
+            Version.objects.get_for_object(obj)
+            .select_related("revision")
+            .order_by("revision__date_created", "pk")
+        )
+        expected_order = list(versions.values_list("pk", flat=True))
+
+        urls_in_order = [
+            resolve_url("admin:test_app_testmodelparent_revision", obj.pk, vid)
+            for vid in expected_order
+        ]
+
+        last_index = -1
+        for url in urls_in_order:
+            index = content.find(url)
+            self.assertNotEqual(index, -1, f"Expected to find {url} in history page")
+            self.assertGreater(index, last_index, "History list is not ordered by revision date (oldest first)")
+            last_index = index
+
+
+class AdminHistoryViewLatestFirstOrderByDateTest(LoginMixin, TestBase):
+
+    class TestModelParentAdminLatestFirstOrderByDate(VersionAdmin):
+        history_latest_first = True
+        history_order_by_date = True
+
+    def setUp(self):
+        super().setUp()
+        # Register a custom admin with both flags enabled
+        admin.site.register(TestModelParent, self.TestModelParentAdminLatestFirstOrderByDate)
+        self.reloadUrls()
+
+    def tearDown(self):
+        super().tearDown()
+        admin.site.unregister(TestModelParent)
+        self.reloadUrls()
+
+    def testHistorylistViewOrderLatestFirstByDate(self):
+        # Create an object and multiple revisions with increasing timestamps.
+        with reversion.create_revision():
+            obj = TestModelParent.objects.create(name="v1", parent_name="p1")
+            # Use an out-of-sequence date to verify correct ordering
+            reversion.set_date_created(datetime.now() + timedelta(days=1))
+        with reversion.create_revision():
+            obj.name = "v2"
+            obj.save()
+        with reversion.create_revision():
+            obj.name = "v3"
+            obj.save()
+
+        # Fetch history page.
+        response = self.client.get(resolve_url("admin:test_app_testmodelparent_history", obj.pk))
+        content = response.content.decode()
+
+        # Expected order: ordered by revision creation date descending (newest date first).
+        versions = (
+            Version.objects.get_for_object(obj)
+            .select_related("revision")
+            .order_by("-revision__date_created", "-pk")
+        )
+        expected_order = list(versions.values_list("pk", flat=True))
+
+        urls_in_order = [
+            resolve_url("admin:test_app_testmodelparent_revision", obj.pk, vid)
+            for vid in expected_order
+        ]
+
+        last_index = -1
+        for url in urls_in_order:
+            index = content.find(url)
+            self.assertNotEqual(index, -1, f"Expected to find {url} in history page")
+            self.assertGreater(index, last_index, "History list is not ordered by revision date (newest first)")
+            last_index = index
+
+
+class AdminHistoryViewCustomOrderingTest(LoginMixin, TestBase):
+    class TestModelParentAdminCustomOrdering(VersionAdmin):
+        def get_version_ordering(self, request):
+            return ("revision__comment",)
+
+    def setUp(self):
+        super().setUp()
+        # Register a custom admin with history_order_by_date enabled
+        admin.site.register(TestModelParent, self.TestModelParentAdminCustomOrdering)
+        self.reloadUrls()
+
+    def tearDown(self):
+        super().tearDown()
+        admin.site.unregister(TestModelParent)
+        self.reloadUrls()
+
+    def testHistorylistViewCustomOrdering(self):
+        # Create an object and multiple revisions with increasing timestamps.
+        with reversion.create_revision():
+            obj = TestModelParent.objects.create(name="v1", parent_name="p1")
+            reversion.set_comment("B")
+        with reversion.create_revision():
+            obj.name = "v2"
+            obj.save()
+            reversion.set_comment("A")
+        with reversion.create_revision():
+            obj.name = "v3"
+            obj.save()
+            reversion.set_comment("C")
+
+        # Fetch history page.
+        response = self.client.get(resolve_url("admin:test_app_testmodelparent_history", obj.pk))
+        content = response.content.decode()
+
+        # Expected order: ordered by revision comment ascending.
+        versions = (
+            Version.objects.get_for_object(obj)
+            .select_related("revision")
+            .order_by("revision__comment")
+        )
+        expected_order = list(versions.values_list("pk", flat=True))
+
+        urls_in_order = [
+            resolve_url("admin:test_app_testmodelparent_revision", obj.pk, vid)
+            for vid in expected_order
+        ]
+
+        last_index = -1
+        for url in urls_in_order:
+            index = content.find(url)
+            self.assertNotEqual(index, -1, f"Expected to find {url} in history page")
+            self.assertGreater(index, last_index, "History list is not ordered by comment ascending")
+            last_index = index
 
 
 class AdminQuotingTest(LoginMixin, AdminMixin, TestBase):

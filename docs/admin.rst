@@ -90,6 +90,11 @@ A subclass of ``django.contrib.ModelAdmin`` providing rollback and recovery.
     If ``True``, revisions will be displayed with the most recent revision first.
 
 
+``history_order_by_date = False``
+
+    If ``True``, revisions will be ordered by ``date_created`` instead of the numeric version ID.
+
+
 .. _VersionAdmin_register:
 
 ``reversion_register(model, **options)``
@@ -107,3 +112,21 @@ A subclass of ``django.contrib.ModelAdmin`` providing rollback and recovery.
 
     ``options``
         Registration options, see :ref:`reversion.register() <register>`.
+
+.. _VersionAdmin_get_version_ordering:
+
+``get_version_ordering(request)``
+
+    Method that returns a tuple specifying the field names (relative to the ``Version`` model) for ordering. Semantics are similar to the built-in ``get_ordering`` method in Django's ``ModelAdmin``.
+
+    Implementations may override this method to achieve custom or dynamic ordering of the version queryset. The return value must be a list or tuple. Calling ``super()`` returns the default ordering which takes ``history_latest_first`` and ``history_order_by_date`` into account; this call may be omitted if the default ordering is not required.
+
+    .. code:: python
+
+        def get_version_ordering(self, request):
+            if request.user.is_superuser:
+                return ("-revision__date_created", "revision__comment")
+            return super().get_version_ordering(request)
+
+    ``request``
+        The current request.
