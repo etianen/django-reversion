@@ -3,6 +3,12 @@
 django-reversion changelog
 ==========================
 
+6.1.0 - 2025-12-12
+------------------
+
+- Added ``history_order_by_date`` and ``get_version_ordering`` to ``VersionAdmin`` (@micmarc).
+
+
 6.0.0 - 2025-09-20
 ------------------
 
