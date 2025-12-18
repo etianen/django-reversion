@@ -1,6 +1,7 @@
+from asgiref.sync import sync_to_async
 from contextvars import ContextVar
 from collections import namedtuple, defaultdict
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from functools import wraps
 from django.apps import apps
 from django.core import serializers
@@ -279,6 +280,25 @@ def _dummy_context():
     yield
 
 
+@asynccontextmanager
+async def _acreate_revision_context(manage_manually, using):
+    _push_frame(manage_manually, using)
+    try:
+        yield
+        # Only save for a db if that's the last stack frame for that db.
+        if not any(using in frame.db_versions for frame in _stack.get()[:-1]):
+            current_frame = _current_frame()
+            await sync_to_async(_save_revision)(
+                versions=current_frame.db_versions[using].values(),
+                user=current_frame.user,
+                comment=current_frame.comment,
+                meta=current_frame.meta,
+                date_created=current_frame.date_created,
+                using=using,
+            )
+    finally:
+        _pop_frame()
+
 @contextmanager
 def _create_revision_context(manage_manually, using, atomic):
     context = transaction.atomic(using=using) if atomic else _dummy_context()
@@ -307,6 +327,11 @@ def _create_revision_context(manage_manually, using, atomic):
         finally:
             _pop_frame()
 
+def acreate_revision(manage_manually=False, using=None):
+    from reversion.models import Revision
+    using = using or router.db_for_write(Revision)
+    return _ContextWrapper(_acreate_revision_context, (manage_manually, using))
+
 
 def create_revision(manage_manually=False, using=None, atomic=True):
     from reversion.models import Revision
@@ -320,6 +345,12 @@ class _ContextWrapper:
         self._func = func
         self._args = args
         self._context = func(*args)
+
+    async def __aenter__(self):
+        return await self._context.__aenter__()
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        return await self._context.__aexit__(exc_type, exc_value, traceback)
 
     def __enter__(self):
         return self._context.__enter__()
