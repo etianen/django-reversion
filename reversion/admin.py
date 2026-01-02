@@ -87,13 +87,13 @@ class VersionAdmin(admin.ModelAdmin):
     def log_addition(self, request, object, message):
         change_message = message or _("Initial version.")
         entry = super().log_addition(request, object, change_message)
-        if is_active():
+        if entry and is_active():
             set_comment(entry.get_change_message())
         return entry
 
     def log_change(self, request, object, message):
         entry = super().log_change(request, object, message)
-        if is_active():
+        if entry and is_active():
             set_comment(entry.get_change_message())
         return entry
 
