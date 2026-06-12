@@ -1,0 +1,158 @@
+# Turkish translation for django-reversion.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the django-reversion package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: django-reversion\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-09 00:00+0300\n"
+"PO-Revision-Date: 2026-06-09 00:00+0300\n"
+"Last-Translator: \n"
+"Language-Team: Turkish\n"
+"Language: tr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: reversion/admin.py:88
+msgid "Initial version."
+msgstr "İlk sürüm."
+
+#: reversion/admin.py:217
+#, python-format
+msgid "Reverted to previous version, saved on %(datetime)s"
+msgstr "%(datetime)s tarihinde kaydedilen önceki sürüme geri alındı"
+
+#: reversion/admin.py:225
+#, python-format
+msgid "Could not load %(object_repr)s version - not found"
+msgstr "%(object_repr)s sürümü yüklenemedi - bulunamadı"
+
+#: reversion/admin.py:245
+#, python-format
+msgid "Recover %(name)s"
+msgstr "%(name)s öğesini kurtar"
+
+#: reversion/admin.py:261
+#, python-format
+msgid "Revert %(name)s"
+msgstr "%(name)s öğesini geri al"
+
+#: reversion/admin.py:299 reversion/templates/reversion/change_list.html:7
+#: reversion/templates/reversion/recover_form.html:10
+#: reversion/templates/reversion/recover_list.html:10
+#, python-format
+msgid "Recover deleted %(name)s"
+msgstr "Silinen %(name)s öğelerini kurtar"
+
+#: reversion/apps.py:7
+msgid "Reversion"
+msgstr "Sürümleme"
+
+#: reversion/models.py:39
+#, python-format
+msgid "Could not save %(object_repr)s version - missing dependency."
+msgstr "%(object_repr)s sürümü kaydedilemedi - eksik bağımlılık."
+
+#: reversion/models.py:52
+msgid "date created"
+msgstr "oluşturulma tarihi"
+
+#: reversion/models.py:61
+msgid "user"
+msgstr "kullanıcı"
+
+#: reversion/models.py:67
+msgid "comment"
+msgstr "yorum"
+
+#: reversion/models.py:119
+msgid "revision"
+msgstr "revizyon"
+
+#: reversion/models.py:120
+msgid "revisions"
+msgstr "revizyonlar"
+
+#: reversion/models.py:283
+#, python-format
+msgid "Could not load %(object_repr)s version - incompatible version data."
+msgstr "%(object_repr)s sürümü yüklenemedi - uyumsuz sürüm verisi."
+
+#: reversion/models.py:287
+#, python-format
+msgid "Could not load %(object_repr)s version - unknown serializer %(format)s."
+msgstr "%(object_repr)s sürümü yüklenemedi - bilinmeyen serileştirici %(format)s."
+
+#: reversion/models.py:343
+msgid "version"
+msgstr "sürüm"
+
+#: reversion/models.py:344
+msgid "versions"
+msgstr "sürümler"
+
+#: reversion/templates/reversion/object_history.html:8
+msgid ""
+"Choose a date from the list below to revert to a previous version of this "
+"object."
+msgstr ""
+"Bu nesnenin önceki bir sürümüne geri dönmek için aşağıdaki listeden bir "
+"tarih seçin."
+
+#: reversion/templates/reversion/object_history.html:15
+#: reversion/templates/reversion/recover_list.html:23
+msgid "Date/time"
+msgstr "Tarih/saat"
+
+#: reversion/templates/reversion/object_history.html:16
+msgid "User"
+msgstr "Kullanıcı"
+
+#: reversion/templates/reversion/object_history.html:17
+msgid "Action"
+msgstr "İşlem"
+
+#: reversion/templates/reversion/object_history.html:38
+msgid ""
+"This object doesn't have a change history. It probably wasn't added via this "
+"admin site."
+msgstr ""
+"Bu nesnenin değişiklik geçmişi yok. Muhtemelen bu yönetim sitesi üzerinden "
+"eklenmedi."
+
+#: reversion/templates/reversion/recover_form.html:7
+#: reversion/templates/reversion/recover_list.html:7
+#: reversion/templates/reversion/revision_form.html:7
+msgid "Home"
+msgstr "Ana sayfa"
+
+#: reversion/templates/reversion/recover_form.html:20
+msgid "Press the save button below to recover this version of the object."
+msgstr "Nesnenin bu sürümünü kurtarmak için aşağıdaki kaydet düğmesine basın."
+
+#: reversion/templates/reversion/recover_list.html:17
+msgid ""
+"Choose a date from the list below to recover a deleted version of an object."
+msgstr ""
+"Bir nesnenin silinmiş bir sürümünü kurtarmak için aşağıdaki listeden bir "
+"tarih seçin."
+
+#: reversion/templates/reversion/recover_list.html:37
+msgid "There are no deleted objects to recover."
+msgstr "Kurtarılacak silinmiş nesne yok."
+
+#: reversion/templates/reversion/revision_form.html:11
+msgid "History"
+msgstr "Geçmiş"
+
+#: reversion/templates/reversion/revision_form.html:12
+#, python-format
+msgid "Revert %(verbose_name)s"
+msgstr "%(verbose_name)s öğesini geri al"
+
+#: reversion/templates/reversion/revision_form.html:21
+msgid "Press the save button below to revert to this version of the object."
+msgstr "Nesnenin bu sürümüne geri dönmek için aşağıdaki kaydet düğmesine basın."
