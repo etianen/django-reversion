@@ -3,6 +3,12 @@
 django-reversion changelog
 ==========================
 
+6.3.0 - 2026-06-12
+------------------
+
+- Added Turkish translation (@mcihad).
+
+
 6.2.0 - 2026-05-12
 ------------------
 
