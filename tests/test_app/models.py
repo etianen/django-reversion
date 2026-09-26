@@ -150,3 +150,8 @@ class TestModelWithUniqueConstraint(models.Model):
         max_length=191,
         unique=True,
     )
+
+
+class TestModelCustomObjectId(models.Model):
+    slug = models.CharField(max_length=191, unique=True)
+    name = models.CharField(max_length=191, default="v1")

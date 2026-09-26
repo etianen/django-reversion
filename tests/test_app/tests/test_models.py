@@ -5,6 +5,7 @@ from test_app.models import (
     TestModelNestedInline,
     TestModelInlineByNaturalKey, TestModelWithNaturalKey,
     TestModelWithUniqueConstraint,
+    TestModelCustomObjectId
 )
 from test_app.tests.base import TestBase, TestModelMixin, TestModelParentMixin
 import json
@@ -458,3 +459,74 @@ class TransactionRollbackTest(TestBase):
                 TestModelWithUniqueConstraint.objects.create(name='A')
             except Exception:
                 pass
+
+
+class CustomObjectIdTest(TestBase):
+
+    def setUp(self):
+        super().setUp()
+        reversion.register(TestModelCustomObjectId, object_id_field='slug')
+
+    def testObjectIdStoredAsSlug(self):
+        with reversion.create_revision():
+            TestModelCustomObjectId.objects.create(slug='custom-id', name='v1')
+        version = Version.objects.get_for_object_reference(TestModelCustomObjectId, 'custom-id').get()
+        self.assertEqual(version.object_id, 'custom-id')
+
+    def testGetForObject(self):
+        with reversion.create_revision():
+            obj = TestModelCustomObjectId.objects.create(slug='custom-id', name='v1')
+        self.assertEqual(Version.objects.get_for_object(obj).count(), 1)
+
+    def testFieldDict(self):
+        with reversion.create_revision():
+            obj = TestModelCustomObjectId.objects.create(slug='custom-id', name='v1')
+        version = Version.objects.get_for_object_reference(TestModelCustomObjectId, 'custom-id').get()
+        self.assertEqual(version.field_dict, {'id': obj.pk, 'slug': 'custom-id', 'name': 'v1'})
+
+    def testMultipleVersions(self):
+        with reversion.create_revision():
+            obj = TestModelCustomObjectId.objects.create(slug='custom-id', name='v1')
+        with reversion.create_revision():
+            obj.name = 'v2'
+            obj.save()
+        versions = Version.objects.get_for_object_reference(TestModelCustomObjectId, 'custom-id')
+        self.assertEqual(versions.count(), 2)
+        self.assertEqual(versions[0].field_dict['name'], 'v2')
+        self.assertEqual(versions[1].field_dict['name'], 'v1')
+
+    def testGetDeleted(self):
+        with reversion.create_revision():
+            obj = TestModelCustomObjectId.objects.create(slug='custom-id', name='v1')
+        obj.delete()
+        deleted = Version.objects.get_deleted(TestModelCustomObjectId)
+        self.assertEqual(deleted.count(), 1)
+        self.assertEqual(deleted[0].object_id, 'custom-id')
+
+    def testGetDeletedNotIncludingExisting(self):
+        with reversion.create_revision():
+            TestModelCustomObjectId.objects.create(slug='custom-id', name='v1')
+        self.assertEqual(Version.objects.get_deleted(TestModelCustomObjectId).count(), 0)
+
+
+class CustomObjectIdIgnoreDuplicatesTest(TestBase):
+
+    def setUp(self):
+        reversion.register(TestModelCustomObjectId, object_id_field='slug', ignore_duplicates=True)
+
+    def testIgnoreDuplicates(self):
+        with reversion.create_revision():
+            obj = TestModelCustomObjectId.objects.create(slug='custom-id', name='v1')
+        with reversion.create_revision():
+            obj.save()
+        versions = Version.objects.get_for_object_reference(TestModelCustomObjectId, 'custom-id')
+        self.assertEqual(versions.count(), 1)
+
+    def testIgnoreDuplicatesNewData(self):
+        with reversion.create_revision():
+            obj = TestModelCustomObjectId.objects.create(slug='custom-id', name='v1')
+        with reversion.create_revision():
+            obj.name = 'v2'
+            obj.save()
+        versions = Version.objects.get_for_object_reference(TestModelCustomObjectId, 'custom-id')
+        self.assertEqual(versions.count(), 2)

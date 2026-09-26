@@ -9,7 +9,9 @@ from django.shortcuts import resolve_url
 import reversion
 from reversion.admin import VersionAdmin
 from reversion.models import Version
-from test_app.models import TestModel, TestModelParent, TestModelInline, TestModelGenericInline, TestModelEscapePK
+from test_app.models import (
+    TestModel, TestModelParent, TestModelInline, TestModelGenericInline, TestModelEscapePK, TestModelCustomObjectId
+)
 from test_app.tests.base import TestBase, LoginMixin
 
 
@@ -569,3 +571,70 @@ class AdminRegisterInlineTest(TestBase):
 
     def testAutoRegisterGenericInline(self):
         self.assertTrue(reversion.is_registered(TestModelGenericInline))
+
+
+class TestModelCustomObjectIdAdmin(VersionAdmin):
+
+    def reversion_register(self, model, **kwargs):
+        kwargs["object_id_field"] = "slug"
+        super().reversion_register(model, **kwargs)
+
+
+class CustomObjectIdAdminMixin(TestBase):
+
+    def setUp(self):
+        super().setUp()
+        admin.site.register(TestModelCustomObjectId, TestModelCustomObjectIdAdmin)
+        self.reloadUrls()
+
+    def tearDown(self):
+        super().tearDown()
+        admin.site.unregister(TestModelCustomObjectId)
+        self.reloadUrls()
+
+
+class CustomObjectIdAdminHistoryViewTest(LoginMixin, CustomObjectIdAdminMixin, TestBase):
+
+    def testHistoryView(self):
+        with reversion.create_revision():
+            obj = TestModelCustomObjectId.objects.create(slug="test", name="v1")
+        with reversion.create_revision():
+            obj.name = "v2"
+            obj.save()
+        response = self.client.get(resolve_url("admin:test_app_testmodelcustomobjectid_history", obj.pk))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context["action_list"]), 2)
+
+
+class CustomObjectIdAdminRevisionViewTest(LoginMixin, CustomObjectIdAdminMixin, TestBase):
+
+    def setUp(self):
+        super().setUp()
+        with reversion.create_revision():
+            self.obj = TestModelCustomObjectId.objects.create(slug="test", name="v1")
+        with reversion.create_revision():
+            self.obj.name = "v2"
+            self.obj.save()
+
+    def testRevisionViewGet(self):
+        version = Version.objects.get_for_object_reference(TestModelCustomObjectId, "test")[1]
+        response = self.client.get(resolve_url(
+            "admin:test_app_testmodelcustomobjectid_revision",
+            self.obj.slug,
+            version.pk,
+        ))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="v1"')
+        # Verify the revert was rolled back (GET should not persist changes).
+        self.obj.refresh_from_db()
+        self.assertEqual(self.obj.name, "v2")
+
+    def testRevisionViewRevert(self):
+        version = Version.objects.get_for_object_reference(TestModelCustomObjectId, "test")[1]
+        self.client.post(resolve_url(
+            "admin:test_app_testmodelcustomobjectid_revision",
+            self.obj.slug,
+            version.pk,
+        ), {"slug": "test", "name": "v1"})
+        self.obj.refresh_from_db()
+        self.assertEqual(self.obj.name, "v1")

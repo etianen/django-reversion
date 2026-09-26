@@ -9,6 +9,4 @@ class TestModelAdmin(VersionAdmin):
 
 
 admin.site.register(TestModel, TestModelAdmin)
-
-
 admin.site.register(TestModelRelated, admin.ModelAdmin)

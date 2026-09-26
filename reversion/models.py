@@ -19,8 +19,8 @@ from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 
 from reversion.errors import RevertError
-from reversion.revisions import (_follow_relations_recursive,
-                                 _get_content_type, _get_options)
+from reversion.revisions import (_follow_relations_recursive, _get_content_type,
+                                 _get_options)
 
 
 logger = logging.getLogger(__name__)
@@ -91,7 +91,10 @@ class Revision(models.Model):
                         model = version._model
                         try:
                             # Load the model instance from the same DB as it was saved under.
-                            old_revision.add(model._default_manager.using(version.db).get(pk=version.object_id))
+                            id_field = _get_options(model).object_id_field
+                            old_revision.add(
+                                model._default_manager.using(version.db).get(**{id_field: version.object_id})
+                            )
                         except model.DoesNotExist:
                             pass
                     # Calculate the set of all objects that are in the revision now.
@@ -135,14 +138,17 @@ class VersionQuerySet(models.QuerySet):
         )
 
     def get_for_object(self, obj, model_db=None):
-        return self.get_for_object_reference(obj.__class__, obj.pk, model_db=model_db)
+        opts = _get_options(obj.__class__)
+        return self.get_for_object_reference(
+            obj.__class__, getattr(obj, opts.object_id_field), model_db=model_db
+        )
 
     def get_deleted(self, model, model_db=None):
         model_db = model_db or router.db_for_write(model)
         connection = connections[self.db]
+        object_id_field_name = _get_options(model).object_id_field
         if self.db == model_db and connection.vendor in ("sqlite", "postgresql", "oracle"):
-            pk_field_name = model._meta.pk.name
-            object_id_cast_target = model._meta.get_field(pk_field_name)
+            object_id_cast_target = model._meta.get_field(object_id_field_name)
             if django.VERSION >= (2, 1):
                 # django 2.0 contains a critical bug that doesn't allow the code below to work,
                 # fallback to casting primary keys then
@@ -158,14 +164,14 @@ class VersionQuerySet(models.QuerySet):
                 model_qs = (
                     model._default_manager
                     .using(model_db)
-                    .filter(**{pk_field_name: casted_object_id})
+                    .filter(**{object_id_field_name: casted_object_id})
                 )
             else:
                 model_qs = (
                     model._default_manager
                     .using(model_db)
-                    .annotate(_pk_to_object_id=Cast("pk", Version._meta.get_field("object_id")))
-                    .filter(_pk_to_object_id=models.OuterRef("object_id"))
+                    .annotate(_field_to_object_id=Cast(object_id_field_name, Version._meta.get_field("object_id")))
+                    .filter(_field_to_object_id=models.OuterRef("object_id"))
                 )
             # conditional expressions are being supported since django 3.0
             # DISTINCT ON works only for Postgres DB
@@ -190,7 +196,9 @@ class VersionQuerySet(models.QuerySet):
             # We have to use a slow subquery.
             subquery = self.get_for_model(model, model_db=model_db).exclude(
                 object_id__in=list(
-                    model._default_manager.using(model_db).values_list("pk", flat=True).order_by().iterator()
+                    model._default_manager.using(model_db).values_list(
+                        object_id_field_name, flat=True
+                    ).order_by().iterator()
                 ),
             ).values_list("object_id").annotate(
                 latest_pk=models.Max("pk")

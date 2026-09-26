@@ -187,6 +187,11 @@ Registration API
 
         See `Serialization of natural keys <https://docs.djangoproject.com/en/3.1/topics/serialization/#serialization-of-natural-keys>`_
 
+    ``object_id_field=None``
+        The name of the model field to use as the version's ``object_id``. Defaults to the model's primary key field. Use this when you want versions to be keyed on a different unique field, such as a slug.
+
+        The field must exist on the model (validated at registration time). ``"pk"`` is not a valid value — use the concrete field name instead (e.g. ``"id"``).
+        
     .. Hint::
         By default, django-reversion will not register any parent classes of a model that uses multi-table inheritance. If you wish to also add parent models to your revision, you must explicitly add their ``parent_ptr`` fields to the ``follow`` parameter when you register the model.
 

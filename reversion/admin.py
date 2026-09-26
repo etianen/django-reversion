@@ -18,7 +18,7 @@ from django.utils.translation import gettext as _
 
 from reversion.errors import RevertError
 from reversion.models import Version
-from reversion.revisions import is_active, register, is_registered, set_comment, create_revision, set_user
+from reversion.revisions import is_active, register, is_registered, set_comment, create_revision, set_user, _get_options
 from reversion.utils import mute_signals
 
 
@@ -200,7 +200,18 @@ class VersionAdmin(admin.ModelAdmin):
                 version.revision.revert(delete=True)
                 # Run the normal changeform view.
                 with self.create_revision(request):
-                    response = self.changeform_view(request, quote(version.object_id), request.path, extra_context)
+                    opts = _get_options(version._model)
+                    if opts.object_id_field == version._model._meta.pk.attname:
+                        obj_pk = version.object_id
+                    else:
+                        obj = get_object_or_404(
+                            version._model._default_manager.using(version.db),
+                            **{opts.object_id_field: version.object_id},
+                        )
+                        obj_pk = str(obj.pk)
+                    response = self.changeform_view(
+                        request, quote(obj_pk), request.path, extra_context
+                    )
                     # Decide on whether the keep the changes.
                     if request.method == "POST" and response.status_code == 302:
                         set_comment(_("Reverted to previous version, saved on %(datetime)s") % {
@@ -305,6 +316,12 @@ class VersionAdmin(admin.ModelAdmin):
             if not self.has_change_permission(request):
                 raise PermissionDenied
 
+        version_opts = _get_options(self.model)
+        if version_opts.object_id_field == self.model._meta.pk.attname:
+            reversion_object_id = unquote(object_id)
+        else:
+            obj = get_object_or_404(self.model, pk=unquote(object_id))
+            reversion_object_id = str(getattr(obj, version_opts.object_id_field))
         opts = self.model._meta
         action_list = [
             {
@@ -317,7 +334,7 @@ class VersionAdmin(admin.ModelAdmin):
             for version
             in self._reversion_order_version_queryset(request, Version.objects.get_for_object_reference(
                 self.model,
-                unquote(object_id),  # Underscores in primary key get quoted to "_5F"
+                reversion_object_id,
             ).select_related("revision", "revision__user"))
         ]
         # Compile the context.
