@@ -3,6 +3,12 @@
 django-reversion changelog
 ==========================
 
+6.4.0 - 2026-10-15
+------------------
+
+- Added Persian translation (@elias-ebrahimpour).
+
+
 6.3.0 - 2026-06-12
 ------------------
 
