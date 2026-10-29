@@ -2,7 +2,6 @@ from collections import defaultdict
 from itertools import chain, groupby
 import logging
 
-import django
 from django.apps import apps
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -149,33 +148,14 @@ class VersionQuerySet(models.QuerySet):
         object_id_field_name = _get_options(model).object_id_field
         if self.db == model_db and connection.vendor in ("sqlite", "postgresql", "oracle"):
             object_id_cast_target = model._meta.get_field(object_id_field_name)
-            if django.VERSION >= (2, 1):
-                # django 2.0 contains a critical bug that doesn't allow the code below to work,
-                # fallback to casting primary keys then
-                # see https://code.djangoproject.com/ticket/29142
-                if django.VERSION < (2, 2):
-                    # properly cast autofields for django before 2.2 as it was fixed in django itself later
-                    # see https://github.com/django/django/commit/ac25dd1f8d48accc765c05aebb47c427e51f3255
-                    object_id_cast_target = {
-                        "AutoField": models.IntegerField(),
-                        "BigAutoField": models.BigIntegerField(),
-                    }.get(object_id_cast_target.__class__.__name__, object_id_cast_target)
-                casted_object_id = Cast(models.OuterRef("object_id"), object_id_cast_target)
-                model_qs = (
-                    model._default_manager
-                    .using(model_db)
-                    .filter(**{object_id_field_name: casted_object_id})
-                )
-            else:
-                model_qs = (
-                    model._default_manager
-                    .using(model_db)
-                    .annotate(_field_to_object_id=Cast(object_id_field_name, Version._meta.get_field("object_id")))
-                    .filter(_field_to_object_id=models.OuterRef("object_id"))
-                )
-            # conditional expressions are being supported since django 3.0
+            casted_object_id = Cast(models.OuterRef("object_id"), object_id_cast_target)
+            model_qs = (
+                model._default_manager
+                .using(model_db)
+                .filter(**{object_id_field_name: casted_object_id})
+            )
             # DISTINCT ON works only for Postgres DB
-            if connection.vendor == "postgresql" and django.VERSION >= (3, 0):
+            if connection.vendor == "postgresql":
                 subquery = (
                     self.get_for_model(model, model_db=model_db)
                     .filter(~models.Exists(model_qs))
