@@ -3,6 +3,16 @@
 django-reversion changelog
 ==========================
 
+6.5.0 - 2026-10-29
+------------------
+
+- Django 6.1 and Python 3.15 support (@etianen).
+- **Breaking:** Dropped support for Django 4.2 LTS (@etianen).
+- **Breaking:** Dropped support for Python 3.9 and 3.10 (@etianen).
+- Fixed 500 error in ``VersionAdmin`` when saving a model with no changed fields (@U-238).
+- Fixed ``createinitialrevisions`` not detecting the admin app when using a custom ``AdminConfig`` (@UnknownPlatypus).
+
+
 6.4.0 - 2026-10-15
 ------------------
 
