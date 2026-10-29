@@ -73,7 +73,7 @@ class Command(BaseRevisionCommand):
                         ).values_list("revision_id", flat=True)[:keep].iterator())
                 # Add to revision query.
                 revision_query |= models.Q(
-                    pk__in=model_query.order_by().values_list("revision_id", flat=True)
+                    pk__in=model_query.order_by().values_list("revision_id", flat=True).distinct()
                 )
                 # If we have at least one model, then we can delete.
                 can_delete = True
@@ -91,4 +91,6 @@ class Command(BaseRevisionCommand):
                 self.stdout.write("Deleting {total} revisions...".format(
                     total=revisions_to_delete.count(),
                 ))
+            qs = Version.objects.filter(revision__in=revisions_to_delete)
+            qs._raw_delete(qs.db)
             revisions_to_delete.delete()
