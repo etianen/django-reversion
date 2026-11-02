@@ -1,6 +1,7 @@
-from setuptools import find_packages, setup
+import ast
+import re
 
-from reversion import __version__
+from setuptools import find_packages, setup
 
 # Load in babel support, if available.
 try:
@@ -21,9 +22,16 @@ def read(filepath):
         return f.read()
 
 
+def read_version():
+    # Read __version__ without importing reversion, which imports Django when it is installed:
+    # building must not depend on the installed Django working with this Python.
+    match = re.search(r"^__version__ = VERSION = (\(.*\))$", read("reversion/__init__.py"), re.MULTILINE)
+    return ".".join(str(x) for x in ast.literal_eval(match.group(1)))
+
+
 setup(
     name="django-reversion",
-    version=".".join(str(x) for x in __version__),
+    version=read_version(),
     license="BSD",
     description="An extension to the Django web framework that provides version control for model instances.",
     long_description=read("README.rst"),
