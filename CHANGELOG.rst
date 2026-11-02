@@ -3,6 +3,12 @@
 django-reversion changelog
 ==========================
 
+6.5.1 - 2026-11-02
+------------------
+
+- Fixed building the package when the installed Django is incompatible with the building Python (@Rahul-cs50).
+
+
 6.5.0 - 2026-10-29
 ------------------
 
