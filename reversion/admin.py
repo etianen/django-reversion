@@ -235,9 +235,11 @@ class VersionAdmin(admin.ModelAdmin):
 
     def recover_view(self, request, version_id, extra_context=None):
         """Displays a form that can recover a deleted model."""
-        # The revisionform view will check for change permission (via changeform_view),
-        # but we also need to check for add permissions here.
+        # The revisionform view reverts before changeform_view checks permissions, so check
+        # add (and, when saving, change) permissions here.
         if not self.has_add_permission(request):
+            raise PermissionDenied
+        if request.method == "POST" and not self.has_change_permission(request):
             raise PermissionDenied
         # Render the recover view.
         version = get_object_or_404(Version, pk=version_id)
@@ -257,6 +259,16 @@ class VersionAdmin(admin.ModelAdmin):
         """Displays the contents of the given revision."""
         object_id = unquote(object_id)  # Underscores in primary key get quoted to "_5F"
         version = get_object_or_404(Version, pk=version_id, object_id=object_id)
+        # The revisionform view reverts before changeform_view checks permissions, so check them here.
+        opts = _get_options(version._model)
+        obj = version._model._default_manager.using(version.db).filter(
+            **{opts.object_id_field: version.object_id}
+        ).first()
+        if request.method == "POST":
+            if not self.has_change_permission(request, obj):
+                raise PermissionDenied
+        elif not self.has_view_or_change_permission(request, obj):
+            raise PermissionDenied
         context = {
             "title": _("Revert %(name)s") % {"name": version.object_repr},
             "revert": True,
