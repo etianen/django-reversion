@@ -14,7 +14,8 @@ import reversion
 from reversion.admin import VersionAdmin
 from reversion.models import Revision, Version
 from test_app.models import (
-    TestModel, TestModelParent, TestModelInline, TestModelGenericInline, TestModelEscapePK, TestModelCustomObjectId
+    TestModel, TestModelParent, TestModelInline, TestModelGenericInline, TestModelEscapePK, TestModelCustomObjectId,
+    TestModelRelated,
 )
 from test_app.tests.base import TestBase, LoginMixin
 
@@ -350,6 +351,50 @@ class AdminRecoverViewNoChangePermissionTest(AdminPermissionMixin, TestBase):
         self.assertFalse(TestModelParent.objects.exists())
         self.assertEqual(Revision.objects.count(), revision_count)
         self.assertEqual(self.saved_senders, [])
+
+
+class AdminOtherModelVersionTest(AdminPermissionMixin, TestBase):
+    """Versions of other models can't be reverted through this model's admin."""
+
+    permissions = ("add", "change", "view")
+
+    def setUp(self):
+        super().setUp()
+        reversion.register(TestModelRelated)
+        with reversion.create_revision():
+            self.related = TestModelRelated.objects.create()
+        with reversion.create_revision():
+            self.related.name = "v2"
+            self.related.save()
+        # A TestModelParent sharing the related object's pk, so a cross-model revert would find a form to save.
+        with reversion.create_revision():
+            TestModelParent.objects.create(pk=self.related.pk)
+        self.related_version = Version.objects.get_for_object(self.related)[1]
+
+    def testRevisionViewOtherModelNotFound(self):
+        response = self.client.post(resolve_url(
+            "admin:test_app_testmodelparent_revision",
+            self.related.pk,
+            self.related_version.pk,
+        ), {
+            "name": "v1",
+            "parent_name": "parent v1",
+        })
+        self.assertEqual(response.status_code, 404)
+        self.related.refresh_from_db()
+        self.assertEqual(self.related.name, "v2")
+
+    def testRecoverViewOtherModelNotFound(self):
+        response = self.client.post(resolve_url(
+            "admin:test_app_testmodelparent_recover",
+            self.related_version.pk,
+        ), {
+            "name": "v1",
+            "parent_name": "parent v1",
+        })
+        self.assertEqual(response.status_code, 404)
+        self.related.refresh_from_db()
+        self.assertEqual(self.related.name, "v2")
 
 
 class AdminRecoverlistViewTest(LoginMixin, AdminMixin, TestBase):
