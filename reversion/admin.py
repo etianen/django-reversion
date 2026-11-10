@@ -203,13 +203,13 @@ class VersionAdmin(admin.ModelAdmin):
             raise PermissionDenied
 
         # Determine whether to mute signals based on request method
-        if request.method == "GET":
-            # For GET requests (viewing revisions), mute all Django model signals
-            # to prevent unintended side effects from signal handlers
-            signal_context = mute_signals(pre_save, post_save, pre_delete, post_delete, m2m_changed)
-        else:
-            # For POST requests (actual reverts), allow signals to fire normally
+        if request.method == "POST":
+            # POST is the only method that can save the revert, so allow signals to fire normally
             signal_context = nullcontext()
+        else:
+            # Any other method only views the revision and is rolled back, so mute all Django model
+            # signals to prevent unintended side effects from signal handlers
+            signal_context = mute_signals(pre_save, post_save, pre_delete, post_delete, m2m_changed)
 
         # Run the view.
         try:

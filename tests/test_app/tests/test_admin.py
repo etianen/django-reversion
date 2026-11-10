@@ -301,6 +301,19 @@ class AdminRevisionViewNoChangePermissionTest(AdminPermissionMixin, TestBase):
     def testRevisionViewRevertDeniedWithMiddleware(self):
         self.postRevert()
 
+    def testRevisionViewOtherMethodsDontFireSignals(self):
+        url = resolve_url(
+            "admin:test_app_testmodelparent_revision",
+            self.obj.pk,
+            Version.objects.get_for_object(self.obj)[1].pk,
+        )
+        for method in ("HEAD", "OPTIONS", "PUT", "PATCH", "DELETE"):
+            with self.subTest(method=method):
+                self.client.generic(method, url)
+                self.obj.refresh_from_db()
+                self.assertEqual(self.obj.name, "v2")
+                self.assertEqual(self.saved_senders, [])
+
 
 class AdminRevisionViewNoViewPermissionTest(AdminPermissionMixin, TestBase):
 
