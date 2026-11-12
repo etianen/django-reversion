@@ -1,16 +1,21 @@
 import re
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
+from django.conf import settings
 from django.contrib import admin
+from django.contrib.auth.models import Permission, User
 from django.contrib.contenttypes.admin import GenericTabularInline
 from django.db.models.signals import pre_save, post_save, pre_delete, post_delete, m2m_changed
 from django.shortcuts import resolve_url
+from django.test.utils import override_settings
 
 import reversion
 from reversion.admin import VersionAdmin
-from reversion.models import Version
+from reversion.models import Revision, Version
 from test_app.models import (
-    TestModel, TestModelParent, TestModelInline, TestModelGenericInline, TestModelEscapePK, TestModelCustomObjectId
+    TestModel, TestModelParent, TestModelInline, TestModelGenericInline, TestModelEscapePK, TestModelCustomObjectId,
+    TestModelRelated,
 )
 from test_app.tests.base import TestBase, LoginMixin
 
@@ -226,6 +231,183 @@ class AdminRecoverViewTest(LoginMixin, AdminMixin, TestBase):
         obj = TestModelParent.objects.get()
         self.assertEqual(obj.name, "v1")
         self.assertEqual(obj.parent_name, "parent v1")
+
+
+@override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
+class AdminPermissionMixin(AdminMixin, TestBase):
+    """Logs in a staff user who only has the given permissions on TestModelParent."""
+
+    permissions = ()
+
+    def setUp(self):
+        super().setUp()
+        self.user = User(username="staff", is_staff=True)
+        self.user.set_password("password")
+        self.user.save()
+        self.user.user_permissions.set(Permission.objects.filter(
+            content_type__app_label="test_app",
+            codename__in=[f"{action}_testmodelparent" for action in self.permissions],
+        ))
+        self.client.login(username="staff", password="password")
+        self.saved_senders = []
+        post_save.connect(self.post_save_receiver)
+
+    def tearDown(self):
+        post_save.disconnect(self.post_save_receiver)
+        super().tearDown()
+
+    def post_save_receiver(self, sender, **kwargs):
+        if sender in (TestModel, TestModelParent):
+            self.saved_senders.append(sender)
+
+
+class AdminRevisionViewNoChangePermissionTest(AdminPermissionMixin, TestBase):
+
+    permissions = ("view",)
+
+    def setUp(self):
+        super().setUp()
+        with reversion.create_revision():
+            self.obj = TestModelParent.objects.create()
+        with reversion.create_revision():
+            self.obj.name = "v2"
+            self.obj.parent_name = "parent v2"
+            self.obj.save()
+        self.saved_senders.clear()
+
+    def postRevert(self):
+        revision_count = Revision.objects.count()
+        version_count = Version.objects.count()
+        response = self.client.post(resolve_url(
+            "admin:test_app_testmodelparent_revision",
+            self.obj.pk,
+            Version.objects.get_for_object(self.obj)[1].pk,
+        ), {
+            "name": "v1",
+            "parent_name": "parent v1",
+        })
+        self.assertEqual(response.status_code, 403)
+        self.obj.refresh_from_db()
+        self.assertEqual(self.obj.name, "v2")
+        self.assertEqual(self.obj.parent_name, "parent v2")
+        self.assertEqual(Revision.objects.count(), revision_count)
+        self.assertEqual(Version.objects.count(), version_count)
+        self.assertEqual(self.saved_senders, [])
+
+    def testRevisionViewRevertDenied(self):
+        self.postRevert()
+
+    @override_settings(MIDDLEWARE=settings.MIDDLEWARE + ["reversion.middleware.RevisionMiddleware"])
+    def testRevisionViewRevertDeniedWithMiddleware(self):
+        self.postRevert()
+
+    def testRevisionViewOtherMethodsDontFireSignals(self):
+        url = resolve_url(
+            "admin:test_app_testmodelparent_revision",
+            self.obj.pk,
+            Version.objects.get_for_object(self.obj)[1].pk,
+        )
+        for method in ("HEAD", "OPTIONS", "PUT", "PATCH", "DELETE"):
+            with self.subTest(method=method):
+                self.client.generic(method, url)
+                self.obj.refresh_from_db()
+                self.assertEqual(self.obj.name, "v2")
+                self.assertEqual(self.saved_senders, [])
+
+
+class AdminRevisionViewNoViewPermissionTest(AdminPermissionMixin, TestBase):
+
+    def setUp(self):
+        super().setUp()
+        with reversion.create_revision():
+            self.obj = TestModelParent.objects.create()
+        with reversion.create_revision():
+            self.obj.name = "v2"
+            self.obj.save()
+        self.saved_senders.clear()
+
+    def testRevisionViewDenied(self):
+        with patch.object(Revision, "revert") as revert:
+            response = self.client.get(resolve_url(
+                "admin:test_app_testmodelparent_revision",
+                self.obj.pk,
+                Version.objects.get_for_object(self.obj)[1].pk,
+            ))
+        self.assertEqual(response.status_code, 403)
+        revert.assert_not_called()
+        self.obj.refresh_from_db()
+        self.assertEqual(self.obj.name, "v2")
+        self.assertEqual(self.saved_senders, [])
+
+
+class AdminRecoverViewNoChangePermissionTest(AdminPermissionMixin, TestBase):
+
+    permissions = ("add", "view")
+
+    def setUp(self):
+        super().setUp()
+        with reversion.create_revision():
+            obj = TestModelParent.objects.create()
+        obj.delete()
+        self.saved_senders.clear()
+
+    def testRecoverViewRecoverDenied(self):
+        revision_count = Revision.objects.count()
+        response = self.client.post(resolve_url(
+            "admin:test_app_testmodelparent_recover",
+            Version.objects.get_for_model(TestModelParent).get().pk,
+        ), {
+            "name": "v1",
+            "parent_name": "parent v1",
+        })
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(TestModelParent.objects.exists())
+        self.assertEqual(Revision.objects.count(), revision_count)
+        self.assertEqual(self.saved_senders, [])
+
+
+class AdminOtherModelVersionTest(AdminPermissionMixin, TestBase):
+    """Versions of other models can't be reverted through this model's admin."""
+
+    permissions = ("add", "change", "view")
+
+    def setUp(self):
+        super().setUp()
+        reversion.register(TestModelRelated)
+        with reversion.create_revision():
+            self.related = TestModelRelated.objects.create()
+        with reversion.create_revision():
+            self.related.name = "v2"
+            self.related.save()
+        # A TestModelParent sharing the related object's pk, so a cross-model revert would find a form to save.
+        with reversion.create_revision():
+            TestModelParent.objects.create(pk=self.related.pk)
+        self.related_version = Version.objects.get_for_object(self.related)[1]
+
+    def testRevisionViewOtherModelNotFound(self):
+        response = self.client.post(resolve_url(
+            "admin:test_app_testmodelparent_revision",
+            self.related.pk,
+            self.related_version.pk,
+        ), {
+            "name": "v1",
+            "parent_name": "parent v1",
+        })
+        self.assertEqual(response.status_code, 404)
+        self.related.refresh_from_db()
+        self.assertEqual(self.related.name, "v2")
+
+    def testRecoverViewOtherModelNotFound(self):
+        response = self.client.post(resolve_url(
+            "admin:test_app_testmodelparent_recover",
+            self.related_version.pk,
+        ), {
+            "name": "v1",
+            "parent_name": "parent v1",
+        })
+        self.assertEqual(response.status_code, 404)
+        self.related.refresh_from_db()
+        self.assertEqual(self.related.name, "v2")
 
 
 class AdminRecoverlistViewTest(LoginMixin, AdminMixin, TestBase):
