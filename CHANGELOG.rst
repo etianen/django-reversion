@@ -3,6 +3,12 @@
 django-reversion changelog
 ==========================
 
+6.5.2 - 2026-11-12
+------------------
+
+- Fixed permission checks in ``VersionAdmin`` when reverting or recovering an object. Permissions are now checked against the current object before the revert runs, and revisions are limited to the admin's own model (@Shin--, @etianen).
+
+
 6.5.1 - 2026-11-02
 ------------------
 

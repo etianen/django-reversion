@@ -29,4 +29,4 @@ from reversion.revisions import (  # noqa
     get_registered_models,
 )
 
-__version__ = VERSION = (6, 5, 1)
+__version__ = VERSION = (6, 5, 2)
