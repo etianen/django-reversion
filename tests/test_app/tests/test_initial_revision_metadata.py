@@ -73,7 +73,7 @@ class CreateInitialRevisionMetadataTest(TestModelMixin, TestBase):
     def testInvalidTimestampDoesNotCreateRevisions(self):
         TestModel.objects.create()
 
-        for timestamp in ("not-a-date", "2020-02-30T12:00:00", "2020-09-28T24:00:00"):
+        for timestamp in ("not-a-date", "2020-02-30T12:00:00", "2020-09-28T25:00:00"):
             with self.subTest(timestamp=timestamp):
                 with self.assertRaisesMessage(CommandError, "Invalid --date-created"):
                     self.callCommand("createinitialrevisions", "--date-created", timestamp)
