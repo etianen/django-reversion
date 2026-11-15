@@ -1,11 +1,16 @@
 import json
 
 from django.apps import apps
+from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.management import CommandError
 from django.db import connections, reset_queries, transaction, router
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from reversion.models import Revision, Version, _safe_subquery
 from reversion.management.commands import BaseRevisionCommand
 from reversion.revisions import create_revision, set_comment, add_to_revision, add_meta
+from reversion.revisions import set_user, set_date_created
 
 
 class Command(BaseRevisionCommand):
@@ -19,6 +24,14 @@ class Command(BaseRevisionCommand):
             action="store",
             default="Initial version.",
             help="Specify the comment to add to the revisions. Defaults to 'Initial version'.")
+        parser.add_argument(
+            "--user",
+            help="Attribute revisions to this user's username, looked up in the revision database.",
+        )
+        parser.add_argument(
+            "--date-created",
+            help="Set the revision creation time to an ISO 8601 timestamp. Defaults to the current time.",
+        )
         parser.add_argument(
             "--batch-size",
             action="store",
@@ -52,6 +65,25 @@ class Command(BaseRevisionCommand):
         meta_values = meta.values()
         # Determine if we should use queryset.iterator()
         using = using or router.db_for_write(Revision)
+        user = None
+        if options["user"] is not None:
+            user_model = get_user_model()
+            try:
+                user = user_model._default_manager.db_manager(using).get_by_natural_key(options["user"])
+            except user_model.DoesNotExist as exc:
+                raise CommandError(f"Unknown user: {options['user']}") from exc
+        date_created = options["date_created"]
+        if date_created is not None:
+            try:
+                date_created = parse_datetime(date_created)
+            except ValueError:
+                date_created = None
+            if date_created is None:
+                raise CommandError("Invalid --date-created value: expected an ISO 8601 timestamp.")
+            if settings.USE_TZ and timezone.is_naive(date_created):
+                date_created = timezone.make_aware(date_created, timezone.get_default_timezone())
+            elif not settings.USE_TZ and timezone.is_aware(date_created):
+                date_created = timezone.make_naive(date_created, timezone.get_default_timezone())
         server_side_cursors = not connections[using].settings_dict.get('DISABLE_SERVER_SIDE_CURSORS')
         use_iterator = connections[using].vendor in ("postgresql",) and server_side_cursors
         # Create revisions.
@@ -79,7 +111,10 @@ class Command(BaseRevisionCommand):
                     total = live_objs.count()
                     if total:
                         for obj in live_objs.iterator(batch_size):
-                            self.create_revision(obj, using, meta, meta_models, meta_values, comment, model_db)
+                            self.create_revision(
+                                obj, using, meta, meta_models, meta_values, comment, model_db,
+                                user=user, date_created=date_created,
+                            )
                             created_count += 1
                             # Print out a message every batch_size if feeling extra verbose
                             if not created_count % batch_size:
@@ -92,7 +127,10 @@ class Command(BaseRevisionCommand):
                         chunked_ids = ids[i:i+batch_size]
                         objects = live_objs.in_bulk(chunked_ids)
                         for obj in objects.values():
-                            self.create_revision(obj, using, meta, meta_models, meta_values, comment, model_db)
+                            self.create_revision(
+                                obj, using, meta, meta_models, meta_values, comment, model_db,
+                                user=user, date_created=date_created,
+                            )
                             created_count += 1
                         # Print out a message every batch_size if feeling extra verbose
                         self.batch_complete(verbosity, created_count, total)
@@ -103,12 +141,18 @@ class Command(BaseRevisionCommand):
                         total=total,
                     ))
 
-    def create_revision(self, obj, using, meta, meta_models, meta_values, comment, model_db):
+    def create_revision(
+        self, obj, using, meta, meta_models, meta_values, comment, model_db, user=None, date_created=None,
+    ):
         with create_revision(using=using):
             if meta:
                 for model, values in zip(meta_models, meta_values):
                     add_meta(model, **values)
             set_comment(comment)
+            if user is not None:
+                set_user(user)
+            if date_created is not None:
+                set_date_created(date_created)
             add_to_revision(obj, model_db=model_db)
 
     def batch_complete(self, verbosity, created_count, total):
