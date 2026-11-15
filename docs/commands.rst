@@ -17,9 +17,21 @@ Creates an initial revision for all registered models in your project. It should
 
     ./manage.py createinitialrevisions
     ./manage.py createinitialrevisions your_app.YourModel --comment="Initial revision."
+    ./manage.py createinitialrevisions your_app.YourModel --user=historian --date-created="2020-09-28T12:34:56+00:00"
     ./manage.py createinitialrevisions your_app.YourModel --meta="{\"your_app.RevisionMeta\": {\"hello\": \"world\"}}"
 
 Run ``./manage.py createinitialrevisions --help`` for more information.
+
+``--user`` looks up an existing user by the configured user model's username
+field, in the database selected for revision data (``--using``). Omitting it
+leaves the default revision user unchanged.
+
+``--date-created`` sets the same creation time on every new revision. Timestamps
+without a UTC offset are interpreted in ``settings.TIME_ZONE``. If
+``USE_TZ=False``, timestamps with an offset are converted to that time zone and
+stored without time zone information. Invalid timestamps and unknown users are
+rejected before creating any revisions. Omitting the option preserves the
+current-time default.
 
 .. Warning::
     For large databases, this command can take a long time to run.
