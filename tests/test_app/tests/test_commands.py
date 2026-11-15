@@ -3,7 +3,8 @@ from datetime import timedelta
 from django.core.management import CommandError
 from django.utils import timezone
 import reversion
-from test_app.models import TestModel
+from reversion.models import Version
+from test_app.models import TestModel, TestModelCustomObjectId
 from test_app.tests.base import TestBase, TestModelMixin
 
 
@@ -19,6 +20,41 @@ class CreateInitialRevisionsTest(TestModelMixin, TestBase):
         self.callCommand("createinitialrevisions")
         self.callCommand("createinitialrevisions")
         self.assertSingleRevision((obj,), comment="Initial version.")
+
+
+class CreateInitialRevisionsCustomObjectIdTest(TestBase):
+
+    def setUp(self):
+        super().setUp()
+        reversion.register(TestModelCustomObjectId, object_id_field="slug")
+
+    def testRepeatedCommandDoesNotDuplicateRevisions(self):
+        obj = TestModelCustomObjectId.objects.create(slug="custom-id")
+        self.callCommand("createinitialrevisions", "test_app.TestModelCustomObjectId")
+        version = Version.objects.get_for_object(obj).get()
+
+        self.callCommand("createinitialrevisions", "test_app.TestModelCustomObjectId")
+        self.assertEqual(Version.objects.get_for_object(obj).get(), version)
+
+    def testObjectIdMatchingAnotherPrimaryKeyDoesNotSkipObject(self):
+        with reversion.create_revision():
+            existing = TestModelCustomObjectId.objects.create(pk=1, slug="2")
+        missing = TestModelCustomObjectId.objects.create(pk=2, slug="new")
+
+        self.callCommand("createinitialrevisions", "test_app.TestModelCustomObjectId")
+
+        self.assertEqual(Version.objects.get_for_object(existing).count(), 1)
+        self.assertSingleRevision((missing,), comment="Initial version.")
+
+    def testCustomObjectIdWithSeparateRevisionDatabase(self):
+        obj = TestModelCustomObjectId.objects.create(slug="custom-id")
+        self.callCommand("createinitialrevisions", "test_app.TestModelCustomObjectId", using="postgres")
+        version = Version.objects.using("postgres").get_for_object(obj).get()
+
+        self.callCommand("createinitialrevisions", "test_app.TestModelCustomObjectId", using="postgres")
+
+        self.assertEqual(Version.objects.using("postgres").get_for_object(obj).get(), version)
+        self.assertNoRevision()
 
 
 class CreateInitialRevisionsAppLabelTest(TestModelMixin, TestBase):

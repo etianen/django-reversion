@@ -5,7 +5,7 @@ from django.core.management import CommandError
 from django.db import connections, reset_queries, transaction, router
 from reversion.models import Revision, Version, _safe_subquery
 from reversion.management.commands import BaseRevisionCommand
-from reversion.revisions import create_revision, set_comment, add_to_revision, add_meta
+from reversion.revisions import create_revision, set_comment, add_to_revision, add_meta, _get_options
 
 
 class Command(BaseRevisionCommand):
@@ -66,7 +66,7 @@ class Command(BaseRevisionCommand):
                 live_objs = _safe_subquery(
                     "exclude",
                     model._default_manager.using(model_db),
-                    model._meta.pk.name,
+                    _get_options(model).object_id_field,
                     Version.objects.using(using).get_for_model(
                         model,
                         model_db=model_db,
