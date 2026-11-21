@@ -62,7 +62,38 @@ A *revision* represents one or more changes made to your model instances, groupe
 
 .. Important::
 
-    Bulk actions, such as ``Queryset.update()``, do not send signals, so won't be noticed by django-reversion.
+    Bulk actions, such as ``QuerySet.update()``, ``QuerySet.bulk_update()`` and
+    ``QuerySet.bulk_create()``, do not send signals, so won't be noticed by
+    django-reversion. To record their results, call ``reversion.add_to_revision()`` for
+    each saved instance inside the same revision block:
+
+    .. code:: python
+
+        with reversion.create_revision():
+            objects = list(YourModel.objects.filter(name="obj v1"))
+            for obj in objects:
+                obj.name = "obj v2"
+            YourModel.objects.bulk_update(objects, ["name"])
+            for obj in objects:
+                reversion.add_to_revision(obj)
+
+    Add instances after the bulk operation, with field values that reflect the
+    database. ``QuerySet.update()`` does not update instances in memory, so fetch
+    the affected objects again before adding them. If the update changes fields
+    used by the queryset's filter, save the primary keys first and use those keys
+    to fetch the updated objects.
+
+    After ``bulk_create()``, instances must have their primary keys populated
+    before they can be added to a revision. Whether the database supplies these
+    keys depends on the backend and bulk-create options; if necessary, fetch the
+    saved objects again. Re-fetch instances after database-side expressions or
+    conflict handling as well, so that revisions contain the values actually
+    stored.
+
+    Recording a bulk operation still requires loading and serializing every
+    versioned object, and may query followed relations. Account for this memory
+    and database work when choosing batch sizes. The revision records the saved
+    state; it does not create a version of the state before the bulk operation.
 
 
 Loading revisions
