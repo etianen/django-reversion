@@ -1,5 +1,7 @@
 import json
 from datetime import timedelta
+from unittest import skipIf
+from django.conf import settings
 from django.core.management import CommandError
 from django.utils import timezone
 import reversion
@@ -51,8 +53,9 @@ class CreateInitialRevisionsAppLabelTest(TestModelMixin, TestBase):
         self.assertNoRevision()
 
 
+@skipIf(settings.REVERSION_TEST_SQLITE_ONLY, "Requires PostgreSQL or MySQL")
 class CreateInitialRevisionsDbTest(TestModelMixin, TestBase):
-    databases = {"default", "mysql", "postgres"}
+    databases = {"default", "mysql", "postgres"}.intersection(settings.DATABASES)
 
     def testCreateInitialRevisionsDb(self):
         obj = TestModel.objects.create()
@@ -67,8 +70,9 @@ class CreateInitialRevisionsDbTest(TestModelMixin, TestBase):
         self.assertSingleRevision((obj,), comment="Initial version.", using="mysql")
 
 
+@skipIf(settings.REVERSION_TEST_SQLITE_ONLY, "Requires PostgreSQL or MySQL")
 class CreateInitialRevisionsModelDbTest(TestModelMixin, TestBase):
-    databases = {"default", "postgres"}
+    databases = {"default", "postgres"}.intersection(settings.DATABASES)
 
     def testCreateInitialRevisionsModelDb(self):
         obj = TestModel.objects.db_manager("postgres").create()
@@ -135,8 +139,9 @@ class DeleteRevisionsAppLabelTest(TestModelMixin, TestBase):
         self.assertSingleRevision((obj,))
 
 
+@skipIf(settings.REVERSION_TEST_SQLITE_ONLY, "Requires PostgreSQL or MySQL")
 class DeleteRevisionsDbTest(TestModelMixin, TestBase):
-    databases = {"default", "mysql", "postgres"}
+    databases = {"default", "mysql", "postgres"}.intersection(settings.DATABASES)
 
     def testDeleteRevisionsDb(self):
         with reversion.create_revision(using="postgres"):
@@ -157,8 +162,9 @@ class DeleteRevisionsDbTest(TestModelMixin, TestBase):
         self.assertSingleRevision((obj,))
 
 
+@skipIf(settings.REVERSION_TEST_SQLITE_ONLY, "Requires PostgreSQL or MySQL")
 class DeleteRevisionsModelDbTest(TestModelMixin, TestBase):
-    databases = {"default", "postgres"}
+    databases = {"default", "postgres"}.intersection(settings.DATABASES)
 
     def testDeleteRevisionsModelDb(self):
         with reversion.create_revision():

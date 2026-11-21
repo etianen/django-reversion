@@ -1,3 +1,5 @@
+from unittest import skipIf
+from django.conf import settings
 import reversion
 from reversion.models import Version
 from test_app.models import (
@@ -19,8 +21,9 @@ class GetForModelTest(TestModelMixin, TestBase):
         self.assertEqual(Version.objects.get_for_model(obj.__class__).count(), 1)
 
 
+@skipIf(settings.REVERSION_TEST_SQLITE_ONLY, "Requires PostgreSQL or MySQL")
 class GetForModelDbTest(TestModelMixin, TestBase):
-    databases = {"default", "mysql", "postgres"}
+    databases = {"default", "mysql", "postgres"}.intersection(settings.DATABASES)
 
     def testGetForModelDb(self):
         with reversion.create_revision(using="postgres"):
@@ -62,8 +65,9 @@ class GetForObjectTest(TestModelMixin, TestBase):
         self.assertEqual(Version.objects.get_for_object(obj_2).get().object, obj_2)
 
 
+@skipIf(settings.REVERSION_TEST_SQLITE_ONLY, "Requires PostgreSQL or MySQL")
 class GetForObjectDbTest(TestModelMixin, TestBase):
-    databases = {"default", "mysql", "postgres"}
+    databases = {"default", "mysql", "postgres"}.intersection(settings.DATABASES)
 
     def testGetForObjectDb(self):
         with reversion.create_revision(using="postgres"):
@@ -78,8 +82,9 @@ class GetForObjectDbTest(TestModelMixin, TestBase):
         self.assertEqual(Version.objects.using("mysql").get_for_object(obj).count(), 1)
 
 
+@skipIf(settings.REVERSION_TEST_SQLITE_ONLY, "Requires PostgreSQL or MySQL")
 class GetForObjectModelDbTest(TestModelMixin, TestBase):
-    databases = {"default", "postgres"}
+    databases = {"default", "postgres"}.intersection(settings.DATABASES)
 
     def testGetForObjectModelDb(self):
         with reversion.create_revision():
@@ -135,8 +140,9 @@ class GetForObjectReferenceTest(TestModelMixin, TestBase):
         self.assertEqual(Version.objects.get_for_object_reference(TestModel, obj_2.pk).get().object, obj_2)
 
 
+@skipIf(settings.REVERSION_TEST_SQLITE_ONLY, "Requires PostgreSQL or MySQL")
 class GetForObjectReferenceDbTest(TestModelMixin, TestBase):
-    databases = {"default", "postgres"}
+    databases = {"default", "postgres"}.intersection(settings.DATABASES)
 
     def testGetForObjectReferenceModelDb(self):
         with reversion.create_revision(using="postgres"):
@@ -145,8 +151,9 @@ class GetForObjectReferenceDbTest(TestModelMixin, TestBase):
         self.assertEqual(Version.objects.using("postgres").get_for_object_reference(TestModel, obj.pk).count(), 1)
 
 
+@skipIf(settings.REVERSION_TEST_SQLITE_ONLY, "Requires PostgreSQL or MySQL")
 class GetForObjectReferenceModelDbTest(TestModelMixin, TestBase):
-    databases = {"default", "mysql", "postgres"}
+    databases = {"default", "mysql", "postgres"}.intersection(settings.DATABASES)
 
     def testGetForObjectReferenceModelDb(self):
         with reversion.create_revision():
@@ -162,7 +169,7 @@ class GetForObjectReferenceModelDbTest(TestModelMixin, TestBase):
 
 
 class GetDeletedTest(TestModelMixin, TestBase):
-    databases = {"default", "mysql", "postgres"}
+    databases = {"default", "mysql", "postgres"}.intersection(settings.DATABASES)
 
     def testGetDeleted(self):
         with reversion.create_revision():
@@ -189,6 +196,7 @@ class GetDeletedTest(TestModelMixin, TestBase):
         self.assertEqual(Version.objects.get_deleted(TestModel)[0].object_id, str(pk_2))
         self.assertEqual(Version.objects.get_deleted(TestModel)[1].object_id, str(pk_1))
 
+    @skipIf(settings.REVERSION_TEST_SQLITE_ONLY, "Requires PostgreSQL or MySQL")
     def testGetDeletedPostgres(self):
         with reversion.create_revision(using="postgres"):
             obj = TestModel.objects.using("postgres").create()
@@ -197,6 +205,7 @@ class GetDeletedTest(TestModelMixin, TestBase):
         obj.delete()
         self.assertEqual(Version.objects.using("postgres").get_deleted(TestModel, model_db="postgres").count(), 1)
 
+    @skipIf(settings.REVERSION_TEST_SQLITE_ONLY, "Requires PostgreSQL or MySQL")
     def testGetDeletedMySQL(self):
         with reversion.create_revision(using="mysql"):
             obj = TestModel.objects.using("mysql").create()
@@ -206,8 +215,9 @@ class GetDeletedTest(TestModelMixin, TestBase):
         self.assertEqual(Version.objects.using("mysql").get_deleted(TestModel, model_db="mysql").count(), 1)
 
 
+@skipIf(settings.REVERSION_TEST_SQLITE_ONLY, "Requires PostgreSQL or MySQL")
 class GetDeletedDbTest(TestModelMixin, TestBase):
-    databases = {"default", "mysql", "postgres"}
+    databases = {"default", "mysql", "postgres"}.intersection(settings.DATABASES)
 
     def testGetDeletedDb(self):
         with reversion.create_revision(using="postgres"):
@@ -224,8 +234,9 @@ class GetDeletedDbTest(TestModelMixin, TestBase):
         self.assertEqual(Version.objects.using("mysql").get_deleted(TestModel).count(), 1)
 
 
+@skipIf(settings.REVERSION_TEST_SQLITE_ONLY, "Requires PostgreSQL or MySQL")
 class GetDeletedModelDbTest(TestModelMixin, TestBase):
-    databases = {"default", "postgres"}
+    databases = {"default", "postgres"}.intersection(settings.DATABASES)
 
     def testGetDeletedModelDb(self):
         with reversion.create_revision():

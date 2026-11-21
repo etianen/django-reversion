@@ -1,6 +1,8 @@
 from datetime import timedelta
+from unittest import skipIf
 from unittest.mock import MagicMock
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.transaction import get_connection
@@ -172,8 +174,9 @@ class CreateRevisionManageManuallyTest(TestModelMixin, TestBase):
         self.assertNoRevision()
 
 
+@skipIf(settings.REVERSION_TEST_SQLITE_ONLY, "Requires PostgreSQL or MySQL")
 class CreateRevisionDbTest(TestModelMixin, TestBase):
-    databases = {"default", "mysql", "postgres"}
+    databases = {"default", "mysql", "postgres"}.intersection(settings.DATABASES)
 
     def testCreateRevisionMultiDb(self):
         with reversion.create_revision(using="mysql"), reversion.create_revision(using="postgres"):
@@ -324,7 +327,7 @@ class GetDateCreatedTest(TestBase):
 
 
 class AddMetaTest(TestModelMixin, TestBase):
-    databases = {"default", "mysql", "postgres"}
+    databases = {"default", "mysql", "postgres"}.intersection(settings.DATABASES)
 
     def testAddMeta(self):
         with reversion.create_revision():
@@ -336,6 +339,7 @@ class AddMetaTest(TestModelMixin, TestBase):
         with self.assertRaises(reversion.RevisionManagementError):
             reversion.add_meta(TestMeta, name="meta v1")
 
+    @skipIf(settings.REVERSION_TEST_SQLITE_ONLY, "Requires PostgreSQL or MySQL")
     def testAddMetaMultDb(self):
         with reversion.create_revision(using="mysql"), reversion.create_revision(using="postgres"):
             obj = TestModel.objects.create()

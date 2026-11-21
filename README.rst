@@ -60,6 +60,18 @@ pull requests for any new code.
 
     $ tests/manage.py test tests
 
+For environments without PostgreSQL or MySQL, set ``REVERSION_TEST_SQLITE_ONLY=1``
+to run the SQLite-compatible tests without either database driver:
+
+.. code:: bash
+
+    $ pip install django -e .
+    $ REVERSION_TEST_SQLITE_ONLY=1 python tests/manage.py test tests
+
+This skips the tests that require PostgreSQL or MySQL, including multi-database
+tests. It provides a subset of the full suite for packaging and local checks.
+Leave the variable unset (or set it to ``0``) to run the full suite as CI does.
+
 5. Create a Pull Request with your contribution
 
 Contributors

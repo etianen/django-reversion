@@ -76,6 +76,8 @@ WSGI_APPLICATION = "test_project.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
 
+REVERSION_TEST_SQLITE_ONLY = os.environ.get("REVERSION_TEST_SQLITE_ONLY") == "1"
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
@@ -96,6 +98,9 @@ DATABASES = {
         "PASSWORD": os.environ.get("DJANGO_DATABASE_PASSWORD_MYSQL", ""),
     },
 }
+
+if REVERSION_TEST_SQLITE_ONLY:
+    DATABASES = {"default": DATABASES["default"]}
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
