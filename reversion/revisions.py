@@ -1,4 +1,5 @@
 from contextvars import ContextVar
+from copy import copy
 from collections import namedtuple, defaultdict
 from contextlib import contextmanager
 from functools import wraps
@@ -168,6 +169,17 @@ def _add_to_revision(obj, using, model_db, explicit):
     if obj.pk is None:
         return
     version_options = _get_options(obj.__class__)
+    # Expressions can remain on an instance after save(). Serialize their
+    # database values without changing the caller's instance or other fields.
+    version_fields = set(version_options.fields) | {version_options.object_id_field}
+    expression_fields = [
+        field.attname for field in obj._meta.concrete_fields
+        if (field.name in version_fields or field.attname in version_fields)
+        and hasattr(obj.__dict__.get(field.attname), "resolve_expression")
+    ]
+    if expression_fields:
+        obj = copy(obj)
+        obj.refresh_from_db(using=model_db, fields=expression_fields)
     content_type = _get_content_type(obj.__class__, using)
     object_id = force_str(getattr(obj, version_options.object_id_field))
     version_key = (content_type, object_id)
